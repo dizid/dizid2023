@@ -1,9 +1,7 @@
 <script setup> 
 import { reactive } from 'vue'
 import  ProjectsService  from '@/components/ProjectsService.js' // use getProjects() from ProjectService to get all projects  
-// export default { name: "AppsChildView", }
-const projects = reactive([])
-
+let projects = reactive([])
 async function getProjects() {
                 try{
                     const response = await ProjectsService.getProjects()
