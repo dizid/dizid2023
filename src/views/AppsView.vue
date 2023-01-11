@@ -1,27 +1,21 @@
 <script setup> 
-import { computed, reactive } from 'vue'
+import { reactive } from 'vue'
 import  ProjectsService  from '@/components/ProjectsService.js' // use getProjects() from ProjectService to get all projects  
-// const projects = reactive([])
+// export default { name: "AppsChildView", }
+const projects = reactive([])
 
-
-const projects = computed(() => {
-
-  async function getProjects() {
+async function getProjects() {
                 try{
                     const response = await ProjectsService.getProjects()
                     console.log("MF (inside function) response: ", response)
                     projects = await response.data.records
                     console.log("MF: (inside function) projects: ", projects)  // WORKS
-                    return projects
                 }catch(err){
                     console.log(err)
                 }
                 }
-             // getProjects() 
+              getProjects() 
               console.log("MF: (outside function) projects: ", projects)
-              
-            })
-            
 </script>
 <template>
     <div class="apps"> 
