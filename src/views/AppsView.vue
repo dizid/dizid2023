@@ -1,30 +1,27 @@
 <script setup> 
 import { reactive } from 'vue'
 import  ProjectsService  from '@/components/ProjectsService.js' // use getProjects() from ProjectService to get all projects  
-let projects = reactive([])
-async function getProjects() {
+let state = reactive( {projects: [],})
+async function getProjectsData() {
                 try{
-                    const response = await ProjectsService.getProjects()
-                    console.log("MF (inside function) response: ", response)
-                    projects = await response.data.records
-                    console.log("MF: (inside function) projects: ", projects)  // WORKS
+                    const response = await ProjectsService.getProjects().then((response) => {
+                   state.projects = response.data.records 
+                   console.log(state.projects)
+                  })
                 }catch(err){
                     console.log(err)
-                }
-                }
-              getProjects() 
-              console.log("MF: (outside function) projects: ", projects)
+                }}
+              getProjectsData() 
 </script>
 <template>
     <div class="apps"> 
       <h1>Apps</h1>
-      <p>Here are some of my apps:</p>
-      <p>TEST: {{ projects }}</p>
-      <div class="projects">
-        <div v-for="project in projects" :key="project.id">
-          <h2>{{ project.name }}</h2>
-          <p>{{ project.description }}</p>
-          <p>{{ project.url }}</p>
+      <p>Some sites, apps and tools i made in the past 20 years:</p>
+      <div class="flex">
+        <div class="purpleurls" v-for="project in state.projects" :key="project.id">
+          <p v-if="project.fields.URL"><a :href="project.fields.URL">{{ project.fields.Title }}</a></p>
+          <p v-else>{{ project.fields.Title }}</p>
+          <p><img :src="project.fields.Image[0].url" :alt="project.fields.slug" width="250"/></p> 
         </div>
     </div>
     </div>
