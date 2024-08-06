@@ -1,6 +1,5 @@
 <template>
   <div class="about">
-    <h1>About Dizid</h1>
-    <p></p>
+    <img src="/dizid-ai-logo-2024-1.jpg" />
   </div>
 </template>
