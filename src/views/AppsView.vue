@@ -16,7 +16,7 @@ async function getProjectsData() {
 <template>
     <div class="apps"> 
       <h1>Apps</h1>
-      <p>Some sites, apps and tools i made in the past 20 years:</p>
+      <p>Some sites, apps and tools i made in the past 10 years:</p>
       <div class="flex">
         <div class="purpleurls" v-for="project in state.projects" :key="project.id">
           <p v-if="project.fields.URL"><a :href="project.fields.URL">{{ project.fields.Title }}</a></p>
