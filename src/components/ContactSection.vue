@@ -16,10 +16,13 @@ const handleSubmit = async () => {
   submitError.value = null
 
   try {
-    const response = await fetch('/api/contact', {
+    const response = await fetch('/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formData.value)
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        'form-name': 'contact',
+        ...formData.value
+      }).toString()
     })
 
     if (response.ok) {
@@ -126,8 +129,12 @@ const resetForm = () => {
           <form
             v-if="!isSubmitted"
             class="contact-form"
+            name="contact"
+            data-netlify="true"
             @submit.prevent="handleSubmit"
           >
+            <!-- Hidden field for Netlify Forms JS submission -->
+            <input type="hidden" name="form-name" value="contact" />
 
             <div class="form-group">
               <label for="name" class="form-label">Name</label>
