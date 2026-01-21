@@ -17,7 +17,7 @@ export default async (req: Request, context: Context) => {
       );
     }
 
-    const apiKey = Netlify.env.get("RESEND_API_KEY");
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
       console.error("RESEND_API_KEY not configured");
       return new Response(
