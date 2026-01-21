@@ -56,6 +56,9 @@ const scrollToContact = () => {
           <a href="https://github.com/dizid" target="_blank" rel="noopener" class="social-link" aria-label="GitHub">
             <i class="fa-brands fa-github"></i>
           </a>
+          <a href="https://linkedin.com/in/dizid" target="_blank" rel="noopener" class="social-link" aria-label="LinkedIn">
+            <i class="fa-brands fa-linkedin"></i>
+          </a>
           <a href="https://playground.dizid.com" target="_blank" rel="noopener" class="social-link" aria-label="Playground">
             <i class="fa-solid fa-gamepad"></i>
           </a>

@@ -7,30 +7,31 @@ const skillCategories = [
       { name: 'Vue.js', level: 95 },
       { name: 'JavaScript', level: 90 },
       { name: 'TypeScript', level: 80 },
-      { name: 'HTML/CSS', level: 95 },
-      { name: 'Responsive Design', level: 90 }
+      { name: 'React', level: 70 },
+      { name: 'Tailwind CSS', level: 90 },
+      { name: 'HTML5/CSS3', level: 95 }
     ]
   },
   {
-    title: 'Backend & Tools',
+    title: 'Backend & APIs',
     icon: 'fa-solid fa-server',
     skills: [
       { name: 'Node.js', level: 75 },
       { name: 'REST APIs', level: 85 },
-      { name: 'Netlify Functions', level: 80 },
-      { name: 'Git/GitHub', level: 90 },
-      { name: 'Vite', level: 85 }
+      { name: 'Airtable', level: 85 },
+      { name: 'Firebase', level: 70 },
+      { name: 'Netlify Functions', level: 80 }
     ]
   },
   {
-    title: 'Specializations',
-    icon: 'fa-solid fa-rocket',
+    title: 'Tools & Practices',
+    icon: 'fa-solid fa-toolbox',
     skills: [
-      { name: 'AI Integrations', level: 75 },
-      { name: 'User Experience', level: 90 },
-      { name: 'Web3/Blockchain', level: 60 },
-      { name: 'Performance', level: 80 },
-      { name: 'Accessibility', level: 75 }
+      { name: 'Git/GitHub', level: 90 },
+      { name: 'Vite/Webpack', level: 85 },
+      { name: 'VS Code', level: 95 },
+      { name: 'Figma', level: 70 },
+      { name: 'Responsive Design', level: 95 }
     ]
   }
 ]

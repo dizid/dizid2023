@@ -1,9 +1,9 @@
 <script setup>
 const highlights = [
-  { icon: 'fa-solid fa-code', label: 'Clean Code', value: 'Advocate' },
-  { icon: 'fa-solid fa-users', label: 'UX', value: 'Focused' },
-  { icon: 'fa-solid fa-robot', label: 'AI', value: 'Explorer' },
-  { icon: 'fa-solid fa-house-laptop', label: 'Work', value: 'Remote' }
+  { icon: 'fa-solid fa-calendar-check', label: 'Experience', value: '25+ Years' },
+  { icon: 'fa-solid fa-folder-open', label: 'Projects', value: '100+' },
+  { icon: 'fa-solid fa-users', label: 'Clients', value: '50+' },
+  { icon: 'fa-solid fa-globe', label: 'Available', value: 'Worldwide' }
 ]
 
 const techStack = [
@@ -11,7 +11,7 @@ const techStack = [
   { name: 'JavaScript', icon: 'fa-brands fa-js', color: '#f7df1e' },
   { name: 'TypeScript', icon: 'fa-solid fa-code', color: '#3178c6' },
   { name: 'Node.js', icon: 'fa-brands fa-node-js', color: '#68a063' },
-  { name: 'HTML/CSS', icon: 'fa-brands fa-html5', color: '#e34f26' },
+  { name: 'Tailwind', icon: 'fa-solid fa-wind', color: '#38bdf8' },
   { name: 'Git', icon: 'fa-brands fa-git-alt', color: '#f05032' }
 ]
 </script>
@@ -24,22 +24,22 @@ const techStack = [
           <h2 class="section-title">About Me</h2>
 
           <p class="about-intro">
-            I'm a web developer who believes that great software should feel invisible.
-            When users don't notice the interface, that's when you know you've done it right.
+            Web Developer & Digital Craftsman with over 25 years of experience
+            building responsive websites and web applications.
           </p>
 
           <p class="about-text">
-            Based in the Netherlands, I spend my days crafting web applications with Vue.js
-            and experimenting with AI integrations. My playground is filled with projects
-            ranging from practical tools to playful experiments - because the best way to
-            learn is to build.
+            I've been coding since the early days of HTML 1.0, and founded Dizid Digital Development
+            to help businesses create custom digital tools and user-focused interfaces.
+            Based in the Netherlands, I specialize in Vue.js development and enjoy
+            experimenting with AI integrations.
           </p>
 
           <p class="about-text">
-            With 52+ repositories on GitHub, I'm constantly exploring new technologies
-            and pushing the boundaries of what's possible on the web. Whether it's a
-            grumpy AI chatbot or a blockchain scanner, I approach each project with
-            curiosity and attention to user experience.
+            My approach is simple: great software should feel invisible. When users
+            don't notice the interface, that's when you know you've done it right.
+            From practical business tools to playful experiments, I approach each
+            project with curiosity and attention to user experience.
           </p>
 
           <div class="highlights">

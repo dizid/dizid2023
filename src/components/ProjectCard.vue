@@ -1,5 +1,7 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   project: {
     type: Object,
     required: true
@@ -9,13 +11,44 @@ defineProps({
     default: false
   }
 })
+
+// Handle both Airtable format (url) and fallback format (live)
+const liveUrl = computed(() => props.project.url || props.project.live)
 </script>
 
 <template>
-  <article class="project-card" :class="{ 'featured': featured }">
-    <div class="project-header">
+  <article class="project-card" :class="{ 'featured': featured, 'has-image': project.image }">
+    <!-- Image header for Airtable projects -->
+    <div v-if="project.image" class="project-image">
+      <img :src="project.image" :alt="project.title" loading="lazy" />
+      <div class="project-links image-links">
+        <a
+          v-if="project.github"
+          :href="project.github"
+          target="_blank"
+          rel="noopener"
+          class="project-link"
+          aria-label="View on GitHub"
+        >
+          <i class="fa-brands fa-github"></i>
+        </a>
+        <a
+          v-if="liveUrl"
+          :href="liveUrl"
+          target="_blank"
+          rel="noopener"
+          class="project-link primary"
+          aria-label="View live demo"
+        >
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+        </a>
+      </div>
+    </div>
+
+    <!-- Icon header for fallback projects -->
+    <div v-else class="project-header">
       <div class="project-icon">
-        <i :class="project.icon"></i>
+        <i :class="project.icon || 'fa-solid fa-code'"></i>
       </div>
       <div class="project-links">
         <a
@@ -29,8 +62,8 @@ defineProps({
           <i class="fa-brands fa-github"></i>
         </a>
         <a
-          v-if="project.live"
-          :href="project.live"
+          v-if="liveUrl"
+          :href="liveUrl"
           target="_blank"
           rel="noopener"
           class="project-link primary"
@@ -41,19 +74,21 @@ defineProps({
       </div>
     </div>
 
-    <h3 class="project-title">{{ project.title }}</h3>
-    <p class="project-description">{{ project.description }}</p>
+    <div class="project-content">
+      <h3 class="project-title">{{ project.title }}</h3>
+      <p class="project-description">{{ project.description }}</p>
 
-    <div v-if="project.features && featured" class="project-features">
-      <span v-for="feature in project.features" :key="feature" class="feature-tag">
-        {{ feature }}
-      </span>
-    </div>
+      <div v-if="project.features && featured" class="project-features">
+        <span v-for="feature in project.features" :key="feature" class="feature-tag">
+          {{ feature }}
+        </span>
+      </div>
 
-    <div class="project-tech">
-      <span v-for="tech in project.tech" :key="tech" class="tech-tag">
-        {{ tech }}
-      </span>
+      <div class="project-tech">
+        <span v-for="tech in project.tech" :key="tech" class="tech-tag">
+          {{ tech }}
+        </span>
+      </div>
     </div>
   </article>
 </template>
@@ -63,11 +98,15 @@ defineProps({
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
-  padding: var(--space-6);
   transition: all var(--transition-base);
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow: hidden;
+}
+
+.project-card:not(.has-image) {
+  padding: var(--space-6);
 }
 
 .project-card:hover {
@@ -87,6 +126,59 @@ defineProps({
   box-shadow: var(--shadow-glow);
 }
 
+/* Image styles for Airtable projects */
+.project-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.project-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-base);
+}
+
+.project-card:hover .project-image img {
+  transform: scale(1.05);
+}
+
+.image-links {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.project-card:hover .image-links {
+  opacity: 1;
+}
+
+.image-links .project-link {
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  color: white;
+}
+
+.image-links .project-link:hover {
+  background: var(--color-accent);
+}
+
+/* Content area */
+.project-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.has-image .project-content {
+  padding: var(--space-5);
+}
+
+/* Icon header styles */
 .project-header {
   display: flex;
   justify-content: space-between;

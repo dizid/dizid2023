@@ -14,6 +14,15 @@ const currentYear = new Date().getFullYear()
         <a href="https://github.com/dizid" target="_blank" rel="noopener" aria-label="GitHub">
           <i class="fa-brands fa-github"></i>
         </a>
+        <a href="https://linkedin.com/in/dizid" target="_blank" rel="noopener" aria-label="LinkedIn">
+          <i class="fa-brands fa-linkedin"></i>
+        </a>
+        <a href="https://twitter.com/dizid" target="_blank" rel="noopener" aria-label="Twitter">
+          <i class="fa-brands fa-x-twitter"></i>
+        </a>
+        <a href="https://dev.to/dizid" target="_blank" rel="noopener" aria-label="Dev.to">
+          <i class="fa-brands fa-dev"></i>
+        </a>
         <a href="https://playground.dizid.com" target="_blank" rel="noopener" aria-label="Playground">
           <i class="fa-solid fa-gamepad"></i>
         </a>

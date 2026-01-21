@@ -60,6 +60,36 @@ const resetForm = () => {
 
           <div class="contact-methods">
             <a
+              href="mailto:dev@dizid.com"
+              class="contact-method"
+            >
+              <div class="method-icon">
+                <i class="fa-solid fa-envelope"></i>
+              </div>
+              <div class="method-info">
+                <span class="method-label">Email</span>
+                <span class="method-value">dev@dizid.com</span>
+              </div>
+              <i class="fa-solid fa-arrow-right method-arrow"></i>
+            </a>
+
+            <a
+              href="https://linkedin.com/in/dizid"
+              target="_blank"
+              rel="noopener"
+              class="contact-method"
+            >
+              <div class="method-icon">
+                <i class="fa-brands fa-linkedin"></i>
+              </div>
+              <div class="method-info">
+                <span class="method-label">LinkedIn</span>
+                <span class="method-value">in/dizid</span>
+              </div>
+              <i class="fa-solid fa-arrow-right method-arrow"></i>
+            </a>
+
+            <a
               href="https://github.com/dizid"
               target="_blank"
               rel="noopener"
@@ -76,17 +106,17 @@ const resetForm = () => {
             </a>
 
             <a
-              href="https://playground.dizid.com"
+              href="https://twitter.com/dizid"
               target="_blank"
               rel="noopener"
               class="contact-method"
             >
               <div class="method-icon">
-                <i class="fa-solid fa-gamepad"></i>
+                <i class="fa-brands fa-x-twitter"></i>
               </div>
               <div class="method-info">
-                <span class="method-label">Playground</span>
-                <span class="method-value">playground.dizid.com</span>
+                <span class="method-label">Twitter</span>
+                <span class="method-value">@dizid</span>
               </div>
               <i class="fa-solid fa-arrow-right method-arrow"></i>
             </a>
