@@ -1,12 +1,16 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const isScrolled = ref(false)
 const isMobileMenuOpen = ref(false)
 
-const navLinks = [
+// Anchor links for homepage sections
+const anchorLinks = [
   { name: 'About', href: '#about' },
-  { name: 'Projects', href: '#projects' },
   { name: 'Skills', href: '#skills' },
   { name: 'Contact', href: '#contact' }
 ]
@@ -17,10 +21,30 @@ const handleScroll = () => {
 
 const scrollToSection = (href) => {
   isMobileMenuOpen.value = false
-  const element = document.querySelector(href)
-  if (element) {
-    element.scrollIntoView({ behavior: 'smooth' })
+
+  // If not on homepage, navigate home first then scroll
+  if (route.path !== '/') {
+    router.push('/' + href)
+  } else {
+    const element = document.querySelector(href)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' })
+    }
   }
+}
+
+const goHome = () => {
+  isMobileMenuOpen.value = false
+  if (route.path !== '/') {
+    router.push('/')
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+}
+
+const goToProjects = () => {
+  isMobileMenuOpen.value = false
+  router.push('/projects')
 }
 
 onMounted(() => {
@@ -35,20 +59,30 @@ onUnmounted(() => {
 <template>
   <nav class="navbar" :class="{ 'scrolled': isScrolled }">
     <div class="container navbar-content">
-      <a href="#" class="logo" @click.prevent="scrollToSection('#hero')">
+      <a href="/" class="logo" @click.prevent="goHome">
         <span class="logo-text">dizid</span>
         <span class="logo-dot">.</span>
       </a>
 
       <div class="nav-links" :class="{ 'active': isMobileMenuOpen }">
         <a
-          v-for="link in navLinks"
+          v-for="link in anchorLinks"
           :key="link.name"
           :href="link.href"
           class="nav-link"
           @click.prevent="scrollToSection(link.href)"
         >
           {{ link.name }}
+        </a>
+
+        <!-- Projects page link -->
+        <a
+          href="/projects"
+          class="nav-link"
+          :class="{ 'active': route.path === '/projects' }"
+          @click.prevent="goToProjects"
+        >
+          Projects
         </a>
       </div>
 
@@ -132,6 +166,14 @@ onUnmounted(() => {
 }
 
 .nav-link:hover::after {
+  width: 100%;
+}
+
+.nav-link.active {
+  color: var(--color-accent);
+}
+
+.nav-link.active::after {
   width: 100%;
 }
 

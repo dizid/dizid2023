@@ -1,11 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import NavBar from './components/NavBar.vue'
-import HeroSection from './components/HeroSection.vue'
-import AboutSection from './components/AboutSection.vue'
-import ProjectsSection from './components/ProjectsSection.vue'
-import SkillsSection from './components/SkillsSection.vue'
-import ContactSection from './components/ContactSection.vue'
 import FooterSection from './components/FooterSection.vue'
 
 const isLoaded = ref(false)
@@ -19,11 +14,7 @@ onMounted(() => {
   <div class="app" :class="{ 'is-loaded': isLoaded }">
     <NavBar />
     <main>
-      <HeroSection />
-      <AboutSection />
-      <ProjectsSection />
-      <SkillsSection />
-      <ContactSection />
+      <router-view />
     </main>
     <FooterSection />
   </div>

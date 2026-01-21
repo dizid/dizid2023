@@ -16,16 +16,10 @@ const handleSubmit = async () => {
   submitError.value = null
 
   try {
-    const formBody = new URLSearchParams()
-    formBody.append('form-name', 'contact')
-    formBody.append('name', formData.value.name)
-    formBody.append('email', formData.value.email)
-    formBody.append('message', formData.value.message)
-
-    const response = await fetch('/', {
+    const response = await fetch('/api/contact', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formBody.toString()
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(formData.value)
     })
 
     if (response.ok) {
@@ -131,17 +125,9 @@ const resetForm = () => {
         <div class="contact-form-wrapper">
           <form
             v-if="!isSubmitted"
-            name="contact"
-            method="POST"
-            data-netlify="true"
-            netlify-honeypot="bot-field"
             class="contact-form"
             @submit.prevent="handleSubmit"
           >
-            <input type="hidden" name="form-name" value="contact" />
-            <p class="hidden">
-              <label>Don't fill this out: <input name="bot-field" /></label>
-            </p>
 
             <div class="form-group">
               <label for="name" class="form-label">Name</label>

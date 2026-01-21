@@ -1,19 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import ProjectCard from './ProjectCard.vue'
-import { fetchFeaturedProjects } from '../services/airtable.js'
+import ProjectCard from '../components/ProjectCard.vue'
+import { fetchProjects } from '../services/airtable.js'
 
-// State for Airtable integration
 const projects = ref([])
 const isLoading = ref(true)
 const error = ref(null)
 
-// Fallback projects when Airtable is not configured (only show 4)
+// Fallback projects when Airtable is not configured
 const fallbackProjects = [
   {
     id: '1',
     title: 'Playground',
-    description: 'A digital playground for experimenting with web technologies and AI integrations. Features AI chatbots, meme editors, and more.',
+    description: 'A digital playground for experimenting with web technologies and AI integrations.',
     icon: 'fa-solid fa-gamepad',
     tech: ['Vue 3', 'OpenAI', 'Netlify Functions'],
     github: 'https://github.com/dizid/playground',
@@ -47,12 +46,10 @@ const fallbackProjects = [
 
 onMounted(async () => {
   try {
-    // Fetch only 4 featured projects sorted by order
-    const airtableProjects = await fetchFeaturedProjects(4)
+    const airtableProjects = await fetchProjects()
     if (airtableProjects && airtableProjects.length > 0) {
       projects.value = airtableProjects
     } else {
-      // Use fallback projects if Airtable is not configured
       projects.value = fallbackProjects
     }
   } catch (err) {
@@ -66,12 +63,16 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section id="projects" class="section projects">
+  <section class="projects-page">
     <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Featured Projects</h2>
-        <p class="section-subtitle">
-          A selection of my latest work
+      <div class="page-header">
+        <router-link to="/" class="back-link">
+          <i class="fa-solid fa-arrow-left"></i>
+          Back to Home
+        </router-link>
+        <h1 class="page-title">All Projects</h1>
+        <p class="page-subtitle">
+          A complete collection of projects I've built over the years
         </p>
       </div>
 
@@ -86,7 +87,7 @@ onMounted(async () => {
       <!-- Error State -->
       <div v-if="error && !isLoading" class="error-notice">
         <i class="fa-solid fa-exclamation-triangle"></i>
-        <span>{{ error }}</span>
+        <span>{{ error }} - showing cached projects</span>
       </div>
 
       <!-- Projects Grid -->
@@ -98,37 +99,61 @@ onMounted(async () => {
         />
       </div>
 
-      <div class="projects-cta">
-        <router-link to="/projects" class="btn btn-primary">
-          <i class="fa-solid fa-grid-2"></i>
-          View All Projects
-        </router-link>
+      <div class="projects-footer">
+        <a
+          href="https://github.com/dizid?tab=repositories"
+          target="_blank"
+          rel="noopener"
+          class="btn btn-secondary"
+        >
+          <i class="fa-brands fa-github"></i>
+          View GitHub Repositories
+        </a>
       </div>
     </div>
   </section>
 </template>
 
 <style scoped>
-.projects {
+.projects-page {
+  min-height: 100vh;
+  padding-top: 100px;
+  padding-bottom: var(--space-16);
   background: var(--color-bg-primary);
 }
 
-.section-header {
-  text-align: center;
+.page-header {
   margin-bottom: var(--space-12);
 }
 
-.section-subtitle {
-  color: var(--color-text-secondary);
-  font-size: var(--text-lg);
-  margin-top: var(--space-4);
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-bottom: var(--space-6);
+  transition: color var(--transition-fast);
 }
 
-.section-title {
-  display: inline-block;
+.back-link:hover {
+  color: var(--color-accent);
+}
+
+.page-title {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  margin-bottom: var(--space-4);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-subtitle {
+  font-size: var(--text-lg);
+  color: var(--color-text-secondary);
+  max-width: 600px;
 }
 
 .loading-container {
@@ -162,16 +187,30 @@ onMounted(async () => {
 
 .projects-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-6);
 }
 
-.projects-cta {
+.projects-footer {
   text-align: center;
   margin-top: var(--space-12);
 }
 
+@media (max-width: 1024px) {
+  .projects-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 768px) {
+  .projects-page {
+    padding-top: 80px;
+  }
+
+  .page-title {
+    font-size: var(--text-3xl);
+  }
+
   .projects-grid {
     grid-template-columns: 1fr;
   }
