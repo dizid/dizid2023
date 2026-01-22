@@ -21,6 +21,7 @@ const handleSubmit = async () => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         'form-name': 'contact',
+        'bot-field': '',  // Honeypot field - must be empty for real users
         ...formData.value
       }).toString()
     })
