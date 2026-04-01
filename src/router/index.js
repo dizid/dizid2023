@@ -13,6 +13,11 @@ const router = createRouter({
       path: '/projects',
       name: 'projects',
       component: () => import('../views/ProjectsView.vue')
+    },
+    {
+      path: '/hire',
+      name: 'hire',
+      component: () => import('../views/HireView.vue')
     }
   ],
   // Scroll to top on route change, or to hash if present

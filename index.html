@@ -21,6 +21,15 @@
       <textarea name="message"></textarea>
     </form>
 
+    <!-- Hidden form for Hire page (SPA workaround) -->
+    <form name="hire" netlify netlify-honeypot="bot-field" hidden>
+      <input type="text" name="name" />
+      <input type="email" name="email" />
+      <select name="project"></select>
+      <select name="budget"></select>
+      <textarea name="message"></textarea>
+    </form>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

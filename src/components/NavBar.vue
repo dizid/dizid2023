@@ -47,6 +47,11 @@ const goToProjects = () => {
   router.push('/projects')
 }
 
+const goToHire = () => {
+  isMobileMenuOpen.value = false
+  router.push('/hire')
+}
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
 })
@@ -83,6 +88,17 @@ onUnmounted(() => {
           @click.prevent="goToProjects"
         >
           Projects
+        </a>
+
+        <!-- Hire page link -->
+        <a
+          href="/hire"
+          class="nav-link hire-link"
+          :class="{ 'active': route.path === '/hire' }"
+          @click.prevent="goToHire"
+        >
+          <i class="fa-solid fa-bolt"></i>
+          Hire Me
         </a>
       </div>
 
@@ -175,6 +191,18 @@ onUnmounted(() => {
 
 .nav-link.active::after {
   width: 100%;
+}
+
+.hire-link {
+  color: var(--color-secondary-light) !important;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.hire-link:hover {
+  color: var(--color-secondary) !important;
 }
 
 .mobile-toggle {
