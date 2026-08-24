@@ -3,11 +3,6 @@ import { ref, onMounted } from 'vue'
 import ProjectCard from './ProjectCard.vue'
 import { fetchFeaturedProjects } from '../services/airtable.js'
 
-// State for Airtable integration
-const projects = ref([])
-const isLoading = ref(true)
-const error = ref(null)
-
 // Fallback projects when Airtable is not configured (only show 4)
 const fallbackProjects = [
   {
@@ -45,22 +40,22 @@ const fallbackProjects = [
   }
 ]
 
+// Present synchronously at SSG-render time so prerendered HTML always has
+// real project content; onMounted overwrites with live Airtable data once
+// the client hydrates, if configured.
+const projects = ref(fallbackProjects)
+const error = ref(null)
+
 onMounted(async () => {
   try {
     // Fetch only 4 featured projects sorted by order
     const airtableProjects = await fetchFeaturedProjects(4)
     if (airtableProjects && airtableProjects.length > 0) {
       projects.value = airtableProjects
-    } else {
-      // Use fallback projects if Airtable is not configured
-      projects.value = fallbackProjects
     }
   } catch (err) {
     console.error('Failed to load projects:', err)
     error.value = 'Failed to load projects'
-    projects.value = fallbackProjects
-  } finally {
-    isLoading.value = false
   }
 })
 </script>
@@ -75,22 +70,14 @@ onMounted(async () => {
         </p>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="loading-container">
-        <div class="loading-spinner">
-          <i class="fa-solid fa-spinner fa-spin"></i>
-        </div>
-        <p>Loading projects...</p>
-      </div>
-
       <!-- Error State -->
-      <div v-if="error && !isLoading" class="error-notice">
+      <div v-if="error" class="error-notice">
         <i class="fa-solid fa-exclamation-triangle"></i>
         <span>{{ error }}</span>
       </div>
 
       <!-- Projects Grid -->
-      <div v-if="!isLoading" class="projects-grid">
+      <div class="projects-grid">
         <ProjectCard
           v-for="project in projects"
           :key="project.id || project.title"
@@ -129,21 +116,6 @@ onMounted(async () => {
 
 .section-title {
   display: inline-block;
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-16) 0;
-  color: var(--color-text-muted);
-  gap: var(--space-4);
-}
-
-.loading-spinner {
-  font-size: var(--text-3xl);
-  color: var(--color-accent);
 }
 
 .error-notice {

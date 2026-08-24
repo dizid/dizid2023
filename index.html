@@ -1,35 +1,40 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Marc de Ruijter - Web Developer specializing in Vue.js, AI integrations, and user-focused interfaces" />
-    <title>Marc de Ruijter | Web Developer</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="app"></div>
 
-    <!-- Hidden form for Netlify Forms detection (SPA workaround) -->
-    <form name="contact" netlify netlify-honeypot="bot-field" hidden>
-      <input type="text" name="name" />
-      <input type="email" name="email" />
-      <textarea name="message"></textarea>
-    </form>
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- title, meta description, canonical, OG tags, and JSON-LD are set per-route
+       via useHead() in each view (see src/App.vue, src/views/*.vue) -->
+  <!-- Font Awesome is self-hosted via @fortawesome/fontawesome-free, imported in src/main.js -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+</head>
 
-    <!-- Hidden form for Hire page (SPA workaround) -->
-    <form name="hire" netlify netlify-honeypot="bot-field" hidden>
-      <input type="text" name="name" />
-      <input type="email" name="email" />
-      <select name="project"></select>
-      <select name="budget"></select>
-      <textarea name="message"></textarea>
-    </form>
+<body>
+  <div id="app"></div>
 
-    <script type="module" src="/src/main.js"></script>
-  </body>
+  <!-- Hidden form for Netlify Forms detection (SPA workaround) -->
+  <form name="contact" netlify netlify-honeypot="bot-field" hidden>
+    <input type="text" name="name" />
+    <input type="email" name="email" />
+    <textarea name="message"></textarea>
+  </form>
+
+  <!-- Hidden form for Hire page (SPA workaround) -->
+  <form name="hire" netlify netlify-honeypot="bot-field" hidden>
+    <input type="text" name="name" />
+    <input type="email" name="email" />
+    <select name="project"></select>
+    <select name="budget"></select>
+    <textarea name="message"></textarea>
+  </form>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
 </html>

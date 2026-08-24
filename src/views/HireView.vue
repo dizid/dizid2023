@@ -1,5 +1,31 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useHead } from '@unhead/vue'
+import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
+import WhoShouldUseSection from '../components/WhoShouldUseSection.vue'
+
+useHead({
+  title: 'Hire a Vue.js & AI Developer | Dizid',
+  meta: [
+    {
+      name: 'description',
+      content: 'Marc de Ruijter (Dizid) builds AI-powered web apps and SaaS MVPs in 2-4 weeks. 25+ years in IT, 20+ products shipped. Get a quote.'
+    },
+    { property: 'og:title', content: 'Hire a Vue.js & AI Developer | Dizid' },
+    {
+      property: 'og:description',
+      content: 'Full-stack developer with 25+ years IT experience and 20+ shipped products. I turn your idea into a deployed, AI-enhanced web application — fast.'
+    },
+    { property: 'og:url', content: 'https://dizid.com/hire' },
+    { property: 'og:type', content: 'website' }
+  ],
+  link: [{ rel: 'canonical', href: 'https://dizid.com/hire' }]
+})
+
+useBreadcrumbSchema([
+  { name: 'Home', url: 'https://dizid.com/' },
+  { name: 'Hire', url: 'https://dizid.com/hire' }
+])
 
 const isVisible = ref(false)
 const formData = ref({ name: '', email: '', project: '', budget: '', message: '' })
@@ -50,7 +76,8 @@ const services = [
     title: 'MVP Web App',
     description: 'Full-stack MVP with authentication, database, payments, and AI features. From idea to deployed product.',
     timeline: '2-4 weeks',
-    price: 'From \u20AC8,000'
+    price: 'From \u20AC8,000',
+    link: '/hire/mvp-development'
   },
   {
     icon: 'fa-solid fa-building',
@@ -159,7 +186,10 @@ const stats = [
             <div class="service-icon">
               <i :class="service.icon"></i>
             </div>
-            <h3 class="service-title">{{ service.title }}</h3>
+            <h3 class="service-title">
+              <router-link v-if="service.link" :to="service.link">{{ service.title }}</router-link>
+              <template v-else>{{ service.title }}</template>
+            </h3>
             <p class="service-description">{{ service.description }}</p>
             <div class="service-meta">
               <span class="service-timeline">
@@ -300,6 +330,8 @@ const stats = [
         </div>
       </div>
     </section>
+
+    <WhoShouldUseSection />
 
     <!-- Contact / CTA Section -->
     <section id="contact-hire" class="section contact-hire">
@@ -636,6 +668,14 @@ const stats = [
 .service-title {
   font-size: var(--text-xl);
   margin-bottom: var(--space-3);
+}
+
+.service-title a {
+  color: inherit;
+}
+
+.service-title a:hover {
+  color: var(--color-accent);
 }
 
 .service-description {

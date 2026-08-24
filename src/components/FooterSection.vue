@@ -10,6 +10,12 @@ const currentYear = new Date().getFullYear()
         <p class="footer-tagline">Building interfaces that don't need explaining.</p>
       </div>
 
+      <nav class="footer-nav">
+        <router-link to="/projects">Projects</router-link>
+        <router-link to="/hire">Hire</router-link>
+        <router-link to="/what-is-dizid">What is Dizid?</router-link>
+      </nav>
+
       <div class="footer-links">
         <a href="https://github.com/dizid" target="_blank" rel="noopener" aria-label="GitHub">
           <i class="fa-brands fa-github"></i>
@@ -72,6 +78,20 @@ const currentYear = new Date().getFullYear()
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   margin-top: var(--space-2);
+}
+
+.footer-nav {
+  display: flex;
+  gap: var(--space-6);
+}
+
+.footer-nav a {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.footer-nav a:hover {
+  color: var(--color-accent);
 }
 
 .footer-links {

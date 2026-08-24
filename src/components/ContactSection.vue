@@ -58,7 +58,7 @@ const resetForm = () => {
 
           <div class="contact-methods">
             <a
-              href="mailto:dev@dizid.com"
+              href="mailto:marc@dizid.com"
               class="contact-method"
             >
               <div class="method-icon">
@@ -66,7 +66,7 @@ const resetForm = () => {
               </div>
               <div class="method-info">
                 <span class="method-label">Email</span>
-                <span class="method-value">dev@dizid.com</span>
+                <span class="method-value">marc@dizid.com</span>
               </div>
               <i class="fa-solid fa-arrow-right method-arrow"></i>
             </a>

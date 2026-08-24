@@ -1,9 +1,9 @@
 <script setup>
 const highlights = [
-  { icon: 'fa-solid fa-calendar-check', label: 'Experience', value: '25+ Years' },
-  { icon: 'fa-solid fa-folder-open', label: 'Projects', value: '100+' },
-  { icon: 'fa-solid fa-users', label: 'Clients', value: '50+' },
-  { icon: 'fa-solid fa-globe', label: 'Available', value: 'Worldwide' }
+  { icon: 'fa-solid fa-calendar-check', label: 'Years in IT', value: '25+' },
+  { icon: 'fa-solid fa-rocket', label: 'Products Shipped', value: '20+' },
+  { icon: 'fa-solid fa-bolt', label: 'Weeks per MVP', value: '2-4' },
+  { icon: 'fa-solid fa-globe-europe', label: 'Timezone', value: 'EU (CET)' }
 ]
 
 const techStack = [
