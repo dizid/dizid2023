@@ -17,9 +17,9 @@ import { caseStudies } from '../data/caseStudies.js'
           <div class="proof-header">
             <div>
               <h3 class="proof-title">{{ project.title }}</h3>
-              <p class="proof-subtitle">{{ project.subtitle }}</p>
+              <p v-if="project.subtitle" class="proof-subtitle">{{ project.subtitle }}</p>
             </div>
-            <span class="proof-timeline">
+            <span v-if="project.timeline" class="proof-timeline">
               <i class="fa-solid fa-bolt" aria-hidden="true"></i>
               {{ project.timeline }}
             </span>
@@ -43,8 +43,8 @@ import { caseStudies } from '../data/caseStudies.js'
             </a>
           </div>
 
-          <!-- Tech is secondary for customers: one quiet line, not tags -->
-          <p class="proof-tech">Built with {{ project.tech.join(' · ') }}</p>
+          <!-- Tech is secondary for customers: one quiet line, not tags. Optional field. -->
+          <p v-if="project.tech && project.tech.length" class="proof-tech">Built with {{ project.tech.join(' · ') }}</p>
         </article>
       </div>
 

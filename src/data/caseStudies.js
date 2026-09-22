@@ -1,7 +1,9 @@
 // Real products Marc built and runs himself, described by what they do for
-// the user rather than by framework. Used by the homepage, /hire and
-// /hire/mvp-development. These are own products, not client work, so copy
-// must not imply client results. `tech` is kept for pages that show it.
+// the user rather than by framework. Currently used by ProofSection on the
+// homepage. /hire and /hire/mvp-development still carry their own separate,
+// not-yet-unified case-study arrays (pending refactor). These are own
+// products, not client work, so copy must not imply client results. `tech`
+// is optional — ProofSection only renders the "Built with" line when present.
 export const caseStudies = [
   {
     title: 'LaunchPilot.marketing',
@@ -22,12 +24,12 @@ export const caseStudies = [
     metric: 'A tailored CV per job ad'
   },
   {
-    title: 'Site Improver',
-    subtitle: 'For small businesses with an outdated website',
-    description: 'Reads an existing small-business website, generates a modern redesign with AI, and puts it online. Built for outreach to local businesses.',
-    tech: ['Vue 3', 'Firecrawl', 'Claude API', 'Netlify API', 'Node.js'],
-    timeline: '2 weeks',
-    url: '#',
-    metric: 'Automated redesigns'
+    title: 'Foreground.info',
+    description: 'Checks whether AI assistants (ChatGPT, Gemini, Claude, Grok) mention your business when someone asks a category question.',
+    // Ongoing product, not a fixed past build — shown as a status badge
+    // instead of a build duration like the other cards.
+    timeline: 'WIP',
+    url: 'https://foreground.info',
+    metric: 'Checks 4 AI engines in one scan'
   }
 ]

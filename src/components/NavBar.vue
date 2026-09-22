@@ -42,11 +42,6 @@ const goHome = () => {
   }
 }
 
-const goToProjects = () => {
-  isMobileMenuOpen.value = false
-  router.push('/projects')
-}
-
 const goToHire = () => {
   isMobileMenuOpen.value = false
   router.push('/hire')
@@ -78,16 +73,6 @@ onUnmounted(() => {
           @click.prevent="scrollToSection(link.href)"
         >
           {{ link.name }}
-        </a>
-
-        <!-- Projects page link -->
-        <a
-          href="/projects"
-          class="nav-link"
-          :class="{ 'active': route.path === '/projects' }"
-          @click.prevent="goToProjects"
-        >
-          Projects
         </a>
 
         <!-- Hire page link -->
