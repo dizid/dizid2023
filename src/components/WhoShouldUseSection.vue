@@ -1,8 +1,8 @@
 <script setup>
 const fits = [
-  'Founders who need a working MVP in weeks, not months.',
-  'Teams who want AI (Claude, GPT) built into the product itself — not bolted on as a chatbot afterthought.',
-  'Businesses who want to work directly with the person building their product, not through an agency layer.'
+  'Founders and business owners with an idea and no technical team, who need a working product in weeks, not months.',
+  'Small businesses stuck on spreadsheets, manual processes or an outdated website.',
+  'Anyone who wants one accountable person, not an agency layer, to build the product and manage the project.'
 ]
 
 const notFits = 'Not the right fit for enterprise builds that need a large multi-person team from day one.'

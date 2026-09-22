@@ -9,12 +9,26 @@ onMounted(() => {
   }, 100)
 })
 
-const scrollToProjects = () => {
-  document.querySelector('#projects')?.scrollIntoView({ behavior: 'smooth' })
-}
+// Everything a non-technical customer gets, in the order they care about it.
+// Each point is already promised on /hire (fixed scope + price, 24h quote,
+// weekly demos, solo builder).
+const promises = [
+  'A fixed price, agreed before we start',
+  'A scoped quote within 24 hours',
+  'A working demo every week',
+  'One person accountable, start to finish'
+]
 
-const scrollToContact = () => {
-  document.querySelector('#contact')?.scrollIntoView({ behavior: 'smooth' })
+// Trust strip under the buttons
+const stats = [
+  { value: '25+', label: 'Years in IT' },
+  { value: '20+', label: 'Products shipped' },
+  { value: '2-4', label: 'Weeks to launch' },
+  { value: 'EU', label: 'Timezone (CET)' }
+]
+
+const scrollToProof = () => {
+  document.querySelector('#proof')?.scrollIntoView({ behavior: 'smooth' })
 }
 </script>
 
@@ -27,64 +41,44 @@ const scrollToContact = () => {
 
     <div class="container hero-content" :class="{ 'visible': isVisible }">
       <div class="hero-text">
-        <p class="hero-greeting">Hi, I'm</p>
-        <h1 class="hero-name">
-          Marc de Ruijter
-          <span class="hero-alias">@dizid</span>
+        <p class="hero-eyebrow">Marc de Ruijter &middot; Developer &amp; project lead</p>
+        <h1 class="hero-title">
+          Your software project, built <span class="text-gradient">and managed</span> by one person.
         </h1>
-        <p class="hero-tagline">
-          <span class="quote-mark">"</span>A user interface is like a joke.<br />
-          If you have to explain it, it's not that good.<span class="quote-mark">"</span>
-        </p>
         <p class="hero-description">
-          Web developer crafting intuitive interfaces with Vue.js,
-          experimenting with AI integrations, and building tools that just work.
+          Have an idea or a business problem that needs software? I take you from idea
+          to a working product in 2-4 weeks. Fixed price, a demo every week, and you
+          don't need to be technical.
         </p>
 
         <div class="hero-actions">
-          <button class="btn btn-primary" @click="scrollToProjects">
-            <i class="fa-solid fa-rocket"></i>
-            View Projects
-          </button>
-          <button class="btn btn-secondary" @click="scrollToContact">
-            <i class="fa-solid fa-envelope"></i>
-            Get in Touch
+          <router-link to="/hire#contact-hire" class="btn btn-primary btn-lg">
+            <i class="fa-solid fa-calendar-check"></i>
+            Get a fixed-price quote
+          </router-link>
+          <button class="btn btn-secondary btn-lg" @click="scrollToProof">
+            <i class="fa-solid fa-briefcase"></i>
+            See what I've built
           </button>
         </div>
 
-        <div class="hero-links">
-          <a href="https://github.com/dizid" target="_blank" rel="noopener" class="social-link" aria-label="GitHub">
-            <i class="fa-brands fa-github"></i>
-          </a>
-          <a href="https://linkedin.com/in/dizid" target="_blank" rel="noopener" class="social-link" aria-label="LinkedIn">
-            <i class="fa-brands fa-linkedin"></i>
-          </a>
-          <a href="https://playground.dizid.com" target="_blank" rel="noopener" class="social-link" aria-label="Playground">
-            <i class="fa-solid fa-gamepad"></i>
-          </a>
+        <div class="stats-bar">
+          <div v-for="stat in stats" :key="stat.label" class="stat-item">
+            <span class="stat-value">{{ stat.value }}</span>
+            <span class="stat-label">{{ stat.label }}</span>
+          </div>
         </div>
       </div>
 
       <div class="hero-visual">
-        <div class="code-window">
-          <div class="code-header">
-            <span class="dot red"></span>
-            <span class="dot yellow"></span>
-            <span class="dot green"></span>
-            <span class="file-name">dizid.js</span>
-          </div>
-          <pre class="code-content"><code><span class="keyword">const</span> <span class="variable">developer</span> = {
-  <span class="property">name</span>: <span class="string">'Marc de Ruijter'</span>,
-  <span class="property">alias</span>: <span class="string">'dizid'</span>,
-  <span class="property">focus</span>: [
-    <span class="string">'Vue.js'</span>,
-    <span class="string">'User Experience'</span>,
-    <span class="string">'AI Integrations'</span>
-  ],
-  <span class="property">status</span>: <span class="string">'Building cool stuff'</span>
-};
-
-<span class="keyword">export default</span> developer;</code></pre>
+        <div class="promise-card">
+          <p class="promise-title">Working with me</p>
+          <ul class="promise-list">
+            <li v-for="promise in promises" :key="promise">
+              <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+              <span>{{ promise }}</span>
+            </li>
+          </ul>
         </div>
       </div>
     </div>
@@ -137,7 +131,7 @@ const scrollToContact = () => {
 
 .hero-content {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1.3fr 1fr;
   gap: var(--space-16);
   align-items: center;
   opacity: 0;
@@ -150,138 +144,112 @@ const scrollToContact = () => {
   transform: translateY(0);
 }
 
-.hero-greeting {
-  color: var(--color-accent);
-  font-size: var(--text-lg);
+.hero-eyebrow {
+  color: var(--color-accent-light);
+  font-size: var(--text-sm);
   font-weight: 500;
-  margin-bottom: var(--space-2);
-}
-
-.hero-name {
-  font-size: var(--text-6xl);
-  font-weight: 700;
+  letter-spacing: 0.02em;
   margin-bottom: var(--space-4);
-  line-height: 1.1;
 }
 
-.hero-alias {
-  display: block;
-  font-size: var(--text-2xl);
-  color: var(--color-text-muted);
-  font-weight: 400;
-  margin-top: var(--space-2);
-}
-
-.hero-tagline {
-  font-size: var(--text-xl);
-  color: var(--color-text-secondary);
-  font-style: italic;
+.hero-title {
+  font-size: var(--text-5xl);
+  font-weight: 700;
   margin-bottom: var(--space-6);
-  line-height: 1.5;
-}
-
-.quote-mark {
-  color: var(--color-accent);
-  font-size: var(--text-2xl);
+  line-height: 1.1;
 }
 
 .hero-description {
   font-size: var(--text-lg);
   color: var(--color-text-secondary);
   margin-bottom: var(--space-8);
-  max-width: 500px;
+  max-width: 540px;
+  line-height: 1.6;
 }
 
 .hero-actions {
   display: flex;
   gap: var(--space-4);
-  margin-bottom: var(--space-8);
+  margin-bottom: var(--space-10);
 }
 
-.hero-links {
+.btn-lg {
+  padding: var(--space-4) var(--space-8);
+  font-size: var(--text-base);
+}
+
+/* Trust strip */
+.stats-bar {
   display: flex;
-  gap: var(--space-4);
+  gap: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
 }
 
-.social-link {
+.stat-item {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: var(--radius-lg);
-  background: var(--color-bg-tertiary);
-  color: var(--color-text-secondary);
-  font-size: var(--text-xl);
-  border: 1px solid var(--color-border);
-  transition: all var(--transition-base);
+  flex-direction: column;
 }
 
-.social-link:hover {
-  background: var(--color-accent);
-  color: white;
-  border-color: var(--color-accent);
-  transform: translateY(-2px);
+.stat-value {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
+.stat-label {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  margin-top: var(--space-1);
+}
+
+/* "Working with me" card */
 .hero-visual {
   display: flex;
   justify-content: center;
 }
 
-.code-window {
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-  overflow: hidden;
+.promise-card {
   width: 100%;
-  max-width: 480px;
+  max-width: 400px;
+  padding: var(--space-8);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   animation: float 6s ease-in-out infinite;
 }
 
-.code-header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-4);
-  background: var(--color-bg-tertiary);
-  border-bottom: 1px solid var(--color-border);
-}
-
-.dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.dot.red { background: #ff5f56; }
-.dot.yellow { background: #ffbd2e; }
-.dot.green { background: #27ca40; }
-
-.file-name {
-  margin-left: auto;
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-}
-
-.code-content {
-  padding: var(--space-6);
-  font-family: var(--font-mono);
+.promise-title {
   font-size: var(--text-sm);
-  line-height: 1.7;
-  overflow-x: auto;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-6);
 }
 
-.code-content code {
-  color: var(--color-text-secondary);
+.promise-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
 }
 
-.keyword { color: #c792ea; }
-.variable { color: #82aaff; }
-.property { color: #f07178; }
-.string { color: #c3e88d; }
+.promise-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: var(--text-lg);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.promise-list i {
+  color: var(--color-secondary-light);
+  margin-top: 0.2em;
+}
 
 .scroll-indicator {
   position: absolute;
@@ -340,30 +308,48 @@ const scrollToContact = () => {
     justify-content: center;
   }
 
-  .hero-links {
+  .stats-bar {
     justify-content: center;
   }
 
-  .hero-visual {
-    order: -1;
+  .stat-item {
+    align-items: center;
   }
 
-  .code-window {
-    max-width: 400px;
+  .promise-card {
+    text-align: left;
+    max-width: 480px;
   }
 }
 
 @media (max-width: 640px) {
-  .hero-name {
+  .hero-title {
     font-size: var(--text-4xl);
   }
 
-  .hero-tagline {
+  .hero-description {
     font-size: var(--text-base);
   }
 
   .hero-actions {
     flex-direction: column;
+  }
+
+  .stats-bar {
+    flex-wrap: wrap;
+    gap: var(--space-6);
+  }
+
+  .stat-item {
+    width: 40%;
+  }
+
+  .promise-card {
+    padding: var(--space-6);
+  }
+
+  .promise-list li {
+    font-size: var(--text-base);
   }
 
   .scroll-indicator {

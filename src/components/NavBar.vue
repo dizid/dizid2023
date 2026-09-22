@@ -10,8 +10,8 @@ const isMobileMenuOpen = ref(false)
 
 // Anchor links for homepage sections
 const anchorLinks = [
-  { name: 'About', href: '#about' },
-  { name: 'Skills', href: '#skills' },
+  { name: 'How it works', href: '#process' },
+  { name: 'My work', href: '#proof' },
   { name: 'Contact', href: '#contact' }
 ]
 
@@ -98,7 +98,7 @@ onUnmounted(() => {
           @click.prevent="goToHire"
         >
           <i class="fa-solid fa-bolt"></i>
-          Hire Me
+          Get a Quote
         </a>
       </div>
 

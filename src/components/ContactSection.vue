@@ -50,10 +50,12 @@ const resetForm = () => {
     <div class="container">
       <div class="contact-grid">
         <div class="contact-info">
-          <h2 class="section-title">Let's Connect</h2>
+          <h2 class="section-title">Tell me about your project</h2>
           <p class="contact-intro">
-            Have a project in mind? Want to collaborate? Or just want to say hi?
-            I'd love to hear from you.
+            Describe what you need in a few sentences and I'll get back to you.
+            Want a fixed-price quote? The
+            <router-link to="/hire#contact-hire">project brief form</router-link>
+            asks for a few more details.
           </p>
 
           <div class="contact-methods">
@@ -170,7 +172,7 @@ const resetForm = () => {
                 v-model="formData.message"
                 name="message"
                 class="form-input form-textarea"
-                placeholder="Your message..."
+                placeholder="What do you need built, and what problem should it solve?"
                 rows="5"
                 required
               ></textarea>
