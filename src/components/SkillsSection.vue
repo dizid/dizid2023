@@ -3,36 +3,17 @@ const skillCategories = [
   {
     title: 'Frontend',
     icon: 'fa-solid fa-palette',
-    skills: [
-      { name: 'Vue.js', level: 95 },
-      { name: 'JavaScript', level: 90 },
-      { name: 'TypeScript', level: 80 },
-      { name: 'React', level: 70 },
-      { name: 'Tailwind CSS', level: 90 },
-      { name: 'HTML5/CSS3', level: 95 }
-    ]
+    skills: ['Vue.js', 'JavaScript', 'Tailwind CSS', 'HTML5/CSS3']
   },
   {
     title: 'Backend & APIs',
     icon: 'fa-solid fa-server',
-    skills: [
-      { name: 'Node.js', level: 75 },
-      { name: 'REST APIs', level: 85 },
-      { name: 'Airtable', level: 85 },
-      { name: 'Firebase', level: 70 },
-      { name: 'Netlify Functions', level: 80 }
-    ]
+    skills: ['Node.js', 'REST APIs', 'Airtable', 'Firebase', 'Netlify Functions']
   },
   {
     title: 'Tools & Practices',
     icon: 'fa-solid fa-toolbox',
-    skills: [
-      { name: 'Git/GitHub', level: 90 },
-      { name: 'Vite/Webpack', level: 85 },
-      { name: 'VS Code', level: 95 },
-      { name: 'Figma', level: 70 },
-      { name: 'Responsive Design', level: 95 }
-    ]
+    skills: ['Git/GitHub', 'Vite/Webpack', 'VS Code', 'Figma', 'Responsive Design']
   }
 ]
 </script>
@@ -57,18 +38,8 @@ const skillCategories = [
           </div>
 
           <div class="skills-list">
-            <div v-for="skill in category.skills" :key="skill.name" class="skill-item">
-              <div class="skill-info">
-                <span class="skill-name">{{ skill.name }}</span>
-                <span class="skill-level">{{ skill.level }}%</span>
-              </div>
-              <div class="skill-bar">
-                <div
-                  class="skill-progress"
-                  :style="{ width: skill.level + '%' }"
-                ></div>
-              </div>
-            </div>
+            <span v-for="skill in category.skills" :key="skill" class="tag">{{ skill }}</span>
+            <span class="tag tag-accent">& many more</span>
           </div>
         </div>
       </div>
@@ -136,45 +107,8 @@ const skillCategories = [
 
 .skills-list {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.skill-item {
-  display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: var(--space-2);
-}
-
-.skill-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.skill-name {
-  font-size: var(--text-sm);
-  color: var(--color-text-secondary);
-}
-
-.skill-level {
-  font-size: var(--text-xs);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-}
-
-.skill-bar {
-  height: 6px;
-  background: var(--color-bg-tertiary);
-  border-radius: var(--radius-full);
-  overflow: hidden;
-}
-
-.skill-progress {
-  height: 100%;
-  background: var(--gradient-primary);
-  border-radius: var(--radius-full);
-  transition: width 1s ease;
 }
 
 @media (max-width: 1024px) {
