@@ -22,6 +22,11 @@ export const routes = [
     component: () => import('../views/MvpDevelopmentView.vue')
   },
   {
+    path: '/fixed-price-mvp-for-non-technical-founders',
+    name: 'fixed-price-mvp',
+    component: () => import('../views/FixedPriceMvpView.vue')
+  },
+  {
     path: '/what-is-dizid',
     name: 'what-is-dizid',
     component: () => import('../views/WhatIsDizidView.vue')
