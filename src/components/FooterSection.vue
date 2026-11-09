@@ -86,7 +86,9 @@ const currentYear = new Date().getFullYear()
 
 .footer-nav {
   display: flex;
-  gap: var(--space-6);
+  flex-wrap: wrap; /* 7 links don't fit one row on a phone */
+  justify-content: center;
+  gap: var(--space-3) var(--space-6);
 }
 
 .footer-nav a {

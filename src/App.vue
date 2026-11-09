@@ -5,7 +5,10 @@ import FooterSection from './components/FooterSection.vue'
 
 // Sitewide structured data — doesn't vary per route, unlike title/description/OG
 // (those are set per-view via useHead in HomeView/ProjectsView/HireView).
+// lang: the site is English; the Dutch AI-features page overrides it, and
+// without this default <html lang> would be empty after leaving that page.
 useHead({
+  htmlAttrs: { lang: 'en' },
   script: [
     {
       type: 'application/ld+json',

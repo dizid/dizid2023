@@ -3,8 +3,12 @@
 // (T-0052). Content and the reason it is worded this way live in
 // src/data/aiFeaturesPages.js; this view only renders it, with FAQPage +
 // BreadcrumbList schema and hreflang links between the two languages.
+//
+// Both routes use this same component, so Vue Router reuses the instance
+// when the visitor clicks the language link: everything below is computed
+// from the `lang` prop, never read once in setup.
+import { computed } from 'vue'
 import { useHead } from '@unhead/vue'
-import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
 import { aiFeaturesPages } from '../data/aiFeaturesPages.js'
 
 const props = defineProps({
@@ -12,50 +16,59 @@ const props = defineProps({
 })
 
 const SITE = 'https://dizid.com'
-const page = aiFeaturesPages[props.lang]
-const otherPage = aiFeaturesPages[props.lang === 'nl' ? 'en' : 'nl']
-const canonicalUrl = `${SITE}${page.path}`
+const page = computed(() => aiFeaturesPages[props.lang])
+const otherPage = computed(() => aiFeaturesPages[props.lang === 'nl' ? 'en' : 'nl'])
 
-useHead({
-  htmlAttrs: { lang: page.lang },
-  title: page.metaTitle,
-  meta: [
-    { name: 'description', content: page.metaDescription },
-    { property: 'og:title', content: page.metaTitle },
-    { property: 'og:description', content: page.metaDescription },
-    { property: 'og:url', content: canonicalUrl },
-    { property: 'og:type', content: 'website' },
-    { property: 'og:locale', content: page.lang === 'nl' ? 'nl_NL' : 'en_GB' }
-  ],
-  link: [
-    { rel: 'canonical', href: canonicalUrl },
-    { rel: 'alternate', hreflang: 'nl', href: `${SITE}${aiFeaturesPages.nl.path}` },
-    { rel: 'alternate', hreflang: 'en', href: `${SITE}${aiFeaturesPages.en.path}` },
-    { rel: 'alternate', hreflang: 'x-default', href: `${SITE}${aiFeaturesPages.en.path}` }
-  ],
-  script: [
-    {
-      type: 'application/ld+json',
-      // Same text as rendered below, so the schema always matches the page.
-      innerHTML: JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        inLanguage: page.lang,
-        mainEntity: page.questions.map((question) => ({
-          '@type': 'Question',
-          name: question.heading,
-          acceptedAnswer: { '@type': 'Answer', text: question.text }
-        }))
-      })
-    }
-  ]
-})
-
-useBreadcrumbSchema([
-  { name: 'Home', url: `${SITE}/` },
-  { name: 'Hire', url: `${SITE}/hire` },
-  { name: page.breadcrumbName, url: canonicalUrl }
-])
+useHead(computed(() => {
+  const canonicalUrl = `${SITE}${page.value.path}`
+  return {
+    htmlAttrs: { lang: page.value.lang },
+    title: page.value.metaTitle,
+    meta: [
+      { name: 'description', content: page.value.metaDescription },
+      { property: 'og:title', content: page.value.metaTitle },
+      { property: 'og:description', content: page.value.metaDescription },
+      { property: 'og:url', content: canonicalUrl },
+      { property: 'og:type', content: 'website' },
+      { property: 'og:locale', content: page.value.lang === 'nl' ? 'nl_NL' : 'en_GB' }
+    ],
+    link: [
+      { rel: 'canonical', href: canonicalUrl },
+      { rel: 'alternate', hreflang: 'nl', href: `${SITE}${aiFeaturesPages.nl.path}` },
+      { rel: 'alternate', hreflang: 'en', href: `${SITE}${aiFeaturesPages.en.path}` },
+      { rel: 'alternate', hreflang: 'x-default', href: `${SITE}${aiFeaturesPages.en.path}` }
+    ],
+    script: [
+      {
+        type: 'application/ld+json',
+        // Same text as rendered below, so the schema always matches the page.
+        innerHTML: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          inLanguage: page.value.lang,
+          mainEntity: page.value.questions.map((question) => ({
+            '@type': 'Question',
+            name: question.heading,
+            acceptedAnswer: { '@type': 'Answer', text: question.text }
+          }))
+        })
+      },
+      {
+        // Same shape as useBreadcrumbSchema(), inline so it follows `lang`.
+        type: 'application/ld+json',
+        innerHTML: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'BreadcrumbList',
+          itemListElement: [
+            { name: 'Home', url: `${SITE}/` },
+            { name: 'Hire', url: `${SITE}/hire` },
+            { name: page.value.breadcrumbName, url: canonicalUrl }
+          ].map((item, index) => ({ '@type': 'ListItem', position: index + 1, name: item.name, item: item.url }))
+        })
+      }
+    ]
+  }
+}))
 </script>
 
 <template>
