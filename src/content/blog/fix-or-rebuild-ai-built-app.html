@@ -1,0 +1,67 @@
+<p>The app is 80% done. It looks right, the demo works, and then every new prompt breaks something that worked yesterday. You fix the login, the checkout stops. You fix the checkout, and the dashboard shows the wrong data. Sooner or later the question comes up: can this be fixed, or do I start over?</p>
+
+<p>It's a common question with apps built in Lovable, Bolt, Cursor or v0. The short answer: a full rebuild is rarely the right first move, but "one more prompt" usually isn't either. Below is how to tell the difference, and a self-check you can do in 30 minutes before you pay anyone for either.</p>
+
+<h2>First: get the code out of the builder</h2>
+
+<p>You can't judge an app you can only see through a chat window. Before anything else, put the code somewhere you control. Lovable's <a href="https://docs.lovable.dev/integrations/github">GitHub integration</a> lets you "export and two-way sync" your project code with GitHub, and the docs say it's "available on all plans". Bolt and v0 also let you connect GitHub or download the code.</p>
+
+<p>Once the code is in your own GitHub account, three things change. You own a copy. A developer can read it without logging in to your builder account. And every change from then on has a history you can roll back.</p>
+
+<h2>Why "one more prompt" keeps making it worse</h2>
+
+<p>An AI builder changes the files it thinks matter for your last message. It doesn't always take the whole app into account, so a fix in one place can quietly break another. Each round adds a little more code on top: a second version of a component, a workaround for the last workaround. After enough rounds the app has three ways of doing the same thing, and nobody knows which one is used.</p>
+
+<p>So the first step is the same whether you fix or rebuild: stop adding features for a few days and take stock.</p>
+
+<h2>Signs your app can be fixed</h2>
+
+<ul>
+<li><strong>The data makes sense.</strong> You can describe every table in one sentence ("users", "orders", "bookings"), and the tables match how your business works.</li>
+<li><strong>Sign-in and payments use standard services.</strong> Supabase Auth, Firebase Auth or Clerk for logins, Stripe Checkout for payments. These are well documented, so bugs around them are usually quick to find.</li>
+<li><strong>The bugs are local.</strong> One page or one flow is broken, not everything at once.</li>
+<li><strong>It runs outside the builder.</strong> A developer can copy the code from GitHub, install it, build it and run it on their own machine.</li>
+</ul>
+
+<p>If most of these are true, fixing is almost always cheaper. The screens, the texts and the flows you spent weeks on are worth keeping.</p>
+
+<h2>Signs a rebuild is cheaper</h2>
+
+<ul>
+<li><strong>Access to data is wrong at the root.</strong> The database has no access rules and the app only works because of that, or the rules about who may see what are checked only in the browser. Adding real rules later can break most pages at once. The <a href="/blog/ai-built-app-database-security-checks">5 database checks</a> show how to test this.</li>
+<li><strong>The data model fights your business.</strong> Everything sits in one big table or in loose JSON fields, the same data is stored in three places, and every change touches every page.</li>
+<li><strong>The same feature exists several times.</strong> Files like <code>Checkout.tsx</code>, <code>CheckoutNew.tsx</code> and <code>Checkout2.tsx</code>, each from a different prompt round, and nobody is sure which one is live.</li>
+<li><strong>Your business changed.</strong> The app was built for one-off payments and you now sell subscriptions, or it was built for single users and now it's for teams. The old structure was right for an old plan.</li>
+</ul>
+
+<h2>The middle road: keep the screens, rebuild what's underneath</h2>
+
+<p>Often the best answer sits in between. AI builders are good at screens: layouts, forms, buttons, the parts your users see. They struggle more with the parts nobody sees: who may read which data, what happens after a payment, and what runs on the server instead of in the browser.</p>
+
+<p>So the cheapest path is often to keep the screens and rebuild the data model, the access rules and the payment handling underneath them, one flow at a time. Your users see the same app. It just stops breaking.</p>
+
+<p>Once it's stable, the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a> covers what to check before real users pay.</p>
+
+<h2>A 30-minute self-check</h2>
+
+<ol>
+<li><strong>Code out.</strong> Is the code in a GitHub account you own? If not, connect it now.</li>
+<li><strong>Secret keys.</strong> Open your live site in Chrome, open DevTools, press Ctrl+Shift+F (Cmd+Option+F on a Mac) to search all files, and search for <code>sk_live</code> (a Stripe secret key) and <code>sb_secret</code> (a Supabase secret key). Neither may ever show up in the browser. On older Supabase projects, check that the key in the browser is the one marked <em>anon</em> or <em>publishable</em> in your API settings, never <em>service_role</em>.</li>
+<li><strong>Tables.</strong> Open your database dashboard and write one sentence per table. Note the ones you can't explain.</li>
+<li><strong>Money flows.</strong> Write down the 3 to 5 flows that make or keep money: sign up, pay, use the main feature, cancel. Run each one on your phone and mark the ones that break.</li>
+<li><strong>Duplicates.</strong> Scan the file list in GitHub for near-identical names ending in <code>New</code>, <code>2</code>, <code>Old</code> or <code>Fixed</code>.</li>
+</ol>
+
+<h3>Reading the result</h3>
+
+<ul>
+<li><strong>A secret key in the browser is an emergency, not a reason to rebuild.</strong> Replace the key today in the Stripe or Supabase dashboard, then move the code that uses it to the server.</li>
+<li><strong>You can explain your tables and only one or two flows break:</strong> it's a fix.</li>
+<li><strong>The tables make no sense, most flows break and duplicates are everywhere:</strong> get a second opinion on rebuilding what's underneath before you write the next prompt.</li>
+</ul>
+
+<h2>Fix or rebuild? Get a second opinion first</h2>
+
+<p>I'm Marc de Ruijter, a Dutch full-stack developer with 25+ years in IT, working remotely for clients in Europe. I've shipped 20+ products alone, with Stripe, Supabase, Firebase, Neon and AI APIs. Send me your repo and the flows that break, and I'll tell you in plain words whether it's a fix, a rebuild of what's underneath or a restart, and what each would take. In Dutch or English.</p>
+
+<p><a href="/hire">See how to hire me</a> or <a href="/#contact">send me a message</a>.</p>

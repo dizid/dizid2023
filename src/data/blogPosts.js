@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'fix-or-rebuild-ai-built-app',
+    title: "Lovable or Bolt app stuck? Fix it or rebuild it: how to decide",
+    description: "Every new prompt breaks something else? How to tell if your Lovable, Bolt, Cursor or v0 app can be fixed or needs a rebuild, plus a 30-minute self-check.",
+    datePublished: '2026-11-09',
+    dateModified: '2026-11-09'
+  },
+  {
     slug: 'launch-ready-ai-built-app-checklist',
     title: "Launch-ready AI-built app: what I check before real users",
     description: "Built your app with Lovable, Bolt or Cursor? What I check before users pay: prices, Stripe webhooks, live keys, AI cost caps, emails, deploys, backups.",
