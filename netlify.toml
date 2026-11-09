@@ -5,6 +5,24 @@
 [functions]
   directory = "netlify/functions"
 
+# Common URLs that leads type or link to (Malt, Upwork, LinkedIn). Without these
+# they fell through to the SPA fallback below and silently showed the home page.
+# They must stay ABOVE the "/*" catch-all: Netlify uses the first matching rule.
+[[redirects]]
+  from = "/pricing"
+  to = "/hire#services"
+  status = 301
+
+[[redirects]]
+  from = "/work"
+  to = "/hire#case-studies"
+  status = 301
+
+[[redirects]]
+  from = "/contact"
+  to = "/#contact"
+  status = 301
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
