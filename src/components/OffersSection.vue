@@ -1,5 +1,6 @@
 <script setup>
 import { services } from '../data/services.js'
+import QuickOffers from './QuickOffers.vue'
 </script>
 
 <template>
@@ -31,6 +32,8 @@ import { services } from '../data/services.js'
           </div>
         </div>
       </div>
+
+      <QuickOffers />
 
       <p class="offers-more">
         Not sure which one fits?

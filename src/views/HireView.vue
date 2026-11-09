@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
 import WhoShouldUseSection from '../components/WhoShouldUseSection.vue'
+import QuickOffers from '../components/QuickOffers.vue'
 
 useHead({
   title: 'Hire a Vue.js & AI Developer | Dizid',
@@ -200,6 +201,8 @@ const stats = [
             </div>
           </div>
         </div>
+
+        <QuickOffers />
       </div>
     </section>
 
@@ -434,6 +437,8 @@ const stats = [
                   required
                 >
                   <option value="" disabled>Select a service</option>
+                  <option value="ai-chat-assistant">AI chat assistant for your website (&euro;490 fixed)</option>
+                  <option value="ai-notice">AI notice for your chatbot (&euro;390 fixed)</option>
                   <option value="ai-integration">AI Integration Sprint (1-2 weeks)</option>
                   <option value="mvp">MVP Web App (2-4 weeks)</option>
                   <option value="saas">Full SaaS Build (4-8 weeks)</option>
@@ -451,6 +456,7 @@ const stats = [
                   class="form-input"
                 >
                   <option value="" disabled>Select budget range (optional)</option>
+                  <option value="under-1k">Under &euro;1,000 (small fixed-price job)</option>
                   <option value="3-5k">&euro;3,000 - &euro;5,000</option>
                   <option value="5-10k">&euro;5,000 - &euro;10,000</option>
                   <option value="10-15k">&euro;10,000 - &euro;15,000</option>
