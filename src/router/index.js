@@ -1,4 +1,14 @@
 import HomeView from '../views/HomeView.vue'
+import { blogPosts } from '../data/blogPosts.js'
+
+// One static route per blog post (not a dynamic /blog/:slug), so vite-ssg
+// prerenders every post to its own HTML file without extra config.
+const blogPostRoutes = blogPosts.map((post) => ({
+  path: `/blog/${post.slug}`,
+  name: `blog-${post.slug}`,
+  component: () => import('../views/BlogPostView.vue'),
+  props: { slug: post.slug }
+}))
 
 export const routes = [
   {
@@ -30,7 +40,13 @@ export const routes = [
     path: '/what-is-dizid',
     name: 'what-is-dizid',
     component: () => import('../views/WhatIsDizidView.vue')
-  }
+  },
+  {
+    path: '/blog',
+    name: 'blog',
+    component: () => import('../views/BlogIndexView.vue')
+  },
+  ...blogPostRoutes
 ]
 
 // Scroll to top on route change, or to hash if present
