@@ -1,0 +1,78 @@
+<p>Ask an AI assistant "who's a good roofer in Utrecht?" and you get a few names, not ten links. If yours isn't one of them, that customer may never see you.</p>
+
+<p>I build <a href="https://foreground.info/">Foreground</a>, which asks ChatGPT, Gemini, Claude and Grok the questions customers ask and counts which businesses get named.</p>
+
+<h2>What GEO is</h2>
+
+<p>GEO stands for generative engine optimization. The term comes from a <a href="https://arxiv.org/abs/2311.09735">2023 research paper</a> (KDD 2024) whose authors report it "can boost visibility by up to 40%" in AI answers in their tests. In plain words: SEO aims for a spot in a list of links. GEO aims for your name in the answer itself.</p>
+
+<h2>How AI assistants find businesses</h2>
+
+<p>An assistant answers from its training data or from a live web search. All four big ones can search:</p>
+
+<ul>
+<li><strong>ChatGPT</strong> "may search the web automatically when your question would benefit from current information" and uses your approximate location for local results (<a href="https://help.openai.com/en/articles/9237897-searching-the-web-with-chatgpt">OpenAI</a>).</li>
+<li><strong>Gemini</strong> can ground answers in the Google Search index (<a href="https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers">Google</a>), and in <a href="https://aistudio.google.com/docs/maps-grounding">Google Maps data</a>.</li>
+<li><strong>Claude</strong> searches when a question benefits from current information, and cites its sources (<a href="https://support.claude.com/en/articles/10684626-enable-and-use-web-search">Anthropic</a>).</li>
+<li><strong>Grok</strong> can "search the web in real-time and browse web pages" (<a href="https://docs.x.ai/docs/guides/tools/search-tools">xAI</a>).</li>
+</ul>
+
+<p>So what counts is what a search finds about you now, and whether the assistant can read it.</p>
+
+<h2>What we see when we measure it</h2>
+
+<p>In October Foreground asked the four assistants the same three questions, in Dutch with web search on, for ten trades in Amsterdam, Utrecht and Haarlem:</p>
+
+<ul>
+<li>Across 30 city pages they named 909 businesses. 508 were named in exactly one answer. Only 58 were named in six or more (<a href="https://foreground.info/blog/named-once-is-luck/">source</a>).</li>
+<li>For eight trades, they named 723 businesses between them. Only 41 were named by all four (<a href="https://foreground.info/blog/four-ais-four-different-lists/">source</a>).</li>
+<li>For dentists and physios, chat answers named 186 businesses and Gemini working from Google Maps named 54. 149 of the 186 never came up in the Maps answers (<a href="https://foreground.info/blog/the-map-and-the-chat/">source</a>).</li>
+</ul>
+
+<p>Each assistant has its own shortlist. Your Maps listing and your website are separate ways in.</p>
+
+<h2>The basics</h2>
+
+<h3>1. Say who, what, where and price on your own site</h3>
+
+<p>In plain text, not in an image: your name, what you do, for whom, where, and what it costs. "Quality you can trust" gives an AI nothing to repeat. "Emergency plumber in Haarlem, same-day visits" does. Foreground found a riverside restaurant whose site never said where it is (<a href="https://foreground.info/blog/why-we-dropped-the-score/">source</a>).</p>
+
+<h3>2. Use the same name, address and category everywhere</h3>
+
+<p>Google wants your Business Profile name to match the one "used consistently on your storefront, website, stationery", with a category as specific as possible (<a href="https://support.google.com/business/answer/3038177">Google</a>). Use exactly the same details on review sites and directories.</p>
+
+<h3>3. Add structured data</h3>
+
+<p>Structured data is a small JSON-LD block that states your facts for machines: schema.org <a href="https://schema.org/LocalBusiness">LocalBusiness</a> for a physical business, <a href="https://schema.org/Organization">Organization</a> otherwise. Google uses it "to understand the content of the page" (<a href="https://developers.google.com/search/docs/appearance/structured-data/intro-structured-data">Google</a>); its <a href="https://developers.google.com/search/docs/appearance/structured-data/local-business">LocalBusiness guide</a> requires only name and address. But Google says there's "no special schema.org structured data" needed for its AI Overviews or AI Mode (<a href="https://developers.google.com/search/docs/appearance/ai-features">Google</a>). Useful, but not a shortcut.</p>
+
+<h3>4. Answer the questions customers ask</h3>
+
+<p>Write pages or FAQs for the questions you hear on the phone: prices, areas, hours, who it's for. Specific questions favour small businesses: in Foreground's test of 11 customer niches, at least 3 of the top 5 businesses named were independents in 10 of them (<a href="https://foreground.info/blog/why-we-dropped-the-score/">source</a>).</p>
+
+<h3>5. Get mentioned on the sites AI reads</h3>
+
+<p>In Foreground's Dutch niches, the main sources were the winners' own websites plus comparison sites such as funda.nl and trustoo.nl. One small hotel had been named in 0 of 47 answers. Then ChatGPT named it twice, both times citing the same review page on a Thailand travel blog (<a href="https://foreground.info/blog/why-we-dropped-the-score/">source</a>). Find the directories, review sites and "best of" lists for your trade and city. Get on them. Google's local ranking also counts links to your site and your reviews (<a href="https://support.google.com/business/answer/7091">Google</a>).</p>
+
+<h3>6. Let AI search crawlers in</h3>
+
+<p>Check your <code>robots.txt</code>. Search and training use separate crawlers:</p>
+
+<ul>
+<li><strong>OpenAI:</strong> "Sites that are opted out of OAI-SearchBot will not be shown in ChatGPT search answers." <code>GPTBot</code> is the training crawler, set separately (<a href="https://developers.openai.com/api/docs/bots">OpenAI</a>). Your host or CDN must also allow OpenAI's <a href="https://help.openai.com/en/articles/9237897-searching-the-web-with-chatgpt">search-bot IP addresses</a>.</li>
+<li><strong>Anthropic:</strong> blocking <code>Claude-SearchBot</code> or <code>Claude-User</code> may reduce your visibility in Claude's search results; <code>ClaudeBot</code> is for training (<a href="https://support.claude.com/en/articles/8896518-does-anthropic-crawl-data-from-the-web-and-how-can-site-owners-block-the-crawler">Anthropic</a>).</li>
+<li><strong>Google:</strong> <code>Google-Extended</code> covers Gemini training and grounding, and "does not impact a site's inclusion in Google Search" (<a href="https://developers.google.com/search/docs/crawling-indexing/google-common-crawlers">Google</a>).</li>
+</ul>
+
+<p>With OpenAI and Anthropic you can refuse training and still be found. I found no official crawler list for Grok.</p>
+
+<h3>7. Measure it, more than once</h3>
+
+<p>Answers change between runs. Foreground asked the same questions twice, a few days apart: for 64% of businesses the count moved by at most 1 of 12, for 90% by at most 2 (<a href="https://foreground.info/blog/why-we-dropped-the-score/">source</a>). So ask what a stranger would ask, without your business name, in two or more assistants, several times. Count how often you're named and who's named instead.</p>
+
+<p>None of this guarantees a mention; OpenAI says placement in ChatGPT search "<a href="https://help.openai.com/en/articles/9237897-searching-the-web-with-chatgpt">is not guaranteed</a>". The basics remove the reasons an assistant can't name you. If counting by hand gets tedious, the <a href="https://foreground.info/">free scan on foreground.info</a> does it for one customer niche: 12 answers across four assistants.</p>
+
+<h2>Want your business findable by AI assistants?</h2>
+
+<p>I'm Marc de Ruijter, a Dutch full-stack developer with 25+ years in IT, working remotely from Chiang Mai for clients in the EU. I can make your site clear to AI assistants (plain facts, structured data, crawler settings) or build AI features into your product. Fixed prices, Dutch or English.</p>
+
+<p>See <a href="/hire">what I offer and what it costs</a>, or <a href="/#contact">tell me about your business</a>.</p>

@@ -9,29 +9,29 @@ export const SITE_URL = 'https://dizid.com'
 export const blogPosts = [
   {
     slug: 'eu-ai-act-article-50-chatbot-check',
-    title: "Does your website chatbot say it's an AI? The 1-minute AI Act check",
-    description: '',
+    title: "Does your chatbot say it's an AI? EU AI Act Article 50 check",
+    description: "Since 2 August 2026, EU AI Act Article 50 requires website chatbots to say they are an AI. What the rule says, who must act, and a 1-minute check.",
     datePublished: '2026-11-09',
     dateModified: '2026-11-09'
   },
   {
     slug: 'ai-built-app-database-security-checks',
-    title: 'Your AI-built app works. Is your database open?',
-    description: '',
+    title: "AI-built app? 5 database checks for Supabase, Firebase, Neon",
+    description: "Built your app with Lovable, Bolt, Cursor or v0? Five checks for Supabase, Firebase and Neon that show if strangers can read your users' data.",
     datePublished: '2026-11-09',
     dateModified: '2026-11-09'
   },
   {
     slug: 'lessons-shipping-5-ai-apps-solo',
-    title: 'What I learned shipping 5 AI apps solo',
-    description: '',
+    title: "What I learned shipping 5 AI apps as a solo developer",
+    description: "Lessons from building 5 AI apps alone: capping AI API costs, honest scoring, Stripe webhooks, prerendering for SEO, and why traffic is the hard part.",
     datePublished: '2026-11-09',
     dateModified: '2026-11-09'
   },
   {
     slug: 'get-recommended-by-chatgpt-geo-basics',
-    title: 'How to get your business recommended by ChatGPT (GEO basics)',
-    description: '',
+    title: "How to get your business recommended by ChatGPT (GEO basics)",
+    description: "How ChatGPT, Gemini, Claude and Grok find businesses, what our data on 909 AI-named businesses shows, and 7 GEO basics to get your business recommended.",
     datePublished: '2026-11-09',
     dateModified: '2026-11-09'
   }
