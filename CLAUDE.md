@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev      # Start development server (Vite)
 npm run build    # Build for production
 npm run preview  # Preview production build locally
+npm test         # Unit tests (node --test, scripts/*.test.mjs)
+npm run visits:report -- --days=7   # Read-only visitor counts from the live site (add --line for one line)
 ```
 
 ## Architecture
@@ -29,6 +31,9 @@ This is a Vue 3 portfolio website for Marc de Ruijter, built with Vite, prerende
 
 ### Blog (since 2026-11-09)
 `/blog` (`BlogIndexView.vue`) lists posts; each post is a prerendered static route `/blog/<slug>` (`BlogPostView.vue`, one route per post, built from the list in `src/data/blogPosts.js`). Post bodies are plain HTML fragments in `src/content/blog/<slug>.html` (only h2/h3/p/ul/ol/li/a/strong/em/code; rendered with v-html, our own content only). To add a post: add an entry (title ≤65 chars, meta description 140-155 chars, dates) to `blogPosts.js` and the HTML file. `scripts/build-blog-feeds.mjs` runs after `vite-ssg build`: it appends `/blog` + every post to `dist/sitemap.xml` (public/sitemap.xml stays for static pages) and writes `dist/rss.xml`. Each post gets canonical, OG article tags and BlogPosting + BreadcrumbList JSON-LD. Footer has the Blog link; the top nav does not.
+
+### Visitor counting (since 2026-11-09, board task T-0063)
+Cookie-less, no consent banner needed: `src/services/visits.js` (hooked in `src/main.js`, browser only) sends one beacon per page view to `POST /api/hit` (`netlify/functions/hit/hit.mts`, validation in `visit.mts`), which stores one anonymous JSON record per hit in the Netlify Blobs store `visits`, key `YYYY-MM-DD/<ms>-<rand>`: time, page path, landing yes/no, referring site + utm_source (landings only), phone/desktop. No IP, cookie, ID or user agent is stored. Skipped: bots/crawlers/headless browsers (server), local dev, `navigator.webdriver`, and devices opted out with `?nocount=1` (`?nocount=0` undoes it; Marc's own phone should use it). Only production writes to the site-wide store; previews and draft deploys write to a deploy-scoped store. Rate limit 30 hits/min per IP. Read with `npm run visits:report` (uses the Netlify CLI login; read-only). "Visits" = landings (first page of a visit). Free plan: each hit is one function run (125k/month included).
 
 ### Styling System
 - `src/assets/styles/variables.css` - CSS custom properties (colors, spacing, typography, shadows)
