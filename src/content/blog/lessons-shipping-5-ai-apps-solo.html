@@ -1,0 +1,65 @@
+<p>I'm Marc de Ruijter, a Dutch full-stack developer with 25+ years in IT. I live in Chiang Mai, Thailand, and work remotely for clients in Europe. Since 2022 I've shipped 20+ products alone as Dizid Web Development.</p>
+
+<p>This post covers five of them. Four call AI models; the fifth, TestSwap, makes no AI calls but was built with an AI coding assistant and for AI search. Here's what each taught me, failures included.</p>
+
+<h2>The five apps</h2>
+
+<h3>1. Foreground: measure honestly</h3>
+
+<p><a href="https://foreground.info">Foreground</a> checks whether ChatGPT, Gemini, Claude and Grok name a business when its customers ask for a recommendation, and shows who gets named instead. Stack: Vue 3, TypeScript, Netlify Functions, Postgres on Neon, Stripe, and four AI APIs.</p>
+
+<p>Foreground used to give a score from 0 to 100. In production it was useless: small businesses all landed between 0 and 12, while big names like Apple scored 57 to 100. No owner could move it. I replaced it with a plain count, "named in X of 12 answers", for questions from the customer's own niche.</p>
+
+<p>AI answers change from run to run, so a change only counts at 3 or more of the 12, and "you improved" needs three scans in a row. One AI pass writes the action plan; a second checks it against the business's own website. In a test with 5 false claims planted in each of 5 plans, the check caught all 25.</p>
+
+<h3>2. TestSwap: AI crawlers don't run JavaScript</h3>
+
+<p><a href="https://testswap.dev">TestSwap</a> lets indie developers test each other's apps: review one to earn a credit, spend it on a review of yours. Stack: Vue 3, TypeScript, Firebase Auth with X sign-in, Postgres on Neon, Netlify Functions. First commit: 9 October 2026. First real sign-in on the live site: the next day.</p>
+
+<p>Crawlers like GPTBot and ClaudeBot don't run JavaScript, so a plain single-page app looks empty to them. The build prerenders the homepage, blog and legal pages into real HTML and writes an <code>llms.txt</code>. Every credit move is one database transaction, with rows locked in a fixed order so simultaneous reviews can't deadlock.</p>
+
+<h3>3. WuXing Zodiac: let payment be the gate</h3>
+
+<p><a href="https://wuxingzodiac.me">WuXing Zodiac</a> is a Chinese astrology site covering all 60 element-and-animal signs, prerendered for SEO. Stack: Vue 3, TypeScript, vite-ssg, Netlify Functions and Neon. It sells a personal reading: Stripe Checkout, then a background function writes it with Claude, renders a PDF and emails it. The PDF is never stored.</p>
+
+<p>That function's URL is public, so it trusts nothing but a paid Stripe session. It re-checks the payment with Stripe, claims the order in one database update and stops after 3 attempts, which caps the Claude calls per sale at 6.</p>
+
+<h3>4. LaunchPilot: count before you call</h3>
+
+<p><a href="https://launchpilot.marketing">LaunchPilot</a> is a launch checklist for indie developers: 33 tasks in 4 phases, with AI-written first drafts for each task. Stack: Vue 3, Tailwind CSS, Supabase, Netlify Functions, the Claude API and Stripe.</p>
+
+<p>The browser never talks to Anthropic. A serverless proxy verifies the login token, takes the user ID from that token rather than the request, checks the plan's monthly quota, and only then calls Claude. A later review found no limit on input size; it now rejects anything over 100,000 characters.</p>
+
+<h3>5. Unplugged.cv: free AI endpoints need limits</h3>
+
+<p>Unplugged.cv is an AI CV builder I built in early 2026: paste your career history and get a CV and cover letter, with one rule for the AI: never invent employers or results. Stack: Next.js, React, Neon, Drizzle, the Claude API and Stripe. It is offline at the moment.</p>
+
+<p>Its free endpoints called Claude without a login, as planned for the free tier, but also without a rate limit or a maximum input size. An automated scanner rated that fine; a code review caught it. The fix: 8 requests a minute per IP and an 8,000-character cap. Its downtime taught the other half: check the live site after every deploy, as TestSwap's smoke test now does.</p>
+
+<h2>What applies to every app</h2>
+
+<h3>Cap AI spend in layers</h3>
+
+<p>A public form that calls an AI model is an open tap. I put a monthly limit at each AI provider, then limits in my own code: daily caps, per-IP limits, quotas per plan, input caps. Foreground also logs the cost of every call, and when a provider hits its cap, that AI drops out of scans and I get an email.</p>
+
+<h3>Stripe webhooks are where billing bugs hide</h3>
+
+<p>Foreground's webhook only updates the account whose subscription ID matches the event, so a late event for an old, cancelled subscription can't downgrade someone who subscribed again.</p>
+
+<h3>Keep operations boring</h3>
+
+<p>All five run on Netlify with serverless functions, four with Postgres on Neon. No servers to patch; that's how one person runs five products.</p>
+
+<h3>Use AI coding assistants, then check their work</h3>
+
+<p>I build with Claude Code. Each repo has a <code>CLAUDE.md</code> with rules the assistant must follow, such as never running a schema push on a shared database. It writes code fast; I still type-check, build, test and review anything that spends money. Those instruction files also go stale, so I review them like code.</p>
+
+<h3>Traffic is the hard part</h3>
+
+<p>In my first measurement, TestSwap was named in 0 of 12 AI answers in both its niches, and AI mixes it up with unrelated products of the same name. For WuXing Zodiac I first planned merch sold through paid ads; on paper that lost about $400 per 1,000 visitors.</p>
+
+<h2>Need an app built, or AI added to yours?</h2>
+
+<p>I build web apps and add AI features to existing ones: Vue or React, Node.js, Postgres, Stripe, and the OpenAI, Anthropic, Gemini and xAI APIs, with cost caps from day one. I work remotely for clients in the EU, at fixed prices, in Dutch or English.</p>
+
+<p>See <a href="/hire">what I offer and what it costs</a>, or <a href="/#contact">tell me about your project</a>.</p>

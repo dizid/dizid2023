@@ -15,6 +15,7 @@ const currentYear = new Date().getFullYear()
         <router-link to="/hire">Hire</router-link>
         <router-link to="/what-is-dizid">What is Dizid?</router-link>
         <router-link to="/fixed-price-mvp-for-non-technical-founders">Fixed-price MVP</router-link>
+        <router-link to="/blog">Blog</router-link>
       </nav>
 
       <div class="footer-links">

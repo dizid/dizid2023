@@ -1,0 +1,64 @@
+<p>You built your app with Lovable, Bolt, Cursor or v0, and people use it. Whether your database turns away requests from the wrong person is a separate question. An app can look finished while the answer is no.</p>
+
+<p>In March 2025 a security researcher scanned 1,645 projects built with Lovable and <a href="https://mattpalmer.io/posts/statement-on-CVE-2025-48757/">found 303 endpoints across 170 projects (about 10.3%)</a> with inadequate Row Level Security, exposing data such as names, phone numbers, payment details and API keys. It is filed as <a href="https://nvd.nist.gov/vuln/detail/CVE-2025-48757">CVE-2025-48757</a>. Lovable disputes it: it says each customer is responsible for their own app's data. Either way, the fix is in the app owner's hands.</p>
+
+<p>Below are five checks you can do yourself. I use them on my own apps on Supabase, Firebase and Neon.</p>
+
+<h2>1. Supabase: Row Level Security on every table, with policies that filter</h2>
+
+<p>Supabase's docs say <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">a table in an exposed schema without RLS is readable and writable by any role with a grant on it</a>. Tables created in the dashboard have RLS on by default, but <a href="https://supabase.com/docs/guides/api/securing-your-api">tables created in the SQL Editor or through another tool need it switched on</a>.</p>
+
+<p><strong>How to check:</strong> open the Security Advisor in your Supabase dashboard. It <a href="https://supabase.com/docs/guides/database/database-advisors">flags tables in the public schema without RLS</a> and policies that exist while RLS is off.</p>
+
+<p>Then read each policy. For private data, the condition should compare the row's owner column with <code>auth.uid()</code>, which <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">returns the ID of the user making the request</a>. A policy of <code>using (true)</code> lets everyone through.</p>
+
+<h2>2. Secret keys never in the browser or the repo</h2>
+
+<p>The Supabase publishable key (or older <code>anon</code> key) is <a href="https://supabase.com/docs/guides/api/api-keys">safe to expose in a web page or source code</a>, because RLS decides what it can reach. Firebase web API keys <a href="https://firebase.google.com/docs/projects/api-keys">only identify your project</a>; Security Rules control access.</p>
+
+<p>A Supabase secret key (<code>sb_secret_...</code>) or older <code>service_role</code> key <a href="https://supabase.com/docs/guides/api/api-keys">bypasses every Row Level Security policy</a> and must never be in a browser, a shipped app or source control. Firebase's server libraries <a href="https://firebase.google.com/docs/firestore/security/get-started">bypass all Cloud Firestore Security Rules</a>, so their service account key belongs on the server only.</p>
+
+<p><strong>How to check:</strong> variables starting with <code>VITE_</code> (Vite) or <code>NEXT_PUBLIC_</code> (Next.js) <a href="https://vite.dev/guide/env-and-mode">end up in</a> the <a href="https://nextjs.org/docs/app/guides/environment-variables">JavaScript sent to the browser</a>. Search your code and live site's JavaScript (DevTools, Sources) for <code>service_role</code>, <code>sb_secret_</code> and <code>private_key</code>. Found one? Move it to the server and <a href="https://supabase.com/docs/guides/api/api-keys">rotate the key</a>: Supabase blocks secret keys in browsers, but a leaked key still works from other tools.</p>
+
+<p>In LaunchPilot, my Supabase app, the browser only gets the project URL and public key; the secret key stays in serverless functions.</p>
+
+<h2>3. Firebase: rules not left in test mode</h2>
+
+<p>Firebase's test mode <a href="https://firebase.google.com/docs/firestore/quickstart">allows anyone to read and overwrite your data</a>. Firebase says <a href="https://firebase.google.com/docs/rules/insecure-rules">never to use <code>allow read, write: if true</code> in production</a>: anyone who guesses your project ID can steal, modify or delete the data. A rule that only checks <code>request.auth != null</code> opens the data to every logged-in user.</p>
+
+<p><strong>How to check:</strong> in the Firebase console, open the Rules tab for Firestore, Realtime Database and Storage. Look for <code>if true</code>, or a date check without a user check. For private data, a good rule <a href="https://firebase.google.com/docs/rules/basics">compares <code>request.auth.uid</code> with the owner's ID</a>. Then use the <a href="https://firebase.google.com/docs/rules/simulator">Rules Playground</a> to simulate a logged-out user and a different user ID; both should be denied.</p>
+
+<h2>4. Storage buckets: public only on purpose</h2>
+
+<p>In Supabase, a public bucket means <a href="https://supabase.com/docs/guides/storage/buckets/fundamentals">anyone who has a file's URL can read it</a>. In a private bucket, every operation, downloads included, goes through RLS policies. Firebase Cloud Storage has <a href="https://firebase.google.com/docs/storage/security/get-started">its own Security Rules</a>, so check 3 applies there too.</p>
+
+<p><strong>How to check:</strong> list your buckets. Logos can be public. Invoices, ID scans and private uploads belong in a private bucket, with policies that limit each user to their own folder (<a href="https://supabase.com/docs/guides/storage/security/access-control">example</a>).</p>
+
+<h2>5. Neon or Postgres: connection string on the server, a user check in every endpoint</h2>
+
+<p>Neon's docs say the connection string <a href="https://neon.com/docs/guides/javascript">contains sensitive credentials and must never be exposed in client-side JavaScript</a>. Queries belong in a backend or serverless function.</p>
+
+<p>Your API code is then the gate. Every endpoint must verify the user's sign-in token on the server, then filter by the user ID from that token, never by an ID sent in the request. Skipping that is <a href="https://api-security.owasp.org/editions/2023/en/0xa1-broken-object-level-authorization">Broken Object Level Authorization</a>, number one on OWASP's 2023 API Security Top 10.</p>
+
+<p>In Foreground, my Neon app, every function checks the sign-in token, then checks that the requested record belongs to that user. TestSwap uses Firebase sign-in with Postgres: the server verifies the token itself and keeps private fields out of public queries.</p>
+
+<h2>How to test: log in as user A, ask for user B's data</h2>
+
+<ol>
+<li>Create two test accounts, A and B. As B, create something private, like an order.</li>
+<li>Log in as A. In DevTools, Network tab, find a request that loads A's own data.</li>
+<li>Copy it (right-click, Copy as fetch), swap in the ID of B's record, and send it.</li>
+<li>Send it again without A's sign-in token.</li>
+</ol>
+
+<p>Every try should return an error or nothing. Seeing B's data means a gap. Only test your own app.</p>
+
+<h2>If you're not sure</h2>
+
+<p>If a result confuses you, or you have too many endpoints to test by hand, ask someone who does this often. For an experienced developer, a check like this takes an hour or two. Most fixes are small: a missing policy, a rule that is too wide, or an API function that skips the user check.</p>
+
+<h2>Get a database safety check for your AI-built app</h2>
+
+<p>I'm Marc de Ruijter, a Dutch full-stack developer with 25+ years in IT, working remotely for EU clients. I check your Supabase, Firebase or Neon app against the points above, for a fixed price, in Dutch or English. You get a plain list of what is open and what to fix first.</p>
+
+<p><a href="/hire">See how to hire me</a> or <a href="/#contact">send me a message</a>.</p>
