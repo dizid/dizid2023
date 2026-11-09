@@ -1,5 +1,6 @@
 import HomeView from '../views/HomeView.vue'
 import { blogPosts } from '../data/blogPosts.js'
+import { aiFeaturesPages } from '../data/aiFeaturesPages.js'
 
 // One static route per blog post (not a dynamic /blog/:slug), so vite-ssg
 // prerenders every post to its own HTML file without extra config.
@@ -35,6 +36,19 @@ export const routes = [
     path: '/fixed-price-mvp-for-non-technical-founders',
     name: 'fixed-price-mvp',
     component: () => import('../views/FixedPriceMvpView.vue')
+  },
+  // "Add AI features to your existing app" page, Dutch + English (T-0052)
+  {
+    path: aiFeaturesPages.nl.path,
+    name: 'ai-features-nl',
+    component: () => import('../views/AiFeaturesView.vue'),
+    props: { lang: 'nl' }
+  },
+  {
+    path: aiFeaturesPages.en.path,
+    name: 'ai-features-en',
+    component: () => import('../views/AiFeaturesView.vue'),
+    props: { lang: 'en' }
   },
   {
     path: '/what-is-dizid',

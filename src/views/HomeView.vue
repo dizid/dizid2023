@@ -1,5 +1,6 @@
 <script setup>
 import { useHead } from '@unhead/vue'
+import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
 import HeroSection from '../components/HeroSection.vue'
 import ProblemSection from '../components/ProblemSection.vue'
 import OffersSection from '../components/OffersSection.vue'
@@ -15,7 +16,8 @@ useHead({
   meta: [
     {
       name: 'description',
-      content: 'Marc de Ruijter builds your web app or MVP and manages the whole project. Fixed price, a demo every week, live in 2-4 weeks. 25+ years in IT, 20+ products shipped.'
+      // Max 160 characters (Foreground's site check flagged 163 on 2026-11-09)
+      content: 'Marc de Ruijter builds your web app or MVP and runs the whole project. Fixed price, a demo every week, live in 2-4 weeks. 25+ years in IT, 20+ products shipped.'
     },
     { property: 'og:title', content: 'Dizid | Custom Software Built & Managed for Founders' },
     {
@@ -27,6 +29,10 @@ useHead({
   ],
   link: [{ rel: 'canonical', href: 'https://dizid.com/' }]
 })
+
+// Home has a one-item breadcrumb too, so every page carries BreadcrumbList
+// schema (Foreground's site check lists it as missing on the home page).
+useBreadcrumbSchema([{ name: 'Home', url: 'https://dizid.com/' }])
 
 // Customer questions, answered only with claims the site already makes
 // elsewhere (/hire pricing, timelines, process). Rendered visibly and as
