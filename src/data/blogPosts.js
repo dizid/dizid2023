@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'launch-ready-ai-built-app-checklist',
+    title: "Launch-ready AI-built app: what I check before real users",
+    description: "Built your app with Lovable, Bolt or Cursor? What I check before users pay: prices, Stripe webhooks, live keys, AI cost caps, emails, deploys, backups.",
+    datePublished: '2026-11-09',
+    dateModified: '2026-11-09'
+  },
+  {
     slug: 'eu-ai-act-article-50-chatbot-check',
     title: "Does your chatbot say it's an AI? EU AI Act Article 50 check",
     description: "Since 2 August 2026, EU AI Act Article 50 requires website chatbots to say they are an AI. What the rule says, who must act, and a 1-minute check.",

@@ -1,0 +1,110 @@
+<p>Your app works. You built it with Lovable, Bolt, Cursor or v0, it looks finished, and the first users are about to sign up and pay. The gap between "it works on my screen" and "strangers can pay for it" is mostly made of things the AI builder never saw: real payments, real email inboxes, real deploys and real bills.</p>
+
+<p>This is the list I go through before an app takes real users and real money, on my own apps and on apps I'm asked to fix. The database part has its own post: <a href="/blog/ai-built-app-database-security-checks">5 database checks for Supabase, Firebase and Neon</a>. Everything else is below.</p>
+
+<h2>1. The price comes from your server, not from the browser</h2>
+
+<p>Generated checkout code sometimes sends the amount from the page to your server, and the server passes it on to Stripe. Anyone can change that number in the browser's developer tools and buy your product for one cent.</p>
+
+<p>The fix: create the Checkout Session on the server with a Price ID from your Stripe dashboard, or look the price up in your own database. The browser only says <em>which</em> product, never <em>how much</em>.</p>
+
+<p>How to test: start a checkout, change the amount in the request with DevTools and send it again. The Stripe page should still show your real price.</p>
+
+<h2>2. Webhooks: verified, repeat-safe, and actually arriving</h2>
+
+<p>The webhook is the part that turns "paid" into "account upgraded". It's also where AI-built apps break most quietly. Stripe's <a href="https://docs.stripe.com/webhooks">webhook docs</a> list what the handler must do:</p>
+
+<ul>
+<li><strong>Verify the signature.</strong> Check the <code>Stripe-Signature</code> header with your endpoint's signing secret, using the raw request body. Without it, anyone can send your endpoint a fake "payment succeeded".</li>
+<li><strong>Handle repeats.</strong> Stripe says endpoints "might occasionally receive the same event more than once". Store the event IDs you've processed and skip the ones you've seen, so nobody gets two upgrades or two emails.</li>
+<li><strong>Don't rely on order.</strong> Stripe doesn't guarantee events arrive in the order they happened.</li>
+<li><strong>Answer fast.</strong> Return a 2xx status first, then do the slow work. In live mode Stripe retries failed deliveries for up to three days, so a crash can mean three days of retries before anyone notices.</li>
+</ul>
+
+<p>After your first real payment, open the event deliveries list for your endpoint in the Stripe dashboard. Every event should say "Delivered".</p>
+
+<h2>3. Test mode and live mode are two different worlds</h2>
+
+<p>Everything worked in test mode. On launch day the live keys go in, and one thing still points at test. These are the usual culprits:</p>
+
+<ul>
+<li>Price IDs copied from test mode, which don't exist in live mode.</li>
+<li>The webhook signing secret: test and live have a different one, even for the same URL.</li>
+<li>A secret key that ended up in the front end. Only the publishable key belongs in the browser; the secret key stays on the server.</li>
+</ul>
+
+<h2>4. Every AI call: signed in, limited, capped</h2>
+
+<p>If your app calls OpenAI, Claude or Gemini, every request costs you money. An AI endpoint without limits is a bill that anyone on the internet can run up.</p>
+
+<p>Make sure that:</p>
+
+<ul>
+<li>the endpoint requires sign-in, or has a limit per visitor;</li>
+<li>prompt length is capped;</li>
+<li>each call's cost is logged;</li>
+<li>the provider's dashboard has a hard monthly limit, not just an email alert.</li>
+</ul>
+
+<p>I wrote about how I cap the AI costs of my own apps in <a href="/blog/lessons-shipping-5-ai-apps-solo">what I learned shipping 5 AI apps</a>.</p>
+
+<h2>5. Sign-up and password emails that arrive, and link to the live site</h2>
+
+<p>A classic: the confirmation email arrives, and the link opens <code>localhost:3000</code>. In Supabase, the <a href="https://supabase.com/docs/guides/auth/redirect-urls">Site URL</a> is the default redirect for these links. Supabase says to change it "from http://localhost:3000 to your production URL" and calls it "critical for email confirmations and password resets". Add your live domain to the Redirect URLs list too.</p>
+
+<p>Then make sure the emails don't land in spam. Since February 2024, <a href="https://support.google.com/a/answer/81126">Gmail requires</a> every sender to set up SPF or DKIM for its domain. Senders of more than 5,000 emails a day also need DMARC. Set all three up once, in your email provider and your DNS.</p>
+
+<p>How to test: on your phone, sign up with a fresh Gmail address. Confirm the account, log out, and reset the password.</p>
+
+<h2>6. Make sure the live site runs the code you think it runs</h2>
+
+<p>This one happened to my own site. For up to four weeks, dizid.com served an old build. Netlify was set to deploy the <code>master</code> branch, while every commit went to <code>main</code>. Nothing failed, so nothing warned me. The site just stopped changing.</p>
+
+<p>After every deploy, compare the commit in your host's deploy log with your latest commit, and open a page you just changed on the live site. It takes a minute.</p>
+
+<h2>7. A backup you have restored once</h2>
+
+<p>Every database host offers backups or restore points, and what you get depends on your plan. Find out what yours keeps and for how long. Then do one test restore into a copy or a branch before launch. You don't want to learn how restoring works on the day a migration deletes a table.</p>
+
+<h2>8. Errors you hear about before your users tell you</h2>
+
+<p>Most first users who hit an error don't report it. They leave. Before launch, set up three things:</p>
+
+<ul>
+<li>error tracking for the front end (Sentry has a free tier);</li>
+<li>a look at your server function logs;</li>
+<li>an uptime check on your home page and your checkout.</li>
+</ul>
+
+<p>Then you know about the broken payment button before the first refund request arrives.</p>
+
+<h2>9. The small EU bits</h2>
+
+<p>If you sell in the EU, you need three small things:</p>
+
+<ul>
+<li>A privacy page that names what you store and which services process it.</li>
+<li>A cookie banner only if you use cookies that aren't strictly necessary, like ad or tracking cookies.</li>
+<li>If your app has an AI chatbot, it has to say it's an AI. Here's <a href="/blog/eu-ai-act-article-50-chatbot-check">how to check that in a minute</a>.</li>
+</ul>
+
+<p>This is technical help, not legal advice.</p>
+
+<h2>A one-hour test before launch</h2>
+
+<ol>
+<li>On your phone, sign up with a new account, confirm it and reset the password.</li>
+<li>Buy with a real card, then refund it in Stripe. Check that the account upgraded and the webhook says "Delivered".</li>
+<li>Log in as a second user and try to open the first user's data (the <a href="/blog/ai-built-app-database-security-checks">database post</a> shows how).</li>
+<li>Use the AI feature a few times and check the provider's usage page.</li>
+<li>Restore a backup into a copy.</li>
+<li>Check that the live deploy matches your latest commit.</li>
+</ol>
+
+<p>If all six pass, you're in better shape than most apps on launch day.</p>
+
+<h2>Want a second pair of eyes before launch?</h2>
+
+<p>I'm Marc de Ruijter, a Dutch full-stack developer with 25+ years in IT, working remotely for clients in Europe. I've shipped 20+ products alone, with Stripe, Supabase, Firebase, Neon and AI APIs. I go through this list on your Lovable, Bolt, Cursor or v0 app and fix what's open, in Dutch or English.</p>
+
+<p><a href="/hire">See how to hire me</a> or <a href="/#contact">send me a message</a>.</p>
