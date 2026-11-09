@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'hiring-developer-app-access-handover',
+    title: "Hiring a developer for your app? What to share, and how",
+    description: "Hiring a developer to fix your app? What to put in the brief, how to give access on GitHub, Supabase, Firebase and Stripe without passwords, and clean-up.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'fix-or-rebuild-ai-built-app',
     title: "Lovable or Bolt app stuck? Fix it or rebuild it: how to decide",
     description: "Every new prompt breaks something else? How to tell if your Lovable, Bolt, Cursor or v0 app can be fixed or needs a rebuild, plus a 30-minute self-check.",

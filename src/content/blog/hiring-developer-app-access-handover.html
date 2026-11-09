@@ -1,0 +1,77 @@
+<p>You've decided to get help with your app. Then comes the awkward moment: the developer asks for access. Many founders send their main password over WhatsApp, or paste a Stripe secret key into an email. It works, but it hands a stranger the keys to everything, with no record of what they did and no easy way to take it back.</p>
+
+<p>There's a better way, and it takes about the same time. Below: what to send first, how to give access without sharing passwords on GitHub, Supabase, Firebase and Stripe, what never to send, and how to clean up when the job is done.</p>
+
+<h2>Start with a one-page brief</h2>
+
+<p>A developer can tell you a lot before touching anything. Send one page with:</p>
+
+<ul>
+<li><strong>What the app does</strong>, in two sentences, and who pays for it.</li>
+<li><strong>The live link and a test login.</strong> Make a separate test account; don't share your own.</li>
+<li><strong>The 3 to 5 flows that make or keep money</strong>: sign up, pay, use the main feature, cancel. Mark the ones that break.</li>
+<li><strong>What changed just before it broke</strong>, if you know.</li>
+<li><strong>The services the app uses</strong>: GitHub, Supabase or Firebase, Stripe, hosting, email. Names only, no keys.</li>
+<li><strong>What "done" means to you</strong>, and your deadline.</li>
+</ul>
+
+<p>Most first answers, like "is this a fix or a rebuild?" and "how big is this?", come from that page plus a look at the code. The <a href="/blog/fix-or-rebuild-ai-built-app">fix-or-rebuild self-check</a> helps you fill it in.</p>
+
+<h2>Invite people, don't share passwords</h2>
+
+<p>Every service below lets you invite a developer with their own login. You decide what they can do, you can see what they changed, and you can remove them in one click. Your own password and two-step login stay yours.</p>
+
+<h3>GitHub (the code)</h3>
+
+<p>In your repository, go to <strong>Settings → Collaborators → Add people</strong> and enter the developer's GitHub username. One thing to know: on a repository in a personal account, a collaborator can always push changes. GitHub's docs say collaborators "can't have read-only access" there. They can't delete the repository, change who can see it or invite others; those stay with you.</p>
+
+<p>If you want someone to only read the code at first, put the repository in a GitHub organization. There you choose a role per person, from Read up to Admin.</p>
+
+<h3>Supabase (database and logins)</h3>
+
+<p>In your organization's team settings, invite the developer by email (the invite link expires after 24 hours). Pick <strong>Developer</strong>: Supabase describes it as "read-only access to organization resources, full content access to project resources", and a Developer can't change project settings. Keep Owner and Administrator for yourself.</p>
+
+<p>Watch out on the Free and Pro plans: the role covers every project in the organization, because Read-Only and per-project roles are only on the Team and Enterprise plans. If one organization holds several apps, the developer can see all of them.</p>
+
+<h3>Firebase</h3>
+
+<p>Go to <strong>Project settings → Users and permissions → Add member</strong>. <strong>Editor</strong> is enough for almost all development work. <strong>Owner</strong> can also manage who has access, set up billing and delete the project, so keep that role for yourself. <strong>Viewer</strong> is read-only, which is fine for a first look.</p>
+
+<h3>Stripe (payments)</h3>
+
+<p>Stripe has a role made for this. A <strong>Sandbox User</strong> can create their own sandbox to build and test your checkout in, and in Stripe's words "can't view or make changes to anything in your live account". Start there.</p>
+
+<p>The <strong>Developer</strong> role is a big step up: it "can create secret keys, which grant access to almost all API resources", and it can refund payments too. If live setup needs doing, give that role for the day it's needed, then switch it back.</p>
+
+<p>Better still, keep the live secret key out of the developer's hands completely. They tell you the name of the setting your hosting needs, and you paste the live key into your hosting dashboard yourself. The key goes from Stripe to your hosting and nowhere else.</p>
+
+<h3>Hosting and your domain</h3>
+
+<p>On hosting like Netlify or Vercel, invite the developer to your team if your plan allows it. If it doesn't, keep the login and change settings yourself when they ask. Keep the login for your domain registrar to yourself either way. If the domain needs new DNS records, the developer sends you the exact records and you add them. It takes five minutes, and nobody else can move your domain.</p>
+
+<h2>What never to send</h2>
+
+<ul>
+<li><strong>Your main email password.</strong> Whoever has it can reset every other account you own.</li>
+<li><strong>Two-step login codes.</strong> No developer needs them. If someone asks for one, stop and check who you're talking to.</li>
+<li><strong>Live secret keys in a chat or email.</strong> That means keys starting with <code>sk_live_</code> (Stripe) or <code>sb_secret_</code>, or the <em>service_role</em> key (Supabase). Chats and inboxes are kept for years and synced to every phone. If a key really has to move, use the share feature of a password manager and replace the key when the job is done.</li>
+<li><strong>A copy of your real customer data.</strong> A developer can almost always work with test data. If they really need real personal data, the GDPR expects a written contract with anyone who handles personal data for you (Article 28, usually called a data processing agreement). That's a technical note, not legal advice.</li>
+</ul>
+
+<h2>When the job is done: a 10-minute clean-up</h2>
+
+<ol>
+<li><strong>Remove access</strong> on GitHub, Supabase, Firebase, Stripe and your hosting once the work is over.</li>
+<li><strong>Replace every key that left a dashboard.</strong> Make a new one, update it in your hosting, then delete the old one. Stripe calls this rolling a key.</li>
+<li><strong>Check the code is in your GitHub</strong>, not only on the developer's laptop. The latest change should be there.</li>
+<li><strong>Ask for a short handover note</strong>: what changed, which settings matter, and what's still open.</li>
+<li><strong>Write down where everything lives</strong> (code, database, payments, hosting, domain, email) in one place you own.</li>
+</ol>
+
+<p>Before real users pay, the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a> covers what to test.</p>
+
+<h2>Need a developer for your app?</h2>
+
+<p>I'm Marc de Ruijter, a Dutch full-stack developer with 25+ years in IT, working remotely for clients in Europe. I've shipped 20+ products alone, with Stripe, Supabase, Firebase, Neon and AI APIs. Send me your one-page brief and I'll tell you in plain words what I see, which access I'd need (the smallest roles that do the job) and what the work would take. In Dutch or English.</p>
+
+<p><a href="/hire">See how to hire me</a> or <a href="/#contact">send me a message</a>.</p>
