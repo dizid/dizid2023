@@ -894,7 +894,10 @@ const stats = [
 
 .contact-hire-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /* minmax(0, 1fr), not 1fr: a column may shrink below its content's width.
+     Otherwise the longest <select> option sets the column width and the page
+     scrolls sideways on phones (492 px on a 390 px screen, found 2026-11-09). */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-16);
   align-items: start;
 }
@@ -1000,6 +1003,8 @@ const stats = [
 }
 
 .form-input {
+  width: 100%;
+  max-width: 100%; /* long <select> options get cut off instead of widening the form */
   padding: var(--space-3) var(--space-4);
   background: var(--color-bg-tertiary);
   border: 1px solid var(--color-border);
@@ -1099,7 +1104,7 @@ select.form-input {
   }
 
   .contact-hire-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-12);
   }
 }
