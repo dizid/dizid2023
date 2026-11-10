@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'form-validation-server-side-ai-built-app',
+    title: "Form checks in your AI-built app: browser isn't enough",
+    description: "Why browser-only form checks can be skipped, and how to add server and database checks to your AI-built app, with prompts. Checked in November 2026.",
+    datePublished: '2026-11-11',
+    dateModified: '2026-11-11'
+  },
+  {
     slug: 'duplicate-records-double-clicks-retries',
     title: "Duplicate records in your AI-built app: double clicks and retries",
     description: "Why your AI-built app saves orders or emails twice, and how to stop it: button locks, unique constraints, idempotency keys. Checked in November 2026.",

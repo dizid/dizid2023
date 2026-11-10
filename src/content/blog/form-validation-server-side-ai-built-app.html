@@ -1,0 +1,170 @@
+<p>Your sign-up form says "Please enter a valid email". Your order form will not accept an empty name. It looks safe. But in many apps built with Lovable, Bolt, Cursor and Replit, those checks run only in the browser. The browser is the visitor's machine, so the visitor decides whether they run. This post explains the three layers of checks you need, with plain steps and prompts for your AI tool. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Browser checks are for helping honest users. They are not protection. Anyone can send data to your function or database without using your form. So check every value again on the server, before you save anything. Then add rules in the database itself, so that even a bug in your code cannot store bad data. Never trust a price, a user id or a role that comes from the browser. Show clear messages that say what to fix, and keep what the user typed. You can test most of this yourself in 20 minutes.</p>
+
+<h2>1. Why browser-only checks can be skipped</h2>
+
+<p>When someone presses "Submit", the page sends a request to your server or database. Your form is just one way to make that request. Anyone can open the browser's developer tools, copy the request and send it again with different values. Anyone can also skip the page and call your function address or your database API straight from a terminal tool such as curl.</p>
+
+<p>With Supabase this is normal, not a hack. The page needs a key to talk to the database, so the key is in the page. Supabase's <a href="https://supabase.com/docs/guides/api/api-keys">API keys docs</a> say the publishable key is "Safe to expose online: web page, mobile or desktop app, GitHub actions, CLIs, source code." And: "Anyone can read it, so it only reaches what Row Level Security allows." (The older <code>anon</code> key is described there as the "Legacy version of publishable keys.") So you should assume that anyone can call your database with that key. What they can do then depends on your rules, not on your form.</p>
+
+<p>MDN, the web docs by Mozilla, says it clearly on its <a href="https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Form_validation">client-side form validation page</a>: "client-side validation should not be considered an exhaustive security measure! Your apps should always perform validation, including security checks, on any form-submitted data on the server-side as well as the client-side, because client-side validation is too easy to bypass, so malicious users can still easily send bad data through to your server." Further down: "Never trust data passed to your server from the client. Even if your form is validating correctly and preventing malformed input on the client-side, a malicious user can still alter the network request."</p>
+
+<p>That is the whole idea of this post. The form check is a courtesy. The server check is the lock.</p>
+
+<h2>2. What goes wrong in practice</h2>
+
+<p>When a value is not checked on the server, these things can happen. Each one is a real way a form-fed app can break:</p>
+
+<ul>
+<li><strong>Negative or zero quantities and prices.</strong> An order with quantity -3 can turn a charge into a credit, or break your totals. A price sent from the page can be changed to a tiny number.</li>
+<li><strong>Huge text.</strong> A "name" field that holds a million characters slows your pages, bloats your database and breaks layouts and emails.</li>
+<li><strong>Wrong email formats.</strong> Your welcome emails bounce, and bounces hurt your sender reputation. See <a href="/blog/app-emails-spam-spf-dkim-dmarc">why app emails land in spam</a>.</li>
+<li><strong>Someone else's id in a hidden field.</strong> If the form sends <code>user_id</code> or <code>company_id</code>, a user can change it and write data into another account. See <a href="/blog/admin-page-roles-idor-ai-built-app">admin pages, roles and IDOR in AI-built apps</a>.</li>
+<li><strong>Wrong file types and sizes.</strong> A file input with an "accept" list in the page does not stop someone sending something else. See <a href="/blog/file-uploads-ai-built-app-checks">file upload checks</a>.</li>
+<li><strong>Dates in the past.</strong> Bookings for yesterday, or an end date before the start date.</li>
+<li><strong>Required fields left empty.</strong> A request can simply leave a field out. The page never gets a chance to complain.</li>
+<li><strong>Duplicate sign-ups.</strong> The same email twice, in different upper and lower case. See <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>.</li>
+</ul>
+
+<p>Fake sign-ups by scripts are a related problem with a different fix. See <a href="/blog/stop-fake-bot-signups-app">stopping fake bot sign-ups</a>.</p>
+
+<h2>3. Layer 1: the browser, for a good experience</h2>
+
+<p>Keep the browser checks. They are fast and friendly. MDN says: "Client-side validation is an initial check and an important feature of good user experience; by catching invalid data on the client-side, the user can fix it straight away." Plain HTML does most of the work, with no code:</p>
+
+<ul>
+<li><code>required</code>: per MDN, "Specifies whether a form field needs to be filled in before the form can be submitted."</li>
+<li><code>type="email"</code>: MDN says it "validates the inputs value against a well-formed email address pattern".</li>
+<li><code>min</code> and <code>max</code>: for numbers and dates, "If the field contains a value outside this range, it will be invalid."</li>
+<li><code>minlength</code> and <code>maxlength</code>: MDN says a field "is invalid if it has a value and that value has fewer characters than the <code>minlength</code> value or more than the <code>maxlength</code> value."</li>
+</ul>
+
+<p>One more line from MDN shows why this layer is weak: "Length constraints are never reported if the value is set programmatically. They are only reported for user-provided input." It only watches people typing in the box.</p>
+
+<p>Treat all of this as user experience only. Whatever the browser checks, the server must check again.</p>
+
+<h2>4. Layer 2: check on the server, before you save</h2>
+
+<p>Your app probably has server code somewhere: a Netlify function, a Vercel function or API route, or a Supabase Edge Function. This is the code that receives the form data and writes to the database. Put a check at the top of it. If the data fails the check, stop and send back an error. Save nothing.</p>
+
+<h3>Use a schema library</h3>
+
+<p>Do not write these checks by hand with a pile of "if" lines. Use a schema library. A schema is a short description of what good data looks like. Zod is a common choice in TypeScript apps. Its <a href="https://zod.dev/basics">docs</a> describe <code>safeParse</code> as giving you back "a plain result object containing either the successfully parsed data or a <code>ZodError</code>". You check the <code>success</code> flag. If it is false, the <code>error</code> property holds the problems. If it is true, the <code>data</code> property holds the clean values. It does not throw an error, so your function can answer calmly.</p>
+
+<p>The Zod <a href="https://zod.dev/api">API docs</a> list the building blocks you need for most forms: <code>z.string().min(5)</code> and <code>z.string().max(5)</code> for length (with your own numbers), <code>z.email()</code> for email addresses, <code>z.number().positive()</code> for numbers above zero, <code>z.uuid()</code> for ids, and <code>z.enum([...])</code> to allow only a fixed list of values. A small schema for an order could be: <code>z.object({ productId: z.uuid(), note: z.string().max(500), size: z.enum(["S", "M", "L"]) })</code>. Then, in your function: <code>const result = schema.safeParse(body); if (!result.success) { return an error with a friendly message }</code>.</p>
+
+<p>Two habits make this strong:</p>
+
+<ul>
+<li><strong>Set an upper limit on everything.</strong> Every text field gets a maximum length. Every number gets a sensible range. A limit that is only "at least" and never "at most" still lets huge values in.</li>
+<li><strong>Allow only the fields you expect.</strong> Build the row to save from the checked result, not from the raw request. Extra fields that someone adds, like <code>role</code> or <code>is_admin</code>, then never reach the database.</li>
+</ul>
+
+<h3>Never trust prices and user ids from the client</h3>
+
+<p>Some values should not come from the form at all.</p>
+
+<ul>
+<li><strong>Prices and totals.</strong> The form sends a product id and a quantity. Your function looks up the real price in your database (or in your payment provider) and works out the total itself.</li>
+<li><strong>The current user.</strong> Your function reads who is logged in from the session or token that your auth system checked. It does not read <code>user_id</code> from the form body.</li>
+<li><strong>Roles, status and flags.</strong> "paid", "approved" and "admin" are set by your server, never by a field in the request.</li>
+<li><strong>Things that belong to someone.</strong> If the form sends an id of an existing record, check that the logged-in user owns it before you change it.</li>
+</ul>
+
+<p>Also check that dates make sense in the function: not in the past if it is a booking, and an end after the start. Do this against the server's clock, not the visitor's. For the time-zone side of dates, see <a href="/blog/wrong-day-dates-time-zones-ai-built-app">wrong dates and time zones</a>.</p>
+
+<h2>5. Layer 3: the database refuses bad data</h2>
+
+<p>Your function is one door into the database. There may be others: the Supabase page client, another function, an import script, an admin tool, or a new feature your AI tool writes next month. Rules inside the database apply to all doors. This is your safety net.</p>
+
+<h3>NOT NULL, CHECK and length limits</h3>
+
+<p>The PostgreSQL docs on <a href="https://www.postgresql.org/docs/current/ddl-constraints.html">constraints</a> describe the main tools:</p>
+
+<ul>
+<li><strong>NOT NULL.</strong> "A not-null constraint simply specifies that a column must not assume the null value." Use it on every column that must have a value.</li>
+<li><strong>CHECK.</strong> The docs call it "the most generic constraint type." Their own example is a price column written as <code>price numeric CHECK (price &gt; 0)</code>. You can do the same for a quantity above zero, or an end date after a start date.</li>
+<li><strong>Watch out for empty values.</strong> The docs say: "a check constraint is satisfied if the check expression evaluates to true or the null value." So a CHECK alone does not stop an empty value. Pair it with NOT NULL.</li>
+<li><strong>Foreign keys.</strong> "A foreign key constraint specifies that the values in a column (or a group of columns) must match the values appearing in some row of another table." This stops an order pointing to a product or a user that does not exist.</li>
+</ul>
+
+<p>For text length, the PostgreSQL docs on <a href="https://www.postgresql.org/docs/current/datatype-character.html">character types</a> say the <code>text</code> type "stores strings of any length". By contrast, for <code>character varying(n)</code>: "An attempt to store a longer string into a column of these types will result in an error, unless the excess characters are all spaces, in which case the string will be truncated to the maximum length." So a column such as <code>varchar(200)</code> refuses long text. Or keep <code>text</code> and add a CHECK on the length. Either way, the limit is in the database, where nobody can skip it.</p>
+
+<p>For duplicates, use a unique constraint. It is covered in <a href="/blog/duplicate-records-double-clicks-retries">duplicate records in your AI-built app</a>. For email sign-ups, compare the lower-case version so "Ann@x.com" and "ann@x.com" count as one.</p>
+
+<p>Before you add a rule to a table that already has data, check for rows that break it, and take a backup first. A new rule can fail if old bad rows exist. See <a href="/blog/change-app-database-without-losing-data">changing your database without losing data</a>.</p>
+
+<h3>Supabase RLS: users only write their own rows</h3>
+
+<p>If your page talks to Supabase directly, Row Level Security (RLS) is the rule set that decides what each user can read and write. The Supabase <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">RLS docs</a> say: "Once RLS is enabled, no data is accessible through the API when using a publishable key, until you create policies."</p>
+
+<p>For inserts the key part is <code>with check</code>. The docs say "The <code>with check</code> expression ensures that any new row adheres to the policy constraints". Their example for a profile table is a policy that allows inserts only when <code>(select auth.uid()) = user_id</code>. In plain words: a logged-in user can only insert a row where the user id is their own. If someone changes the hidden field to another person's id, the database says no.</p>
+
+<p>Note the docs also say that if a policy has no <code>with check</code>, "the <code>using</code> expression decides both which rows are visible and which new rows are allowed." It is clearer to write <code>with check</code> yourself for insert and update policies. For the full set of database security checks, read <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a>.</p>
+
+<p>One more fact from the API keys docs: a secret key "bypasses every Row Level Security policy you have." So a function that uses the secret key skips RLS. That is why layer 2 matters there: the function must check the user and the data itself. And the secret key must stay on the server, in "backend components of your app", as the docs put it.</p>
+
+<h2>6. Friendly error messages</h2>
+
+<p>Strict checks are only good if people can recover from them. MDN says: "it's very important to provide as much helpful information as possible in order to guide them in correcting their inputs. You should offer up-front suggestions so they know what's expected, as well as clear error messages."</p>
+
+<ul>
+<li><strong>Say what to fix.</strong> "Quantity must be 1 or more" beats "Invalid input". MDN's list says to "Display explicit error messages" and "Point out exactly where the error occurs, especially on large forms."</li>
+<li><strong>Keep what the user typed.</strong> When the server rejects a form, send the errors back to the page and keep the values in the fields. Never clear a long form because of one wrong field.</li>
+<li><strong>Map server errors to fields.</strong> If the schema check fails, return the list of fields and messages, and show each next to its field. The <code>error</code> from <code>safeParse</code> holds this detail.</li>
+<li><strong>Be permissive about format.</strong> MDN says to "Be permissive about the input format." Trim spaces around an email. Accept a phone number with spaces or dashes, and clean it on the server.</li>
+<li><strong>Do not show raw database errors.</strong> A message that names your tables or columns helps no one. Show a short human message and log the detail on the server.</li>
+<li><strong>Use a clear status.</strong> Return an error status (not "200 OK") when data is rejected, so your page knows it failed.</li>
+</ul>
+
+<h2>7. How to test it yourself</h2>
+
+<p>You do not need hacker skills. Try the edge values, in the form and then outside the form. Do this on a copy of your app or a test database, not on live customer data. See <a href="/blog/staging-copy-ai-built-app-preview-test-database">making a staging copy of your app</a>.</p>
+
+<ol>
+<li><strong>Try the odd values in the form.</strong> Empty fields. A quantity of 0, -1 and 99999999. A name of 5,000 characters pasted in. An email like "abc" and "abc@". A date in the past. A file of the wrong type.</li>
+<li><strong>Turn off the browser checks.</strong> In your browser's developer tools, open the Elements tab, delete the <code>required</code> or <code>maxlength</code> attribute from a field, and submit again. If the bad value now gets saved, the server is not checking.</li>
+<li><strong>Resend a request with a changed value.</strong> In the Network tab, find the request your form sent. Browsers let you copy it and resend it with edited values (look for "Edit and resend" or "Copy as fetch"). Change the price, the quantity or the user id to a wrong one. The correct answer is an error, and no new row.</li>
+<li><strong>Test two users.</strong> Log in as user A. Try to save a row for user B by changing the id. This must fail.</li>
+<li><strong>Look at the data after.</strong> Open your table view and check that nothing odd was stored.</li>
+<li><strong>Check the messages.</strong> Is the error clear? Is the typed text still in the form?</li>
+</ol>
+
+<p>Only test your own app. If any bad value gets saved, that is the list of things to fix.</p>
+
+<h2>8. Prompts for your AI tool</h2>
+
+<p>Adapt these to your app. Ask the tool to show its plan before it changes anything, and to list every file it touched.</p>
+
+<ul>
+<li>"List every form in this app and every function or database call it sends data to. For each field, tell me whether the server checks it, or only the browser."</li>
+<li>"Add a Zod schema to the function that handles the order form. Use safeParse before any database write. Set a maximum length on every text field and a range on every number. Return a clear error per field and a 400 status if the check fails."</li>
+<li>"Stop reading user_id, price and total from the request body. Take the user from the verified session, and look up the price on the server from the product id."</li>
+<li>"Build the row to insert from the checked result only, so extra fields like role or is_admin are ignored."</li>
+<li>"Write a SQL migration that adds NOT NULL, CHECK (quantity > 0) and a maximum length to these columns, and foreign keys where a column points to another table. First give me a query that finds existing rows that break these rules. Do not change data yet."</li>
+<li>"Review the RLS policies on these tables. Make sure every insert and update policy has a with check that requires user_id to equal the logged-in user."</li>
+<li>"When the server rejects a form, show each message next to its field and keep everything the user typed. Do not show raw database errors."</li>
+</ul>
+
+<h2>9. Checklist</h2>
+
+<ul>
+<li>Browser checks are in place for speed (required, type, min, max, maxlength), and you do not rely on them.</li>
+<li>Every function that writes data checks the input with a schema before saving.</li>
+<li>Every text field has a maximum length, and every number has a sensible range.</li>
+<li>Prices, totals, user ids, roles and status are set on the server, never taken from the request.</li>
+<li>The row to save is built from the checked data only.</li>
+<li>Required columns are NOT NULL. Rules like "quantity above zero" are CHECK constraints.</li>
+<li>Text columns have a length limit in the database.</li>
+<li>Links between tables use foreign keys.</li>
+<li>Unique constraints stop duplicate sign-ups, with email compared in lower case.</li>
+<li>RLS is on, and insert and update policies use with check so users can only write their own rows.</li>
+<li>The secret key is only used on the server.</li>
+<li>Errors say what to fix, appear next to the field, and keep the user's input.</li>
+<li>You tested the odd values, the removed attributes, the changed request and the two-user case.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including adding server-side checks and database rules to forms that only check in the browser. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
