@@ -82,7 +82,7 @@ export const blogPosts = [
     title: "Launch-ready AI-built app: what I check before real users",
     description: "Built your app with Lovable, Bolt or Cursor? What I check before users pay: prices, Stripe webhooks, live keys, AI cost caps, emails, deploys, backups.",
     datePublished: '2026-11-09',
-    dateModified: '2026-11-09'
+    dateModified: '2026-11-10'
   },
   {
     slug: 'eu-ai-act-article-50-chatbot-check',

@@ -33,6 +33,8 @@
 <li>A secret key that ended up in the front end. Only the publishable key belongs in the browser; the secret key stays on the server.</li>
 </ul>
 
+<p>Failed renewals, EU VAT, refunds and the Customer Portal are in <a href="/blog/stripe-payments-ai-built-app-launch">taking payments in an AI-built app</a>.</p>
+
 <h2>4. Every AI call: signed in, limited, capped</h2>
 
 <p>If your app calls OpenAI, Claude or Gemini, every request costs you money. An AI endpoint without limits is a bill that anyone on the internet can run up.</p>
@@ -52,9 +54,9 @@
 
 <p>A classic: the confirmation email arrives, and the link opens <code>localhost:3000</code>. In Supabase, the <a href="https://supabase.com/docs/guides/auth/redirect-urls">Site URL</a> is the default redirect for these links. Supabase says to change it "from http://localhost:3000 to your production URL" and calls it "critical for email confirmations and password resets". Add your live domain to the Redirect URLs list too.</p>
 
-<p>Then make sure the emails don't land in spam. Since February 2024, <a href="https://support.google.com/a/answer/81126">Gmail requires</a> every sender to set up SPF or DKIM for its domain. Senders of more than 5,000 emails a day also need DMARC. Set all three up once, in your email provider and your DNS.</p>
+<p>Then make sure the emails don't land in spam. Since February 2024, <a href="https://support.google.com/a/answer/81126">Gmail requires</a> every sender to set up SPF or DKIM for its domain. Senders of more than 5,000 emails a day also need DMARC. Set all three up once, in your email provider and your DNS. How: <a href="/blog/app-emails-spam-spf-dkim-dmarc">SPF, DKIM and DMARC explained</a>.</p>
 
-<p>How to test: on your phone, sign up with a fresh Gmail address. Confirm the account, log out, and reset the password.</p>
+<p>How to test: on your phone, sign up with a fresh Gmail address. Confirm the account, log out, and reset the password. If you also offer Google or Apple sign-in, see <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with social sign-in</a>.</p>
 
 <h2>6. Make sure the live site runs the code you think it runs</h2>
 
@@ -64,7 +66,7 @@
 
 <h2>7. A backup you have restored once</h2>
 
-<p>Every database host offers backups or restore points, and what you get depends on your plan. Find out what yours keeps and for how long. Then do one test restore into a copy or a branch before launch. You don't want to learn how restoring works on the day a migration deletes a table.</p>
+<p>Every database host offers backups or restore points, and what you get depends on your plan. Find out what yours keeps and for how long. Then do one test restore into a copy or a branch before launch. You don't want to learn how restoring works on the day a migration deletes a table. What each host keeps per plan: <a href="/blog/app-database-backups-supabase-neon-firebase">backups on Supabase, Neon and Firebase</a>.</p>
 
 <h2>8. Errors you hear about before your users tell you</h2>
 
@@ -76,14 +78,14 @@
 <li>an uptime check on your home page and your checkout.</li>
 </ul>
 
-<p>Then you know about the broken payment button before the first refund request arrives.</p>
+<p>Then you know about the broken payment button before the first refund request arrives. Step by step, on free tiers: <a href="/blog/app-uptime-monitoring-error-alerts">uptime checks and error alerts</a>.</p>
 
 <h2>9. The small EU bits</h2>
 
 <p>If you sell in the EU, you need three small things:</p>
 
 <ul>
-<li>A privacy page that names what you store and which services process it.</li>
+<li>A privacy page that names what you store and which services process it. The wider GDPR list: <a href="/blog/gdpr-checklist-small-app">8 things to check before EU users sign up</a>.</li>
 <li>A cookie banner only if you use cookies that aren't strictly necessary, like ad or tracking cookies.</li>
 <li>If your app has an AI chatbot, it has to say it's an AI. Here's <a href="/blog/eu-ai-act-article-50-chatbot-check">how to check that in a minute</a>.</li>
 </ul>
