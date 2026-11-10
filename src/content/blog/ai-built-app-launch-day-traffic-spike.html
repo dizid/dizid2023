@@ -1,0 +1,121 @@
+<p>You are about to launch. Maybe it is Product Hunt, a newsletter mention, a TikTok or a press piece. Your app was built with Lovable, Bolt, Cursor or Replit. It works fine for you and three friends. Now hundreds of people may arrive within minutes, and you wonder if it will fall over. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Most AI-built apps do not break because the host is too small. They break at one weak spot: a database that runs out of connections, a slow function that times out, a free email limit, or a paid service that stops answering. Find those spots before launch. Serve as much as you can as static pages. Protect anything that costs money. Run a small test on a copy. Then watch the right dashboards on launch day.</p>
+
+<h2>1. What usually breaks first</h2>
+
+<p>A spike is not one big problem. It is many small limits that all get hit at the same time. These are the usual suspects, roughly in the order they show up:</p>
+
+<ul>
+<li><strong>Database connections.</strong> Every visitor can cause a new connection to your database. A database accepts only so many at once. When it is full, new requests fail.</li>
+<li><strong>Slow queries.</strong> A query that takes half a second for one user is fine. For two hundred users at once, the database queues up and everything gets slow.</li>
+<li><strong>Function timeouts.</strong> Server code on Netlify or Vercel has a time limit. If the database is slow, the function runs out of time before it can answer.</li>
+<li><strong>Third-party limits.</strong> Payment, maps, analytics or any other service you call may limit how many requests you can send per minute.</li>
+<li><strong>Email limits.</strong> Sign-up emails, magic links and password resets all go through an email provider. Providers cap how many emails you can send.</li>
+<li><strong>Images.</strong> A hero image of several megabytes, times hundreds of visitors, is slow for everyone and can cost bandwidth.</li>
+</ul>
+
+<p>The good news: you can check each of these in an afternoon. The rest of this post goes through them.</p>
+
+<h2>2. Supabase: connections and the sign-up email limit</h2>
+
+<h3>Connections and the pooler</h3>
+
+<p>Supabase's <a href="https://supabase.com/docs/guides/database/connection-management">connection management page</a> says: "Every Compute Add-On has a pre-configured direct connection count and pool size." So the number of connections depends on the size of your database. The <a href="https://supabase.com/docs/guides/platform/compute-and-disk">compute and disk page</a> lists them. Today it shows, for example, Nano (free) and Micro at 60 database connections and 200 pooler clients, and Small at 90 and 400. The page also says the database values "are recommended and can be customized". Check your own size in the dashboard, because these numbers can change.</p>
+
+<p>What is the pooler? It is a middle layer. Many short connections from your app go into the pooler. The pooler talks to the database with a smaller number of real connections. That is why the pooler allows more clients than the database allows direct connections.</p>
+
+<p>When should you use it? The <a href="https://supabase.com/docs/guides/database/connecting-to-postgres">connecting to Postgres page</a> says to use the shared pooler in transaction mode "for serverless and edge functions, which open many short-lived connections." For direct connections it says "Use it for persistent backends, such as virtual machines (VMs) and long-running containers." A Netlify or Vercel function is serverless. So if your function connects to the database itself, check that it uses the pooler connection string, not the direct one.</p>
+
+<p>The same page notes that transaction mode does not support prepared statements, so your database library may need a setting turned off. Ask your AI tool: "Which connection string does this function use, direct or pooler? Show me the line." If your app only uses the Supabase JavaScript client in the browser, this matters less. It matters most when you have your own server code that connects straight to Postgres.</p>
+
+<p>One more note from the connection management page: the pool size "applies per database user (role), not as a single total for the whole project." Do not assume one big shared number.</p>
+
+<h3>The Auth email limit is a launch blocker</h3>
+
+<p>This one catches many founders. Supabase's <a href="https://supabase.com/docs/guides/auth/rate-limits">Auth rate limits page</a> lists the built-in email limit as "2 emails per hour with the built-in email provider." It adds: "You can configure this limit when you use custom SMTP or the Send Email hook."</p>
+
+<p>Think about what that means. If your sign-up flow sends a confirmation email, and fifty people sign up in ten minutes, almost nobody gets their email. They see "check your inbox" and nothing arrives. That looks like a broken app. Before launch, set up your own email provider (custom SMTP) and send a real test sign-up.</p>
+
+<p>The same page lists other limits that apply to a busy launch. Sign-up, sign-in and OTP requests from one IP address default to "30 requests per 5 minutes". A new OTP or magic link for the same user needs a "60 seconds window" between requests. These protect you from abuse, but a whole office on one network can hit the IP limit. For more on login, see <a href="/blog/harden-login-ai-built-app-supabase-firebase">hardening login in an AI-built app</a>.</p>
+
+<h2>3. Netlify and Vercel functions: time limits and what users see</h2>
+
+<p>Functions are your server code. They start when a request comes in and must finish in time.</p>
+
+<p><strong>Netlify.</strong> The <a href="https://docs.netlify.com/build/functions/configuration/">functions configuration page</a> lists a "Synchronous execution limit" of 60 seconds, a "Scheduled execution limit" of 30 seconds and a "Background execution limit" of 15 minutes. It marks all three as not configurable. It also lists a buffered request or response payload of 6 MB. On concurrency, the <a href="https://docs.netlify.com/build/functions/overview/">functions overview</a> says the infrastructure "automatically scales according to the volume of traffic to your site." The docs checked for this post do not give a fixed concurrency number there.</p>
+
+<p><strong>Vercel.</strong> The <a href="https://vercel.com/docs/functions/limitations">functions limits page</a> says "If a Vercel Function doesn't complete within the duration, a 504 error code (<code>FUNCTION_INVOCATION_TIMEOUT</code>) is returned." Today the table (for Fluid compute, which the docs say is on by default for new projects) shows a default and maximum of 300 seconds on the Hobby plan, and a default of 300 seconds with a maximum of 800 seconds on Pro. For concurrency it says functions auto-scale, with an upper limit that depends on the plan.</p>
+
+<p>Notice the point: both platforms scale the function itself. The function is rarely the bottleneck. The things the function waits for are: the database, an email service, a payment service. If those are slow, the function sits and waits until the clock runs out.</p>
+
+<p>What does a timeout look like to a user? A spinner that never stops, then a blank screen or a "something went wrong" message. On Vercel the status is 504. In the browser it often looks like a failed request in the Network tab. Users do not say "the function timed out". They say "your app is broken" and leave. So a long wait is a real outage, even if the server is technically fine.</p>
+
+<h2>4. Serve what you can as static pages</h2>
+
+<p>A static page is a ready-made file. The host can hand it out to thousands of people without running any code and without touching your database. That is the cheapest and safest way to survive a spike. Your landing page, pricing page, blog and docs should be static wherever possible.</p>
+
+<p>Netlify's <a href="https://docs.netlify.com/build/caching/caching-overview/">caching overview</a> says: "Static asset responses on Netlify are cached on Netlify's global edge nodes and automatically invalidated whenever a deploy changes the content." Vercel's <a href="https://vercel.com/docs/caching/cdn-cache">CDN cache page</a> says: "Static files are automatically cached on Vercel's global network for the lifetime of the deployment after the first request."</p>
+
+<p>The catch is that many AI-built apps render everything in the visitor's browser. The page is an empty shell, then it calls your database for content. Every visitor means database calls. Prerendering turns the public pages into real files. See <a href="/blog/spa-seo-lovable-bolt-google-cant-see">prerendering a Lovable or Bolt app</a>. It helps Google too.</p>
+
+<p>Two more quick wins:</p>
+
+<ul>
+<li><strong>Images.</strong> Compress them and use sensible sizes. See <a href="/blog/slow-ai-built-app-fixes">fixing a slow AI-built app</a>.</li>
+<li><strong>Slow queries.</strong> The same post covers missing indexes and queries that load too much. Fix the slowest ones on your home page and sign-up path first.</li>
+</ul>
+
+<h2>5. Protect anything paid or limited</h2>
+
+<p>A launch brings real users, and it also brings bots and curious people who click a button forty times. Anything that costs money or has a limit needs a guard.</p>
+
+<ul>
+<li><strong>Rate limit your own functions.</strong> A function that sends an email, creates a record or calls a paid service should refuse too many requests from one person or one IP address.</li>
+<li><strong>Protect sign-up.</strong> Fake sign-ups burn through your email limit and fill your database. See <a href="/blog/stop-fake-bot-signups-app">stopping fake bot sign-ups</a>.</li>
+<li><strong>Set spend caps and alerts.</strong> Put a budget alert on your host, your database and any paid API. A spike that goes well should not become a surprise bill. See <a href="/blog/avoid-surprise-bill-vercel-netlify-supabase-firebase">avoiding a surprise bill on Vercel, Netlify, Supabase or Firebase</a>.</li>
+<li><strong>Know the third-party limits.</strong> Open the pricing or limits page of each service your app calls. Write down the per-minute or per-month limit and what happens when you pass it.</li>
+</ul>
+
+<h2>6. Run a small load test before launch</h2>
+
+<p>A load test sends many fake visitors to your app at the same time and shows you where it slows down or fails. You do not need a huge test. You need a small one that finds the first weak spot.</p>
+
+<p><strong>Test a copy, not production.</strong> Use a staging copy with its own test database, so that fake sign-ups do not fill your real data and fake emails do not reach real people. See <a href="/blog/staging-copy-ai-built-app-preview-test-database">making a staging copy with a test database</a>.</p>
+
+<p>One free tool is k6. Grafana's <a href="https://grafana.com/docs/k6/latest/">k6 docs</a> describe it as "an open-source, developer-friendly, and extensible performance testing tool." Its guide "Run your first k6 test" covers how to install the k6 CLI, run a first test and read the results in the terminal. A simple first test: ask for your home page and your main API call with 20 virtual users for one minute, then slowly raise the number. Watch for error rates and slow response times.</p>
+
+<p><strong>Check your host's rules first.</strong> Netlify's <a href="https://www.netlify.com/legal/acceptable-use-policy/">acceptable use policy</a> does not mention load testing by name. It does prohibit actions that "create an undue burden on the website or the networks or services connected to the website", and it forbids benchmark tests of Netlify's own services "without express permission." So keep your test small and short, hit only your own staging site, and ask the host's support if you plan anything big. For Vercel, Supabase and any third-party service your app calls, read their terms and ask before you send heavy traffic. Never point a load test at someone else's API.</p>
+
+<h2>7. Launch-day watch list</h2>
+
+<ul>
+<li><strong>Uptime check and error alerts.</strong> You should hear about a problem before your users tell you. See <a href="/blog/app-uptime-monitoring-error-alerts">uptime monitoring and error alerts</a>.</li>
+<li><strong>Database dashboard.</strong> Watch the number of connections and the slow queries. Keep it open in a tab.</li>
+<li><strong>Function dashboard.</strong> Watch the error count and the run time of your functions in the Netlify or Vercel dashboard.</li>
+<li><strong>Email provider dashboard.</strong> Watch for bounces and for hitting your daily send limit.</li>
+<li><strong>A rollback plan.</strong> Know which deploy was the last good one and how to go back to it in one click. See <a href="/blog/roll-back-broken-deploy-netlify-vercel-lovable-bolt">rolling back a broken deploy</a>. Do not push new changes during the rush unless you have to.</li>
+<li><strong>A simple "we're busy" message.</strong> Prepare a short banner or a status page: "We are getting a lot of visitors. Some things may be slow. Please try again in a few minutes." It costs nothing, and people are far kinder when they know you are aware.</li>
+</ul>
+
+<h2>8. Checklist</h2>
+
+<ul>
+<li>I know my Supabase compute size and its connection limits.</li>
+<li>Server functions that talk to Postgres use the pooler connection string.</li>
+<li>Custom SMTP is set up, and a real sign-up email arrived in a real inbox.</li>
+<li>I know the Auth limits for sign-up, OTP and magic links.</li>
+<li>I know the function time limit on my host, and my slowest function finishes well under it.</li>
+<li>Public pages are prerendered or static, so visitors do not hit the database.</li>
+<li>Images are compressed and the slowest queries are fixed.</li>
+<li>Sign-up and expensive functions have rate limits.</li>
+<li>Spend caps and budget alerts are on for host, database and paid APIs.</li>
+<li>I ran a small load test on a staging copy and read my host's terms first.</li>
+<li>Uptime check and error alerts are on, and they reach my phone.</li>
+<li>Dashboards for database and functions are open on launch day.</li>
+<li>I know how to roll back, and a "we're busy" message is ready.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including getting them ready for a launch-day rush. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>

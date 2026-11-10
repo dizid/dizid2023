@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'ai-built-app-launch-day-traffic-spike',
+    title: "Will your AI-built app survive a launch-day spike?",
+    description: "Where an AI-built app breaks when hundreds arrive at once, and how to prepare: connections, timeouts, email limits, caching. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'let-users-delete-account-what-to-remove',
     title: "Let users delete their account: what to remove and where",
     description: "Add a 'Delete account' option to an AI-built app: Apple, Google and GDPR rules, plus Supabase, Firebase and Stripe cleanup. Checked in November 2026.",
