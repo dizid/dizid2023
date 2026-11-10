@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'api-key-exposed-ai-built-app-check',
+    title: "Is your API key exposed? Check your AI-built app in 15 minutes",
+    description: "Which API keys may be public and which never? Check your AI-built app in 15 minutes, and what to do first if a secret key leaked. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'spa-seo-lovable-bolt-google-cant-see',
     title: "Google can't see your Lovable or Bolt app: check and fix it",
     description: "Pages missing from Google or ChatGPT? Why Lovable and Bolt apps send crawlers an empty page, how to check in 10 minutes, and the fixes in order of value.",

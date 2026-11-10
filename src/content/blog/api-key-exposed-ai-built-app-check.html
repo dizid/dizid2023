@@ -1,0 +1,110 @@
+<p>Lovable, Bolt, Cursor and Replit are good at making an app work. They are less careful about where a secret key ends up. If the app calls a paid service straight from the browser, the key has to be in the browser too. Anyone can read it there. I checked the facts below against the official docs in November 2026.</p>
+
+<p><strong>Short answer:</strong> some keys are meant to be public, and some must never be. Open your live site and search its JavaScript for secret key prefixes. Search your GitHub repo and its history too. If a secret key shows up, replace it at the provider first, then check the logs, then move the call to a server function.</p>
+
+<h2>Why AI-built apps leak keys</h2>
+
+<p>Everything your app sends to the browser is public. A builder that puts an API call in the frontend puts the key there as well. Two common setups make this easy to do by accident:</p>
+
+<ul>
+<li><strong>Vite</strong> (a common build tool for web apps). Its <a href="https://vite.dev/guide/env-and-mode">env docs</a> say: "<code>VITE_*</code> variables should <em>not</em> contain sensitive information such as API keys." They add that the values "are bundled into your source code at build time."</li>
+<li><strong>Next.js.</strong> Its <a href="https://nextjs.org/docs/app/guides/environment-variables">environment variables guide</a> says a variable with the <code>NEXT_PUBLIC_</code> prefix is inlined into the JavaScript bundle at build time, and that it "will be inlined into any JavaScript sent to the browser."</li>
+</ul>
+
+<p>So a secret named <code>VITE_STRIPE_SECRET_KEY</code> or <code>NEXT_PUBLIC_OPENAI_KEY</code> is not secret. The prefix is what puts it in the browser.</p>
+
+<p>The other common leak is the repo. A <code>.env</code> file committed to GitHub is leaked, even if you delete it in the next commit. It stays in the git history. Vite's docs say to add <code>*.local</code> to your <code>.gitignore</code>, and the Next.js docs warn: "You almost never want to commit these files to your repository."</p>
+
+<h2>Keys that may be public, and keys that never may</h2>
+
+<p><strong>May be public, when set up right:</strong></p>
+
+<ul>
+<li><strong>Supabase publishable key</strong> (<code>sb_publishable_</code>), or the older <code>anon</code> key. <a href="https://supabase.com/docs/guides/api/api-keys">Supabase's API keys page</a> says the publishable key is "Safe to expose online: web page, mobile or desktop app, GitHub actions, CLIs, source code." This is only safe if Row Level Security is on and has real policies. See <a href="/blog/ai-built-app-database-security-checks">the database security checks</a>.</li>
+<li><strong>Firebase web API key.</strong> <a href="https://firebase.google.com/docs/projects/api-keys">Firebase's docs</a> say keys for Firebase services "are OK to include in code or checked-in config files." The same page says it is critical to apply API restrictions to these keys, and that covered APIs are protected by Firebase App Check, not by keeping the key secret. Your Security Rules still decide who can read your data.</li>
+<li><strong>Stripe publishable key</strong> (<code>pk_live_</code>, <code>pk_test_</code>). <a href="https://docs.stripe.com/keys">Stripe's keys page</a> says it can't perform sensitive operations such as creating charges or reading account data, and you can include it in front-end code.</li>
+</ul>
+
+<p><strong>Never public:</strong></p>
+
+<ul>
+<li><strong>Supabase secret key</strong> (<code>sb_secret_</code>) and the older <code>service_role</code> key. Supabase says: "A secret key bypasses every Row Level Security policy you have." It belongs in backend code only.</li>
+<li><strong>Stripe secret key</strong> (<code>sk_live_</code>, <code>sk_test_</code>) and <strong>restricted keys</strong> (<code>rk_live_</code>, <code>rk_test_</code>). Stripe's table marks both as not safe to expose. Webhook signing secrets are separate from API keys and just as private. Stripe's page says they let your receiver "authenticate that webhooks actually came from Stripe."</li>
+<li><strong>Email provider keys</strong> (Resend, SendGrid, Postmark), <strong>database connection strings</strong>, and <strong>AI provider keys</strong>. I could not point to one doc page for all of these, so the rule is simple: if the key lets someone spend money, send mail or read data as you, keep it on the server.</li>
+</ul>
+
+<h2>Check your own app in 15 minutes</h2>
+
+<ol>
+<li><strong>Search the live site.</strong> Open your app in Chrome, open DevTools and go to the Sources tab. Look through the loaded JavaScript files for the prefixes <code>sk_live</code>, <code>sk_test</code>, <code>rk_live</code>, <code>sb_secret</code>, <code>service_role</code> and <code>sk-</code>. Any hit on a secret prefix is a problem. A hit on <code>pk_</code> or <code>sb_publishable</code> is fine.</li>
+<li><strong>Look at the Network tab.</strong> Use the app, then look for requests that go straight from the browser to a paid service, such as an AI provider or an email API. If the browser sends the key itself, so can anyone else.</li>
+<li><strong>Search the repo.</strong> Look for <code>.env</code> files that are tracked, and search the history with <code>git log -p -S"sk_live"</code>. It lists every commit that added or removed that text. Repeat for your other prefixes.</li>
+<li><strong>Turn on GitHub secret scanning.</strong> <a href="https://docs.github.com/en/code-security/secret-scanning/introduction/about-secret-scanning">GitHub's docs</a> say it scans the full Git history of all branches for hardcoded credentials, and that on public repositories it "runs automatically for free." For private repositories the page says organization-owned ones need GitHub Secret Protection. It does not say the same for private repos owned by a normal user account, so check your own settings page.</li>
+<li><strong>Know about push protection.</strong> <a href="https://docs.github.com/en/code-security/secret-scanning/introduction/about-push-protection">Push protection</a> is "designed to prevent hardcoded credentials, such as secrets or tokens, from ever being pushed to your repository." The docs say the user-level version is on by default and stops you pushing secrets to public repositories.</li>
+<li><strong>Run a scanner on your repo.</strong> <a href="https://github.com/gitleaks/gitleaks">Gitleaks</a> describes itself as a tool to "Find secrets" and scans a repo and its history with <code>gitleaks git path_to_repo</code>. <a href="https://github.com/trufflesecurity/trufflehog">TruffleHog</a> says it can "Find, verify, and analyze leaked credentials." A clean report does not prove the repo is clean. Treat it as one more check.</li>
+</ol>
+
+<p>If your app is on Lovable or Bolt and you plan to move it, this is a good moment to sort public from secret. See <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving your app to your own GitHub and hosting</a>.</p>
+
+<h2>If a secret leaked</h2>
+
+<p>Work in this order.</p>
+
+<ol>
+<li><strong>Replace the key first.</strong> GitHub's guide on <a href="https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository">removing sensitive data</a> says: "as a first step you need to revoke and/or rotate that secret." Deleting the file does not help while the old key still works.
+  <ul>
+  <li><strong>Stripe:</strong> <a href="https://docs.stripe.com/keys">rotating a key</a> revokes it and creates a replacement. The Dashboard has a grace period of up to 7 days where both keys work, so you can switch without downtime. If you choose "Now", the old key is deleted. For a leaked key, I would not wait. Stripe's <a href="https://docs.stripe.com/keys-best-practices">best practices</a> say to rotate "immediately even if you aren't sure anyone saw it."</li>
+  <li><strong>Supabase:</strong> creating new keys does not revoke legacy ones. The old keys stay valid until you disable them in the dashboard, which is a separate step. Supabase says: "Rotate a leaked key as soon as you fix the cause of the leak." Its docs also say the browser block does not stop other tools from using the key. Follow Supabase's guide for rotating a leaked key, since it changes with their key system.</li>
+  <li><strong>Other providers:</strong> revoke the key in their dashboard and create a new one.</li>
+  </ul>
+</li>
+<li><strong>Check the logs and your bill.</strong> Stripe lets you open the <a href="https://docs.stripe.com/keys">request logs</a> for any key. For other providers, look at usage and billing for the days the key was exposed. Look for calls you do not recognise.</li>
+<li><strong>Remove it from the code.</strong> Put the new key in the host's environment settings only.</li>
+<li><strong>Then think about the git history.</strong> GitHub says that once the secret is rotated, rewriting history "may not be warranted." It also says that if you rewrite and force push, the commits may still be accessible in forks and other people's clones. A rotated key is what protects you, not the rewrite.</li>
+<li><strong>Move the call to the server.</strong> The browser should call your own function, and the function calls the paid service. Supabase Edge Functions, Netlify Functions and Vercel Functions all work. For example, <a href="https://supabase.com/docs/guides/functions/secrets">Supabase Edge Functions</a> read secrets you set in the dashboard or with <code>supabase secrets set</code>. Add a check in the function so only signed-in users can call it, and so one user cannot call it a thousand times. See also <a href="/blog/stop-fake-bot-signups-app">stopping fake sign-ups</a>.</li>
+</ol>
+
+<p>I left out provider spending limits. They differ per provider and I did not verify each one. Look in the billing settings of the service you use.</p>
+
+<h2>Prevention</h2>
+
+<ul>
+<li>Put <code>.env</code> and <code>*.local</code> in <code>.gitignore</code> before the first commit.</li>
+<li>Keep secrets in your host's environment settings. Stripe's docs say: "Don't put keys in source code or configuration files checked into version control."</li>
+<li>Never use <code>VITE_</code> or <code>NEXT_PUBLIC_</code> on a secret.</li>
+<li>Use a restricted Stripe key where you can. Stripe says it limits the damage if the key is exposed.</li>
+<li>Keep GitHub secret scanning and push protection on.</li>
+<li>Do the 15-minute check before each launch. It fits into the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>.</li>
+</ul>
+
+<h2>How I do it in my own app</h2>
+
+<p>In WuXing Zodiac (wuxingzodiac.me, the app that sells personal PDF readings), the AI key and the Stripe secret key are only read inside Netlify Functions. I searched the built browser files on November 10, 2026, and found neither.</p>
+
+<h2>Prompts for your AI tool</h2>
+
+<p>A vague "make it secure" makes the tool rewrite things you did not ask about. Name the key, the file and what must not change.</p>
+
+<ul>
+<li><em>"The app calls the email API from browser code. Move that call into a server function (a Netlify Function or Supabase Edge Function). The key must be read from an environment variable on the server and must never appear in browser code. Keep the UI exactly the same."</em></li>
+<li><em>"Search the whole project for any variable starting with VITE_ or NEXT_PUBLIC_ that holds a secret key, and list them. Don't change anything yet."</em></li>
+<li><em>"Add .env and *.local to .gitignore and tell me whether any env file is currently tracked by git."</em></li>
+</ul>
+
+<p>The tool may tell you it moved the key when it only renamed it. Run the browser search from the checklist below to confirm.</p>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>No <code>sk_</code>, <code>rk_</code>, <code>sb_secret</code> or <code>service_role</code> in the live site's JavaScript.</li>
+<li>No paid API called straight from the browser with a key.</li>
+<li>No <code>.env</code> file tracked in git, and none in the history.</li>
+<li>Secrets exist only in the host's environment settings.</li>
+<li>Supabase tables have Row Level Security on. Firebase rules are not set to <code>if true</code>.</li>
+<li>GitHub secret scanning and push protection are on.</li>
+<li>You know where each key lives and how to replace it. For a handover, see <a href="/blog/hiring-developer-app-access-handover">what to give a developer who takes over your app</a>.</li>
+</ol>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including finding exposed keys and moving them to the server. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
