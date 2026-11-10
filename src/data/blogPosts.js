@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'testing-ai-built-app-first-tests',
+    title: "Testing an AI-built app: the first tests worth writing",
+    description: "Every AI prompt breaks something that worked? The first tests to write, in order of risk: payments, permissions, webhooks, a browser test and a week plan.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'european-accessibility-act-small-apps-webshops',
     title: "The European Accessibility Act for small apps and webshops",
     description: "Does the European Accessibility Act apply to your webshop or app? What it covers, the micro-enterprise exemption, key dates and a 30-minute self-check.",

@@ -1,0 +1,101 @@
+<p>You ask your AI tool for a small change. It works. Two days later you find that checkout, or login, or an old form no longer works. Nobody asked the tool to touch those. It is a common complaint about AI-built apps. The fix is not more careful prompts. The fix is a few tests. Here is which ones to write first, in order of risk, and how to run them. Tool facts come from each tool's own docs, and versions change, so open the linked page before you copy a command.</p>
+
+<p><strong>Short answer:</strong> test what costs you money or trust first: the price, who can see which data, and the payment webhook. Add one browser test for the main path, and one check against the live site after each deploy. Run it all on every push.</p>
+
+<h2>1. Why AI-built apps break things that worked</h2>
+
+<p>An AI tool does not remember what your app must keep doing. Each prompt can change files you did not mention: a shared helper, a database rule, a route. The change looks fine on the screen you were checking. Something else breaks, and you find out from a customer.</p>
+
+<p>A test is a small program that checks one thing and says pass or fail. Together they are the memory of what must keep working. A red result after a change tells you what it broke, while the change is still fresh.</p>
+
+<h2>2. What to test first, in order of risk</h2>
+
+<h3>1. The money path</h3>
+
+<p>Start where a bug costs real money. The rule: the price comes from your server, never from the browser. Test the server function that creates the checkout, not Stripe itself.</p>
+
+<ul>
+<li>Call the function with a plan name. Check that it uses the price ID you expect for that plan.</li>
+<li>Call it with a made-up price or amount in the request. Check that the function ignores it or rejects it.</li>
+</ul>
+
+<p>In your test, replace the Stripe call with a fake that records what it was given. Then you assert on the recorded price ID. The rest of the money setup is in <a href="/blog/stripe-payments-ai-built-app-launch">Stripe payments in an AI-built app</a>.</p>
+
+<h3>2. Permissions</h3>
+
+<p>Next, who can see whose data. Create two test users, A and B, and let A create a record. Then check these:</p>
+
+<ul>
+<li>B asks for A's record by its ID. The answer must be an error or an empty result, never the data.</li>
+<li>B tries to update or delete A's record. It must fail.</li>
+<li>A visitor who is not signed in asks for either. It must fail.</li>
+</ul>
+
+<p>Run this against your real data rules, on a test database. Why this matters is covered in <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a>.</p>
+
+<h3>3. Webhooks</h3>
+
+<p>A webhook is a call from another service to your app, such as Stripe saying "this customer paid". Two tests matter.</p>
+
+<ul>
+<li><strong>A fake event is rejected.</strong> Send a request with a missing or wrong <code>Stripe-Signature</code> header. Your endpoint must refuse it and change nothing. Stripe's <a href="https://docs.stripe.com/webhooks">webhook docs</a> say to verify the signature, and that without it an attacker could send fake events to trigger actions like granting account access.</li>
+<li><strong>The same event twice does not double-apply.</strong> The same docs say an endpoint might occasionally receive the same event more than once, and suggest logging the event IDs you have processed. Send one event twice. Check that the user is upgraded once and credits are added once.</li>
+</ul>
+
+<h3>4. Input validation</h3>
+
+<p>Every form and API endpoint takes input from strangers. Write a few tests that send bad input and check the answer: an empty field, a very long text, a wrong type, a missing required value. The endpoint should answer with a clear error and save nothing.</p>
+
+<h3>5. One end-to-end test in a real browser</h3>
+
+<p>Unit tests check pieces. This one checks that the pieces work together. It opens a real browser, signs up or signs in, and does the main thing your app is for. Playwright does this. Its <a href="https://playwright.dev/docs/intro">intro page</a> calls it an end-to-end test framework for modern web apps, and says it runs Chromium, Firefox and WebKit. Keep it to one test at first. If the main path breaks, you know right away.</p>
+
+<h3>6. A smoke check against the live site</h3>
+
+<p>The last test runs after a deploy, against the real URL. It is small: do the key pages answer, is the key text on them, does a page that should not exist return a 404, does a protected API route refuse a request with no login? It catches deploys that went out broken, such as a missing environment variable. Pair it with <a href="/blog/app-uptime-monitoring-error-alerts">uptime checks and error alerts</a>, which keep watching afterwards.</p>
+
+<h2>3. Tooling basics</h2>
+
+<h3>Vitest for unit tests</h3>
+
+<p>The <a href="https://vitest.dev/guide/">Vitest guide</a> calls it a testing framework powered by Vite. It reads your <code>vite.config</code> file by default, so a Vite project needs little extra setup. Install it with <code>npm install -D vitest</code>. Test files need <code>.test.</code> or <code>.spec.</code> in the name, such as <code>price.test.js</code>. Plain <code>vitest</code> keeps watching for changes. To run once and exit, as you want in CI, use <code>vitest run</code>.</p>
+
+<h3>Playwright for the browser</h3>
+
+<p>Run all tests with <code>npx playwright test</code>. Playwright runs headless by default and, by default, across several browsers in parallel. On a small laptop, that is heavy. The intro page shows that you can limit it to one browser with <code>--project=chromium</code>, or run one file such as <code>npx playwright test tests/example.spec.ts</code>. The <a href="https://playwright.dev/docs/test-parallel">parallelism page</a> adds <code>--workers=1</code> to run one test at a time. Both keep a local run light.</p>
+
+<h3>GitHub Actions to run it on every push</h3>
+
+<p>GitHub's <a href="https://docs.github.com/en/actions/get-started/understand-github-actions">Actions overview</a> explains the idea: a workflow is a YAML file in <code>.github/workflows</code> in your repository. It starts on an event, and pushing a commit is one such event. It runs one or more jobs on a runner, which is a server GitHub provides. A first workflow checks out your code, installs packages, and runs <code>npm run test:run</code>.</p>
+
+<p>On cost, GitHub's <a href="https://docs.github.com/en/billing/concepts/product-billing/github-actions">billing page</a> says standard GitHub-hosted runners are free for public repositories. Private repositories get a monthly amount of included usage that depends on your plan, and when it is used up, runs are blocked unless you have a payment method on file. Read that page for your plan.</p>
+
+<h2>4. What not to do</h2>
+
+<ul>
+<li><strong>Do not chase 100% coverage.</strong> Coverage counts lines that ran, not lines that matter. Ten tests on money and permissions beat a hundred on button colors.</li>
+<li><strong>Do not test the framework or other people's APIs.</strong> You do not need to prove that Stripe works or that Vue renders. Playwright's <a href="https://playwright.dev/docs/best-practices">best practices</a> say the same: only test what you control, and replace external services with a fake response.</li>
+<li><strong>Do not leave flaky tests red.</strong> A test that fails at random teaches you to ignore red. Fix it or delete it the same day. The Playwright page says its auto-waiting and web-first assertions, which retry until a condition is met, are the main tools for stable tests.</li>
+</ul>
+
+<h2>What I do</h2>
+
+<p>The test counts on my own projects: my travel app HappyRoam has 1,326 automated tests (Vitest), my AI-visibility tool Foreground about 1,000, my job board Remote Job Radar 502, and my astrology site WuXing Zodiac 268. My TestSwap site has a smoke script, <code>npm run smoke</code>, that checks prerendered pages, 404s, the API's 401 and 404 answers and more against a deploy.</p>
+
+<p>On Nov 10 2026, before I changed how my sites reload after a deploy, I wrote a test that simulates a deploy in a real browser. I ran it first to confirm the bug, then again after the fix. A test that fails first proves it can catch the problem.</p>
+
+<h2>Your first week</h2>
+
+<ol>
+<li><strong>Day 1:</strong> money path tests. Price from the server, right price ID, no price from the browser.</li>
+<li><strong>Day 2:</strong> permission tests with two users. B cannot read, change or delete A's data.</li>
+<li><strong>Day 3:</strong> webhook tests. A bad signature is rejected and the same event twice counts once.</li>
+<li><strong>Day 4:</strong> one Playwright test: sign in and do the main action.</li>
+<li><strong>Day 5:</strong> a GitHub Actions workflow that runs the tests on every push. Add the live smoke check if you have time.</li>
+</ol>
+
+<p>After that, add a test each time something breaks: write the test that fails, then fix the bug. Before a launch, also go through the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including a first set of tests for payments, permissions and webhooks, a browser smoke test and tests that run on every push. Or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
