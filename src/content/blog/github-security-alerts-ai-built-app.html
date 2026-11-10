@@ -1,0 +1,166 @@
+<p>You pushed your Lovable, Bolt, Cursor or Replit app to GitHub. Now there is a yellow banner, or a terminal says "found 14 vulnerabilities (3 high, 1 critical)". It looks scary, and the fix button looks like a trap. This post explains what these alerts are, which ones matter, and how to update without breaking your app. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> your app is not automatically in danger. An alert means a package your app uses has a known problem. First find out if that package runs for your real users, or only on your laptop while you build. Fix the ones that run in production first. Update on a branch, build it, test it on a preview, then merge. Do not run <code>npm audit fix --force</code> on your live branch.</p>
+
+<h2>1. What the alerts are</h2>
+
+<p>Your app is built from your own code plus many small packages written by other people. A vulnerability is a known weakness in one of those packages. Several different GitHub and npm features talk about this. They are easy to mix up.</p>
+
+<h3>Dependabot alerts</h3>
+
+<p>GitHub's <a href="https://docs.github.com/en/code-security/dependabot/dependabot-alerts/about-dependabot-alerts">Dependabot alerts page</a> says they "help you find and fix vulnerable dependencies before they become security risks." Dependabot scans your default branch. An alert is sent in two cases: when a new vulnerability is added to the GitHub Advisory Database, or when your dependency graph changes, for example when you push commits that update packages or versions. The page also says "Only advisories reviewed by GitHub trigger alerts."</p>
+
+<p>An alert is only a warning. It changes nothing in your code. Each one shows details about the vulnerability and its severity, the affected file and, when available, a fixed version.</p>
+
+<h3>Dependabot security updates</h3>
+
+<p>These are the automatic fixes. The <a href="https://docs.github.com/en/code-security/dependabot/dependabot-security-updates/about-dependabot-security-updates">security updates page</a> says "Dependabot raises a pull request to update the dependency to the minimum version that includes the patch." A pull request is a proposed change that you can read before you accept it. It is linked to the alert. When you merge it, the alert closes.</p>
+
+<h3>Dependabot version updates</h3>
+
+<p>This is a different feature. The <a href="https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/about-dependabot-version-updates">version updates page</a> says they are "automated pull requests that keep your dependencies updated, even when they don't have any vulnerabilities." You turn them on by checking a <code>dependabot.yml</code> file into your repository. Security updates are for known vulnerabilities. Version updates are routine upkeep. If you only want to deal with security, you do not need the second one.</p>
+
+<h3>npm audit</h3>
+
+<p>This one runs on your computer, not on GitHub. The <a href="https://docs.npmjs.com/cli/v10/commands/npm-audit">npm audit docs</a> say it "submits a description of the dependencies configured in your project to your default registry", and the registry answers with known vulnerabilities. By default it needs a <code>package-lock.json</code> file to run. That file records the exact version of every package, so keep it in your repository.</p>
+
+<p>With the <code>fix</code> argument, npm audit applies suggested updates. The docs say "remediations will be applied to the package tree." Be careful with <code>--force</code>. The docs say it allows npm to "install modules outside your stated dependency range (including SemVer-major changes)", and add: "If you don't have a clear idea of what you want to do, it is strongly recommended that you do not use this option!" In plain words: <code>--force</code> can install new major versions of packages, and major versions can break your app.</p>
+
+<p>One more difference. Secret scanning is a separate thing. If your worry is a leaked key and not an old package, read <a href="/blog/api-key-exposed-ai-built-app-check">the API key check</a>.</p>
+
+<h2>2. Which alerts matter first</h2>
+
+<p>A list of 14 does not mean 14 emergencies. Ask these questions in this order.</p>
+
+<h3>Does the package run for your users?</h3>
+
+<p>Your <code>package.json</code> has two main lists. <code>dependencies</code> are packages your app needs to run. <code>devDependencies</code> are tools you only need while building, such as a dev server, a test runner or a code formatter. A weakness in a dev tool usually matters only on your own machine while you work. A weakness in a package that ends up in the browser, or runs on your server or in your functions, can reach real users.</p>
+
+<p>GitHub helps here. The <a href="https://docs.github.com/en/code-security/dependabot/dependabot-alerts/viewing-and-updating-dependabot-alerts">page on viewing alerts</a> says you can use "the <code>scope:development</code> filter" to find alerts on development dependencies, or look for alerts labeled "Development". The same page says you can filter alerts by package, ecosystem or manifest. So: look at the alerts without the Development label first.</p>
+
+<p>On your own computer, you can ask npm to leave dev packages out. Run:</p>
+
+<ul>
+<li><code>npm audit --omit=dev</code></li>
+</ul>
+
+<p>The npm docs describe <code>--omit</code> as the "dependency types to omit from the installation tree on disk", and the value <code>dev</code> is one of those types. The result is a shorter list that is closer to what runs in production. Treat it as a first filter, not as proof. A generated project can have build tools listed under <code>dependencies</code>, so a package in that list may still be build-only. Check the alert text.</p>
+
+<h3>Can the vulnerable code even be reached?</h3>
+
+<p>A package can have a weakness in a part your app never calls. GitHub has an optional feature for this. The alerts page says reachability analysis helps prioritize alerts by "identifying whether your application can reach vulnerable dependency code." At the time of checking, it was a public preview and supported only JavaScript repositories using npm, pnpm or Yarn, and TypeScript repositories. The alerts view has a "Reachability" dropdown, and you can type <code>reachability:reachable,potentially-reachable</code> in the search bar. It may change or not be on for your repository, so look in your own Security tab.</p>
+
+<h3>Severity is a start, not the answer</h3>
+
+<p>Every alert shows a severity. Use it to sort, not to panic. A "high" alert in a tool that only runs on your laptop is less urgent than a "medium" alert in the login code on your server. GitHub's own page says to weigh the dependency scope and the dependency relationship when you prioritize. The page also suggests using EPSS scores (Exploit Prediction Scoring System) next to severity.</p>
+
+<p>A rough order that works for most small apps:</p>
+
+<ol>
+<li>Packages that run in production, on the server or in functions, with a fix available.</li>
+<li>Packages in the browser bundle with a fix available.</li>
+<li>Reachable alerts, if GitHub shows that verdict.</li>
+<li>Development-only alerts, last.</li>
+</ol>
+
+<h2>3. A safe update routine</h2>
+
+<h3>Understand version numbers first</h3>
+
+<p>Package versions look like 4.17.21. The <a href="https://semver.org/">Semantic Versioning rules</a> give each number a meaning. The last number, PATCH, goes up "when you make backward compatible bug fixes". The middle number, MINOR, goes up "when you add functionality in a backward compatible manner". The first number, MAJOR, goes up "when you make incompatible API changes". So:</p>
+
+<ul>
+<li><strong>Patch and minor updates</strong> (4.17.20 to 4.17.21, or 4.17 to 4.18) should not break your code. Do these first.</li>
+<li><strong>Major updates</strong> (4.x to 5.x) can break things. Do them one at a time, never in a pile.</li>
+</ul>
+
+<p>This is a promise by the package author, not a guarantee. So you still test.</p>
+
+<h3>The routine</h3>
+
+<ol>
+<li><strong>Make a branch.</strong> Never update on your main branch. If something goes wrong, the live app is untouched.</li>
+<li><strong>Update only what the alert names.</strong> Update one package or a small group, not everything.</li>
+<li><strong>Commit the lockfile.</strong> The <code>package-lock.json</code> change is part of the fix. If it is not committed, your host may install different versions than you tested.</li>
+<li><strong>Build.</strong> Run your build command. A build that fails now will fail on your host too.</li>
+<li><strong>Run the app and the tests.</strong> Click the key flows: sign in, the main action, payments if you have them. If you have no tests yet, see <a href="/blog/testing-ai-built-app-first-tests">the first tests worth writing</a>.</li>
+<li><strong>Open a pull request and check the preview.</strong> A preview deploy shows the change at its own address before it goes live. <a href="/blog/staging-copy-ai-built-app-preview-test-database">The staging post</a> explains how to make sure it does not touch your live data.</li>
+<li><strong>Merge.</strong> Then do one quick check on the live site.</li>
+</ol>
+
+<p>If an update breaks the live site anyway, go back to the last good version first and debug later. <a href="/blog/roll-back-broken-deploy-netlify-vercel-lovable-bolt">How to roll back a broken deploy</a> shows how.</p>
+
+<h3>Reading the pull request Dependabot opens</h3>
+
+<p>Do not merge it blind. Look at three things:</p>
+
+<ul>
+<li><strong>The version jump.</strong> The title says from which version to which. A patch or minor jump is low risk. A major jump needs the full routine above.</li>
+<li><strong>The compatibility score.</strong> GitHub says "An update's compatibility score is the percentage of CI runs that passed" for that version change, based on CI results in other public repositories that got the same update. A high score is a good sign. It is not a test of your app.</li>
+<li><strong>The files changed.</strong> You expect <code>package.json</code> and <code>package-lock.json</code>. If it touches other files, ask why.</li>
+</ul>
+
+<p>The same docs say the update goes to "the minimum version that includes the patch". That is the smallest step to a fix, which is what you want.</p>
+
+<h3>When there is no fix yet</h3>
+
+<p>Sometimes an alert shows no fixed version. Then there is nothing to update to. The honest options are:</p>
+
+<ul>
+<li>Check whether the package runs in production at all. If it is a dev tool, the risk is small.</li>
+<li>Check whether your app uses the weak part. Read the advisory text.</li>
+<li>Look for another package that does the same job.</li>
+<li>Leave the alert open and look again in a few weeks, in case a fix has been released.</li>
+</ul>
+
+<p>GitHub's docs pages checked for this post do not cover this exact case, so treat this list as common sense, not as GitHub's rule.</p>
+
+<h3>Dismissing an alert</h3>
+
+<p>You can close an alert you have judged as not relevant. The GitHub page says you can only dismiss open alerts. You choose "Dismiss", click a reason, and you can add an optional comment that shows in the alert timeline. Write the comment. In six months you will not remember why you closed it. For example: "Dev server only, not part of the production build."</p>
+
+<p>Dismiss only after you checked. Never dismiss an alert just to make the banner go away.</p>
+
+<h2>4. What your AI tool can do, and what you check yourself</h2>
+
+<p>Lovable, Bolt, Cursor and Replit can all edit <code>package.json</code> for you. This is a good job for them if you give clear limits. Example prompts:</p>
+
+<ul>
+<li>"Update only the packages named in this Dependabot alert. No major versions. Show me the diff before you apply it."</li>
+<li>"Run <code>npm audit --omit=dev</code> and explain each result in plain English. Which ones are in the browser bundle, and which run on the server?"</li>
+<li>"List which of these vulnerable packages are in devDependencies and which are in dependencies."</li>
+<li>"This update needs a major version. List what changes between the versions and which files in my project use this package."</li>
+</ul>
+
+<p>What to check yourself:</p>
+
+<ul>
+<li>The diff only touches <code>package.json</code> and <code>package-lock.json</code>, and no unrelated packages changed.</li>
+<li>The AI did not run <code>npm audit fix --force</code> without telling you.</li>
+<li>The build passes and the key flows work on a preview, not only in the editor.</li>
+<li>The alert is gone after the merge. GitHub rescans the default branch, so look at the Security tab again.</li>
+</ul>
+
+<p>The AI can also invent a fix, such as removing a feature to make an alert disappear. Read what it changed. If your code lives only inside a builder, <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving it to your own GitHub and hosting</a> comes first, because the routine above needs a repository.</p>
+
+<h2>5. Checklist</h2>
+
+<ul>
+<li>Open the alerts and note the severity, the package and whether a fixed version exists.</li>
+<li>Check scope: is it Development (build tool) or does it run in production?</li>
+<li>Run <code>npm audit --omit=dev</code> for a production-only view.</li>
+<li>Start with production packages that have a fix.</li>
+<li>Make a branch. Never update on main.</li>
+<li>Update only the named packages. Patch and minor first, majors one by one.</li>
+<li>Commit <code>package-lock.json</code> with the change.</li>
+<li>Build, run the app and click the key flows.</li>
+<li>Check the preview deploy before merging.</li>
+<li>Do not use <code>npm audit fix --force</code> on your main branch.</li>
+<li>If there is no fix, judge the exposure and write down your decision.</li>
+<li>Dismiss only with a reason and a comment.</li>
+<li>After merging, test the live site once and check the alert is closed.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including clearing security alerts without breaking the app. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>

@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'github-security-alerts-ai-built-app',
+    title: "GitHub security alerts on your AI-built app: what to fix first",
+    description: "Dependabot or npm audit flags your AI-built app? See which alerts matter, what to fix first and how to update safely. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'staging-copy-ai-built-app-preview-test-database',
     title: "A staging copy of your AI-built app: test before customers do",
     description: "Test changes to a Lovable, Bolt or Cursor app safely: preview deploys, a test database, Stripe test keys and preview sign-in. Checked in November 2026.",
