@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'add-teams-invites-roles-ai-built-app',
+    title: "Add teams to your AI-built app: invites, roles, data per company",
+    description: "Add teams to your Lovable, Bolt, Cursor or Replit app: invites, roles and data per company, with a two-company test plan. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'wrong-day-dates-time-zones-ai-built-app',
     title: "Wrong day in your AI-built app? Dates and time zones explained",
     description: "Why your AI-built app shows dates a day off or an hour wrong, and how to fix it: UTC, timestamptz, Intl and daylight saving. Checked in November 2026.",

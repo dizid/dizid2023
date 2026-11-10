@@ -1,0 +1,161 @@
+<p>Your app has one-person accounts. Then a customer writes: "Can my colleague use it too?" You ask your AI tool for "teams", and it adds a share button or a second user field. That is the start of a data leak. Real teams need a company, members with roles, invites, and rules that keep each company's data apart. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Add two tables: organizations (the companies) and memberships (which user belongs to which company, with which role). Put an organization id on every business row. Write the access rules in the database, so a user only sees rows of companies they belong to. Invite people with an email link or an invite token that expires. Check roles on the server, not only in the buttons. Then test with two companies and three users before launch.</p>
+
+<h2>1. The data model in plain words</h2>
+
+<p>Today your rows say "this belongs to user X". For teams you need to say "this belongs to company Y, and user X is a member of Y". Three pieces:</p>
+
+<ul>
+<li><strong>Organizations:</strong> one row per company or team. It has an id and a name.</li>
+<li><strong>Memberships:</strong> one row per person per company. It holds the user id, the organization id and a role (owner, admin or member). One user can be in more than one company.</li>
+<li><strong>Your business tables:</strong> projects, invoices, clients, files, whatever your app stores. Each row gets an <code>organization_id</code> column. Keep the old <code>user_id</code> too if you want to know who created the row. But the company decides who can see it.</li>
+</ul>
+
+<p>Two plain pieces of advice. First, make the organization id required (not empty) on every business table. A row without a company is a row nobody can reason about. Second, keep a record of which company a user is working in right now, because people in two companies need a switcher.</p>
+
+<h2>2. Access rules: who can see which rows</h2>
+
+<p>If you use Supabase, the rules are Row Level Security (RLS) policies. The <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">Row Level Security guide</a> says: "Enable RLS on every table in an exposed schema." It also says that each policy "is executed every time a table is accessed". So the policy is your real wall between companies. The screen is not.</p>
+
+<p>The old policy usually looks like "the row's user id equals the logged-in user". That has two failure modes for teams:</p>
+
+<ul>
+<li><strong>Too narrow.</strong> A policy that only checks the row's own user id means your colleague cannot see the row you created. The AI tool then "fixes" it by loosening the policy. That leads to the second failure.</li>
+<li><strong>Too broad.</strong> A policy like "any logged-in user can read" lets company A read company B. Firebase's docs describe the same trap for its rules: "Any logged-in user has read and write access to your entire database." Signing in is not the same as belonging to the right company.</li>
+</ul>
+
+<p>The right rule says: "the row's organization id is one of the companies this user is a member of". That needs a look into the memberships table. A common way is a small helper function. The Supabase guide says to "Break the cycle with a security definer function." That is its answer when policies on two tables refer to each other, which happens when the memberships table itself has a policy. The guide adds a safety rule: "Set <code>search_path = ''</code> on every <code>security definer</code> function". Ask your AI tool to follow both.</p>
+
+<p>Speed matters too. The guide says: "Indexing the filter columns and wrapping helper calls keeps policies fast as a table grows." So add an index on <code>organization_id</code> and on the membership columns your policy uses.</p>
+
+<p>There is another way to hold roles. Supabase's <a href="https://supabase.com/docs/guides/auth/custom-claims-and-role-based-access-control-rbac">custom claims and RBAC guide</a> stores roles in a table (its <code>user_roles</code> table holds "Application roles for each user") and uses an Auth Hook to "add additional claims to the user's JWT". The policy then reads the role from the token. Its example is global roles, not per-company roles. For a first version of teams, a memberships table with a helper function is easier to follow. If a user can be in several companies, a single role in the token is not enough on its own.</p>
+
+<p>Whatever you choose, the details of leaks are covered in <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a>. Read it before you ship.</p>
+
+<h2>3. Invites</h2>
+
+<p>An invite has three jobs: tell the person, link them to the right company, and give them the right role. Two ways to build it.</p>
+
+<h3>Option A: Supabase invite by email</h3>
+
+<p>The <a href="https://supabase.com/docs/reference/javascript/auth-admin-inviteuserbyemail">inviteUserByEmail reference</a> says it "Sends an invite link to an email address." It sits under the admin methods. The <a href="https://supabase.com/docs/reference/javascript/admin-api">admin API page</a> says these methods "should be called on a trusted server" and warns: "Never expose your <code>secret</code> key in the browser." The key in question is the powerful server key, the one older docs call the service role key. If your AI tool put it in front-end code, read <a href="/blog/api-key-exposed-ai-built-app-check">the API key check</a> first.</p>
+
+<p>The docs checked for this post do not say how this call behaves when the email already has an account. Test it yourself, and do not assume.</p>
+
+<h3>Option B: your own invite table</h3>
+
+<p>This is plain advice, and it is often clearer. Make an invites table with: organization id, email, role, a random token, an expiry date and a status. The server creates the row and emails a link with the token. When someone opens the link, the server checks the token, the expiry and the status, then creates the membership and marks the invite as used. Rules that keep it safe:</p>
+
+<ul>
+<li>The token is long and random. It is single use.</li>
+<li>The invite expires, for example after seven days.</li>
+<li>Only an owner or admin can create an invite. Check that on the server.</li>
+<li>An admin cannot invite someone as owner unless you want that.</li>
+<li>Check that the logged-in email matches the invite email, or accept that the link works for whoever holds it. Decide on purpose.</li>
+</ul>
+
+<h3>When the invitee already has an account</h3>
+
+<p>This is the case AI tools forget. The colleague may already use your app alone, or may already be in another company. Plain advice: the link should log them in, then add one more membership. It must never create a second account, and never merge or overwrite their existing data. Show them a screen with "Join Company B?" and then the company switcher.</p>
+
+<h3>Do the invite emails arrive?</h3>
+
+<p>An invite that lands in spam is a lost customer. Set up sending properly. See <a href="/blog/app-emails-spam-spf-dkim-dmarc">why app emails go to spam (SPF, DKIM, DMARC)</a>. Also show the admin a list of pending invites with a "resend" and a "cancel" button.</p>
+
+<h2>4. Roles: owner, admin, member</h2>
+
+<p>Keep three roles at the start. A simple split:</p>
+
+<ul>
+<li><strong>Owner:</strong> everything, including billing and deleting the team. At least one owner always exists.</li>
+<li><strong>Admin:</strong> invites and removes members, changes roles of members, manages data. No billing and no deleting the team.</li>
+<li><strong>Member:</strong> uses the app and sees the company's data. Cannot manage people.</li>
+</ul>
+
+<p>The important part is where you enforce this. Hiding the "Invite" button for members is not security. Anyone can send the same request without the button. The check must happen on the server or in the database policy: "is this user an admin of this organization?" Otherwise a member can promote themselves to owner by editing one request. That mistake is described in <a href="/blog/admin-page-roles-idor-ai-built-app">admin pages, roles and IDOR in AI-built apps</a>.</p>
+
+<p>Also protect the memberships table itself. A normal member must not be able to insert or edit membership rows. Only the server, or an admin of that same company, should do it. Do not let the role come from something the user can edit, like their own profile row.</p>
+
+<h2>5. The Firebase and Firestore version</h2>
+
+<p>The idea is the same, the tool is different. Firestore Security Rules can look at other documents. The <a href="https://firebase.google.com/docs/firestore/security/rules-conditions">rules conditions guide</a> says "your security rules can evaluate incoming requests against other documents in the database" through the <code>get()</code> and <code>exists()</code> functions. So a rule can look up the membership document for this user and this company, and check the role.</p>
+
+<p>Two things to know. First, the same page says "Using these functions executes a read operation in your database" and that "you will be billed for reading documents even if your rules reject the request." Keep membership lookups small. Second, the <a href="https://firebase.google.com/docs/firestore/security/insecure-rules">insecure rules guide</a> warns against rules where any signed-in user can read and write everything. For teams, store data under the company, and write rules that check the membership for that company.</p>
+
+<h2>6. Billing per team</h2>
+
+<p>When a company pays, it is the company that is the customer, not each person. Plain advice: store the Stripe customer id on the organization, not on the user. The owner (and maybe admins) can open billing. Members cannot.</p>
+
+<p>For "price per user", Stripe has a name for it. Its <a href="https://docs.stripe.com/billing/subscriptions/quantities">quantities guide</a> says that setting a quantity on a subscription "is often described as 'per-seat licensing'". The same page says Stripe invoices multiple quantities on one invoice and that you "prorate them when the subscription changes", including when you change the quantity. So when a member joins or is removed, your server updates the quantity on the subscription. Do this in the server, and decide what happens when payment fails. Start with <a href="/blog/stripe-payments-ai-built-app-launch">launching Stripe payments in an AI-built app</a> if payments are not live yet.</p>
+
+<h2>7. Moving existing single-user data into teams</h2>
+
+<p>You already have users with data. Do not delete and start again. A safe order:</p>
+
+<ol>
+<li>Take a backup. Try the steps on a copy first.</li>
+<li>Create the organizations and memberships tables.</li>
+<li>Create one personal team for every existing user, with that user as owner.</li>
+<li>Add a nullable <code>organization_id</code> to each business table. Fill it from the row's user: each row gets its owner's personal team.</li>
+<li>Check that no row has an empty organization id.</li>
+<li>Make the column required. Add the index.</li>
+<li>Only now switch the policies from "my user id" to "my company".</li>
+<li>Update the app code so new rows get an organization id.</li>
+</ol>
+
+<p>Users then see their old data inside their personal team, and can invite colleagues into it or move to a new company. For the general method, see <a href="/blog/change-app-database-without-losing-data">changing your app's database without losing data</a>.</p>
+
+<h2>8. Leaving, removing members, deleting a team</h2>
+
+<ul>
+<li><strong>Remove a member:</strong> delete the membership. The person keeps their own account. They lose access to the company data at once. Their old rows stay with the company.</li>
+<li><strong>Leave a team:</strong> the same, started by the member. Block the last owner from leaving. Ask them to name a new owner first.</li>
+<li><strong>Change a role:</strong> checked on the server. Do not let the last owner be demoted.</li>
+<li><strong>Update the seat count</strong> on the subscription when people join or leave.</li>
+<li><strong>Delete a team:</strong> only an owner. Cancel the subscription, delete or export the company data, and remove memberships and pending invites. Say what is deleted in a confirmation screen.</li>
+<li><strong>Delete a person's account:</strong> they may own rows inside a company. Decide who inherits those rows. See <a href="/blog/let-users-delete-account-what-to-remove">what to remove when users delete their account</a>.</li>
+</ul>
+
+<h2>9. Test with two companies and three users</h2>
+
+<p>Do this before launch, on a test copy. Make Company A and Company B, with some data in each. Make three users: Anna (owner of A), Ben (member of A) and Carla (owner of B).</p>
+
+<ul>
+<li>Ben sees all of A's data, and nothing from B.</li>
+<li>Carla sees none of A's data. Test the list pages, the detail pages and the direct URLs.</li>
+<li>Ben cannot invite, remove anyone, change roles or open billing. Test with the screen and with a direct request, not only with hidden buttons.</li>
+<li>Anna invites a new email. The email arrives. The link works once and fails after it expires.</li>
+<li>Anna invites Carla, who already has an account. Carla now has two companies and her B data is untouched.</li>
+<li>Anna removes Ben. Ben loses access at once, even if he keeps the page open.</li>
+<li>Files, exports and search results are also separated per company.</li>
+<li>A request with a made-up organization id of company B, sent by Ben, fails.</li>
+</ul>
+
+<p>Example prompts for your AI tool:</p>
+
+<ul>
+<li>"Add organizations and memberships tables with roles owner, admin and member. Add a required organization_id to every business table. Do not change existing data yet."</li>
+<li>"Rewrite every RLS policy so a user can only access rows whose organization_id is in their memberships. Use a security definer function with an empty search_path and add indexes. List each table and its policies."</li>
+<li>"Create invites with an expiring, single-use token. Only owners and admins may create them. Do it in a server function. Do not use the secret key in the browser."</li>
+<li>"Write tests that log in as three users in two companies and prove that no one can read, edit or delete another company's rows."</li>
+</ul>
+
+<h2>10. Checklist</h2>
+
+<ul>
+<li>Organizations and memberships tables exist. Every business row has a required organization id.</li>
+<li>RLS is on for every table, with policies based on membership.</li>
+<li>No policy that lets any logged-in user read everything.</li>
+<li>Invites are created on the server, expire, and work for users who already have an account.</li>
+<li>Roles are checked on the server or in the database, not only in the screens.</li>
+<li>Members cannot edit membership rows.</li>
+<li>Billing belongs to the organization. Seat count follows the member count.</li>
+<li>Old data moved to personal teams, with a backup taken first.</li>
+<li>Remove, leave and delete flows are tested. The last owner cannot be removed.</li>
+<li>The two-companies, three-users test passed.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including adding teams, invites and roles without one company seeing another's data. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
