@@ -1,0 +1,117 @@
+<p>You ship an update. Then a customer writes: "I tapped the button and nothing happened", or "the page went blank". You open the app and everything works. That is the clue: it only happens to people who had the app open before the update, and a fresh tab can't show it. Vendor facts below come from their own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> the open tab asks for page files from the old version, and your deploy removed them. Catch that one error and load the page again, once, with a guard so it can't loop. Don't let browsers cache <code>index.html</code>. Then test it with a tab that was open during a deploy.</p>
+
+<h2>Why it happens</h2>
+
+<p>Build tools like Vite split your app into files with hashed names, such as <code>Pricing-3f9a1c.js</code>. The name changes when the code changes, and a deploy replaces the old files with new ones. A tab that was open before the deploy still runs the old code. When someone taps a link, it asks for <code>Pricing-3f9a1c.js</code>, and that file is gone.</p>
+
+<p>Then the host's single-page-app fallback steps in. Netlify's <a href="https://docs.netlify.com/manage/routing/redirects/rewrites-proxies/#history-pushstate-and-single-page-apps">rewrite docs</a> show the usual rule, <code>/* /index.html 200</code>, which will "effectively serve the <code>index.html</code> instead of giving a <code>404</code> no matter what URL the browser requests." The same page says: "By default, you can't shadow a URL that actually exists within the site." So real files load fine, and only missing files get the HTML page. The browser expected JavaScript, gets HTML, and the import fails. On a phone nobody sees the console, so the tap just does nothing. If the browser also kept an old copy of <code>index.html</code>, even the main file can be missing, and the page stays blank.</p>
+
+<p>In the console, the error looks like this:</p>
+
+<ul>
+<li><strong>Chrome and Edge:</strong> <code>Failed to fetch dynamically imported module</code></li>
+<li><strong>Safari:</strong> <code>Importing a module script failed</code></li>
+<li><strong>Firefox:</strong> <code>error loading dynamically imported module</code></li>
+</ul>
+
+<p>I saw this on dizid.com on 10 November 2026, during a deploy. A tab opened before the deploy did nothing when Hire or a blog post was tapped. The old hashed page file was gone, Netlify's fallback answered with HTML instead of JavaScript, and the import failed. It's the other side of the rewrite rule from <a href="/blog/ai-built-app-works-in-editor-breaks-live">why an app works in the editor but breaks live</a>.</p>
+
+<h2>The fix: load the page again, once</h2>
+
+<p>First, open <code>package.json</code> and look for <code>vite</code>. Lovable's <a href="https://docs.lovable.dev/introduction/faq">FAQ</a> says "Older apps use React + Vite and render in the browser"; apps created from May 13, 2026 (June 22 for Enterprise workspaces) use TanStack Start. For Bolt and Cursor projects, check the file too.</p>
+
+<p>Vite has an event for this. Its <a href="https://vite.dev/guide/build#load-error-handling">build guide</a> says: "Vite emits <code>vite:preloadError</code> event when it fails to load dynamic imports." It names this exact case: "When a new deployment occurs, the hosting service may delete the assets from previous deployments." Its example:</p>
+
+<pre><code>window.addEventListener('vite:preloadError', (event) =&gt; {
+  window.location.reload() // for example, refresh the page
+})</code></pre>
+
+<p>The guide adds: "make sure to set <code>Cache-Control: no-cache</code> on the HTML file, otherwise the old assets will be still referenced." Why a full reload and not a retry? Vite notes: "Older browsers require a page reload because they cache the failure in the module map." React's <a href="https://react.dev/reference/react/lazy">lazy() docs</a> say "React will not call <code>load</code> more than once."</p>
+
+<p>You can also catch it in the router, which knows where the user was going. Vue Router's <a href="https://router.vuejs.org/api/interfaces/RouterClassic.html">onError</a> handler runs for "errors occurred when trying to resolve an async component that is required to render a route". In React, when a <code>lazy()</code> page fails, "React will throw the rejection reason for the nearest Error Boundary to handle." React Router lets you give a route an <code>ErrorBoundary</code> (<a href="https://reactrouter.com/how-to/error-boundary">its guide</a>), so you can check the message there.</p>
+
+<p><strong>Always add a loop guard.</strong> A file can also be missing for other reasons: a broken build, a blocked request, a bad connection. Then the fresh page fails too, reloads again, and the user is stuck in a loop. So remember when you last reloaded, and don't do it again within a few seconds. My approach on dizid.com (Vue Router), shortened:</p>
+
+<pre><code>// Reload once when a page file from an older deploy is gone.
+const RELOAD_KEY = 'stale-chunk-reload-at'
+const GUARD_MS = 10000 // no second reload within 10 seconds
+const CHUNK_ERROR =
+  /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/i
+
+function reloadOnce(url) {
+  try {
+    const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0)
+    if (Date.now() - last &lt; GUARD_MS) return // just reloaded: stop
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()))
+  } catch {
+    // sessionStorage blocked: reload anyway
+  }
+  window.location.assign(url)
+}
+
+// A page file failed to load: load the target page fully
+router.onError((error, to) =&gt; {
+  if (CHUNK_ERROR.test(error?.message || '')) reloadOnce(to.fullPath)
+})</code></pre>
+
+<p>In a React or other Vite app, call <code>reloadOnce(window.location.href)</code> from the <code>vite:preloadError</code> listener instead. Use one of the two, not both.</p>
+
+<p>I checked it with a simulated deploy. Before the fix, the tap stayed on the home page. After it, the tap landed on /hire with one reload. Then I added the same guard to seven of my sites; two already had it.</p>
+
+<h2>What your host does</h2>
+
+<p><strong>Netlify.</strong> Once all files are uploaded, the <a href="https://docs.netlify.com/deploy/deploy-overview/">deploy docs</a> say "the new version of the site immediately goes live on the CDN." An open tab is suddenly one version behind. Netlify also has <a href="https://docs.netlify.com/deploy/deploy-overview/#skew-protection">skew protection</a>, "available on all plans", but today the docs list only Astro and Next.js as supported frameworks. Its <a href="https://docs.netlify.com/build/caching/caching-overview/#default-values">default</a> for static files is <code>Cache-Control: public, max-age=0, must-revalidate</code>, so browsers check <code>index.html</code> with the server each time. Keep that for the HTML.</p>
+
+<p><strong>Vercel.</strong> Its <a href="https://vercel.com/docs/skew-protection">Skew Protection docs</a> say it "is available on Enterprise and Pro plans" and works "by using version locking, which ensures client and server use the exact same version." The zero-configuration list is Next.js, SvelteKit, Qwik, Astro, Nuxt and React Router; a plain Vite single-page app is not on it. And "The default maximum age is 12 hours on Pro and one day on Enterprise, measured from when the deployment was created", so tabs on older deploys still need the reload.</p>
+
+<p><strong>Cloudflare Pages.</strong> Its <a href="https://developers.cloudflare.com/pages/configuration/serving-pages/#single-page-application-spa-rendering">serving docs</a> say: "If your project does not include a top-level 404.html file, Pages assumes that you are deploying a single-page application." It then serves your root page "for any incoming path that does not correspond to a static asset", so a missing old file gets HTML there too.</p>
+
+<p><strong>Lovable and Bolt hosting:</strong> test it after your next update, as described below.</p>
+
+<p><strong>Cache rules:</strong> no long cache on <code>index.html</code>; a long cache only on hashed files. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cache-Control#caching_static_assets_with_cache_busting">Cache-Control page</a> shows <code>max-age=31536000, immutable</code> for hashed files in <code>/assets/</code>, and says: "Use a no-cache to make sure that the HTML response itself is not cached."</p>
+
+<h2>A second cause: an old service worker</h2>
+
+<p>If your app is installable (a PWA), its service worker can keep serving the old version from its cache. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API/Using_Service_Workers#updating_your_service_worker">service worker guide</a> says a new version "is installed in the background, but not yet activated. It is only activated when there are no longer any pages loaded that are still using the old service worker."</p>
+
+<p>In <a href="https://vite-pwa-org.netlify.app/guide/prompt-for-update.html">vite-plugin-pwa</a>, the <code>registerType</code> option decides what happens next. The default is <code>'prompt'</code>: you show a Refresh button in <code>onNeedRefresh</code> and call <code>updateSW()</code> when it's tapped; "the page will reload and the up-to-date content will be served." The other option, <code>'autoUpdate'</code>, updates without asking, but <a href="https://vite-pwa-org.netlify.app/guide/auto-update.html">its docs</a> warn "the user can lose data in any browser windows/tabs in which the application is open and is filling in a form." If your app has forms, keep the prompt. More in <a href="/blog/ai-built-web-app-on-phones-pwa-or-app-store">installable web app or App Store</a>.</p>
+
+<h2>Test it before your users do</h2>
+
+<ol>
+<li>Open the live site in a normal tab. Don't refresh it from now on.</li>
+<li>Change one word on 3 or 4 pages and deploy. Wait until it's live.</li>
+<li>Back in the old tab, tap through those pages. With the fix, you see one quick reload and land on the page you tapped. Without it, a tap does nothing.</li>
+<li>Check the developer tools console for the three errors above.</li>
+</ol>
+
+<p>To test the guard without a deploy, use Chrome's <a href="https://developer.chrome.com/docs/devtools/request-conditions">request blocking</a>. Open a page once, find its JS file in the Network tab, "right-click a request and select Block request". Go to the home page, reload, and tap the link to the blocked page. You should see one reload at most, never a loop. Turn blocking off afterwards.</p>
+
+<p>Real users don't send you their console. Error tracking does: see <a href="/blog/app-uptime-monitoring-error-alerts">uptime monitoring and error alerts</a>. A rollback swaps the files too, so the same reload helps when you <a href="/blog/roll-back-broken-deploy-netlify-vercel-lovable-bolt">roll back a broken deploy</a>.</p>
+
+<h2>Prompts for Lovable, Bolt or Cursor</h2>
+
+<ul>
+<li><em>"After a deploy, users with the app open tap links and nothing happens. On Vite's vite:preloadError event (or the router's error hook), if the message contains 'Failed to fetch dynamically imported module', 'Importing a module script failed' or 'error loading dynamically imported module', load the page again. Save the reload time in sessionStorage and never reload twice within 10 seconds. Change nothing else; tell me how to test it."</em></li>
+<li><em>"Check what the live site returns for a JavaScript file that doesn't exist, like /assets/does-not-exist.js: status code, content type, and whether the single-page-app rewrite answers it with index.html. Also show me the cache headers for index.html and /assets/. Don't change anything yet."</em></li>
+<li><em>"This app is a PWA. Show me which registerType vite-plugin-pwa uses. Keep the default 'prompt' and add a small banner: when onNeedRefresh fires, show 'A new version is available' with Refresh and Later buttons. Refresh calls updateSW(). Don't switch to autoUpdate, because users could lose what they typed in a form."</em></li>
+</ul>
+
+<h2>Checklist</h2>
+
+<ul>
+<li>A failed page-file import loads the page again, once.</li>
+<li>A guard in sessionStorage stops a reload loop.</li>
+<li><code>index.html</code> has no long cache; only hashed files may have one.</li>
+<li>You know what your host returns for a missing <code>.js</code> file, and whether your plan has skew protection.</li>
+<li>A PWA shows an update prompt instead of silently serving the old version.</li>
+<li>Tested with a tab that was open during a deploy, on 3 or 4 pages.</li>
+<li>Tested with one page file blocked: one reload at most, no loop.</li>
+<li>Error alerts are on, so you see these errors before customers write.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including taps that do nothing after an update. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
