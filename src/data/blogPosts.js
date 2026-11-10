@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'scheduled-jobs-cron-netlify-vercel-supabase',
+    title: "Scheduled jobs for a small app: cron on Netlify, Vercel, Supabase",
+    description: "A job that silently stopped? Where to run scheduled jobs on Netlify, Vercel, Supabase or GitHub Actions: documented limits, UTC, safe repeats, heartbeats.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'stop-fake-bot-signups-app',
     title: "Bots are signing up to your app: how to stop fake sign-ups",
     description: "Hundreds of junk accounts or spam in your forms? How to spot bots and stop them with rate limits, CAPTCHA, honeypots and cleanup, plus a 20-minute list.",

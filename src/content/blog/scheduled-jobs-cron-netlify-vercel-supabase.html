@@ -1,0 +1,117 @@
+<p>Your app sends a daily digest, deletes old records, syncs data or sends reminders. Then one day you notice it stopped, and nothing told you. A scheduled job that does not run makes no error. Here is where such jobs can run, what each platform documents today, and how to make them safe. Limits change, so open the linked page before you rely on a number.</p>
+
+<p><strong>Short answer:</strong> use a schedule only for work that is driven by time. Pick the scheduler on the platform where your code and secrets already live. Make every run safe to repeat, keep each run short, and add a heartbeat check so you hear about a missed run.</p>
+
+<h2>1. Schedule or event?</h2>
+
+<p>A schedule fits work with no trigger except the clock:</p>
+
+<ul>
+<li>A daily or weekly digest email.</li>
+<li>Deleting old records, such as unconfirmed accounts.</li>
+<li>Syncing data from a service that cannot call you.</li>
+<li>Renewing something that expires, like a token.</li>
+</ul>
+
+<p>Use an event or a webhook when something happens that you can react to: a payment, a sign-up, a file upload. Do not poll every minute for "did a payment arrive?" when the payment provider can call you.</p>
+
+<h2>2. What each platform documents</h2>
+
+<h3>Netlify Scheduled Functions</h3>
+
+<p>The <a href="https://docs.netlify.com/build/functions/scheduled-functions/">Netlify docs</a> say:</p>
+
+<ul>
+<li>You use cron syntax, and it runs in UTC. For example, <code>0 0 * * *</code> is midnight UTC. Shortcuts like <code>@hourly</code> and <code>@daily</code> work too.</li>
+<li>A scheduled function has a 30 second execution limit. For longer work, Netlify points you to background functions.</li>
+<li>It runs on a schedule only for published deploys. Deploy previews and branch deploys do not trigger it.</li>
+</ul>
+
+<h3>Vercel Cron Jobs</h3>
+
+<p>Vercel's <a href="https://vercel.com/docs/cron-jobs/usage-and-pricing">usage and pricing page</a> lists 100 cron jobs per project on every plan. On Hobby, a job can run once per day at most, and an expression that runs more often fails the deployment. Hobby timing is loose: a job set for 1:00 can run any time between 1:00 and 1:59. Pro allows once per minute with per-minute precision.</p>
+
+<p>The <a href="https://vercel.com/docs/cron-jobs/manage-cron-jobs">management page</a> adds several points:</p>
+
+<ul>
+<li>Cron jobs run only on production deployments.</li>
+<li>Vercel does not retry a failed cron job.</li>
+<li>Delivery is best effort. A run can be missed with no log entry, and the same run can occasionally be sent twice.</li>
+<li>If a run is longer than the interval, a second one can start while the first is still going.</li>
+</ul>
+
+<p>Vercel calls Cron Jobs a legacy feature and is moving to Schedules, which are in beta with <a href="https://vercel.com/docs/schedules/limits">different limits</a>. Check which one you use.</p>
+
+<h3>Supabase Cron</h3>
+
+<p><a href="https://supabase.com/docs/guides/cron">Supabase Cron</a> is a Postgres module built on <code>pg_cron</code>. A job can run SQL, call a database function or make an HTTP request, such as to an Edge Function. The docs recommend no more than 8 jobs running at once, and each job no longer than 10 minutes. Run history is in the <code>cron.job_run_details</code> table, and the <a href="https://supabase.com/docs/guides/cron/quickstart">quickstart</a> warns that those records are not cleaned up automatically. Check the time zone your jobs use in the docs before you rely on a local time.</p>
+
+<p>To call an Edge Function, the <a href="https://supabase.com/docs/guides/functions/schedule-functions">scheduling guide</a> combines <code>pg_cron</code> with <code>pg_net</code>. It says to keep the project URL and secret key in Supabase Vault, and not to use the publishable key, because anyone can read it.</p>
+
+<h3>GitHub Actions</h3>
+
+<p>The <a href="https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows">GitHub docs</a> say a schedule can be delayed during periods of high load, that the shortest interval is once every 5 minutes, and that it runs only on the default branch. In a public repository, scheduled workflows are disabled when there has been no repository activity for 60 days. The <a href="https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax">workflow syntax page</a> says the default time zone is UTC, and that a <code>timezone</code> key accepts an IANA time zone name.</p>
+
+<h2>3. Time zones and daylight saving</h2>
+
+<p>Netlify's docs say UTC. GitHub's say UTC by default. For Vercel Cron Jobs and Supabase, I did not find a time zone statement on the pages I read, so check before you assume.</p>
+
+<p>UTC does not change with the seasons, but your users' clocks do. A job set for 07:00 UTC runs at 08:00 in Amsterdam in winter and 09:00 in summer. If "9:00 local" matters, either set a time zone where the platform supports it (GitHub does), or run the job every hour and let your code check whether it is 9:00 for that user now.</p>
+
+<h2>4. Overlaps, retries and safe repeats</h2>
+
+<p>Treat every job as one that can run twice, or not at all. Vercel says this about its own delivery. For any platform, three habits help:</p>
+
+<ul>
+<li><strong>Make it idempotent.</strong> Running twice must give the same result as running once. "Set status to sent" is safe. "Add 10 credits" is not.</li>
+<li><strong>Record what you did.</strong> Mark each digest or reminder as sent, and query for all work not yet done. Then the next run catches up after a missed one.</li>
+<li><strong>Use a lock.</strong> If a run can take longer than the interval, let the job exit when another run is active. Vercel suggests a lock for this.</li>
+</ul>
+
+<h2>5. Time limits: split long jobs</h2>
+
+<p>Netlify gives a scheduled function 30 seconds. Supabase recommends 10 minutes per job. A large sync will not fit. Process a batch, save where you stopped, and let the next run continue.</p>
+
+<h2>6. Failures are silent</h2>
+
+<p>When a job does not run, there is no error to see. The schedule may be off, the deploy may not be published, the repository may be inactive, or the platform may skip a run. Two habits help:</p>
+
+<ul>
+<li><strong>Log every run.</strong> Write one line at the start and one at the end, with the number of items handled. For pg_cron, read <code>cron.job_run_details</code>, and clean it up yourself.</li>
+<li><strong>Add a heartbeat.</strong> At the end of each successful run, request a URL from a check service. If it is not requested on time, you get an alert. This catches a job that never started, which an error alert cannot. I describe the setup in <a href="/blog/app-uptime-monitoring-error-alerts">uptime checks and error alerts for small apps</a>.</li>
+</ul>
+
+<h2>7. Secrets live where the job runs</h2>
+
+<p>A job runs on a platform, so it needs the secrets there: the database URL, email key and so on. On Netlify, a variable must include the Functions scope, variables set in <code>netlify.toml</code> are not available to functions, and a new value applies only after a new deploy, as the <a href="https://docs.netlify.com/build/functions/environment-variables/">environment variable docs</a> explain. On Vercel, a <code>CRON_SECRET</code> variable is sent as an <code>Authorization</code> header, so your endpoint can reject callers that are not Vercel. For Supabase, use Vault as above. If your emails come from the job, also read <a href="/blog/app-emails-spam-spf-dkim-dmarc">SPF, DKIM and DMARC for app emails</a>.</p>
+
+<h2>8. Pick a platform</h2>
+
+<ul>
+<li><strong>Your app is already on Netlify and the job is short:</strong> a Scheduled Function. Keep it under 30 seconds, or start a background function.</li>
+<li><strong>Your app is on Vercel:</strong> Cron Jobs. On Hobby, the job can run once a day and at a loose time. Move to Pro or accept that.</li>
+<li><strong>The work is mostly SQL on your Supabase data:</strong> Supabase Cron. For code, call an Edge Function.</li>
+<li><strong>Longer jobs, or your host has no scheduler:</strong> a GitHub Actions schedule. Time precision is loose, and public repos pause after 60 days without activity.</li>
+</ul>
+
+<h2>What I do</h2>
+
+<p>On my job board, Remote Job Radar, the daily ingest and the digest email run from a GitHub Actions schedule, at 03:13 UTC. When a run fails, it sends a push message to my phone through ntfy. That covers failures. A run that never starts sends nothing, so a heartbeat check is the part to add. My own site, dizid.com, has no scheduled jobs.</p>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Is a schedule the right trigger, or should an event start this?</li>
+<li>Does the platform's documented limit fit the frequency and run time you need?</li>
+<li>Is the time in UTC, and does daylight saving matter to your users?</li>
+<li>Is it safe to run twice, and safe to skip one run?</li>
+<li>Does it work in batches that fit the time limit?</li>
+<li>Does it log the start, the end and the count?</li>
+<li>Does a heartbeat alert you when it does not run?</li>
+<li>Are all secrets set on the platform where the job runs?</li>
+<li>Does it run on the deploy that counts: published, production or default branch? If you moved hosts, see <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving your app to your own GitHub and hosting</a>.</li>
+</ol>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including scheduled jobs that stopped, safe repeats, batching and heartbeat alerts. Or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
