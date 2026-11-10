@@ -75,7 +75,7 @@ const liveUrl = computed(() => props.project.url || props.project.live)
     </div>
 
     <div class="project-content">
-      <h3 class="project-title">{{ project.title }}</h3>
+      <h2 class="project-title">{{ project.title }}</h2>
       <p class="project-description">{{ project.description }}</p>
 
       <div v-if="project.features && featured" class="project-features">
