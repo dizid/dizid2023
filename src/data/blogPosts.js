@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'ai-built-web-app-on-phones-pwa-or-app-store',
+    title: "Your AI-built app on phones: installable web app or App Store?",
+    description: "Installable web app or App Store and Google Play? What each needs, what Apple guideline 4.2 says, and a simple decision guide. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'own-domain-lovable-bolt-app-dns-ssl-www',
     title: "Put your Lovable or Bolt app on your own domain: DNS, SSL, www",
     description: "Move your Lovable or Bolt app to your own domain: which DNS records, www or not, HTTPS errors and what else breaks. Checked in November 2026.",

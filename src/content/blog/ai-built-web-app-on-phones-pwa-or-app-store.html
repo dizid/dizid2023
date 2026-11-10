@@ -1,0 +1,114 @@
+<p>Your app works in the browser. Then users start asking: "Is there an app?" You can make the web app installable on the Home Screen, or you can put it in the App Store and Google Play. These are two different jobs, with different costs. Vendor facts below come from Apple, Google, MDN, WebKit and Capacitor, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Start with an installable web app (a PWA). It needs a manifest file and icons, and it works from the web app you already have. Go to the stores only when you need what they give you: store search, store trust, or device features the browser does not offer. A store app made from a plain website copy can be rejected by Apple, so it must add real value.</p>
+
+<h2>1. What "installable web app" (PWA) means</h2>
+
+<p>A PWA is your normal web app plus a few files that let a phone treat it like an app. MDN's guide <a href="https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable">Making PWAs installable</a> says: "For a web app to be a PWA it must be installable, and for it to be installable it must include a manifest."</p>
+
+<p>The manifest is a small JSON file. It holds the name, the icons, the start address and how the app should display. For Chromium browsers (Chrome, Edge, Samsung Internet), MDN lists these needs:</p>
+
+<ul>
+<li><code>name</code> or <code>short_name</code></li>
+<li><code>icons</code>, which "must contain a 192px and a 512px icon"</li>
+<li><code>start_url</code></li>
+<li><code>display</code> and/or <code>display_override</code></li>
+<li><code>prefer_related_applications</code> must be <code>false</code> or not present</li>
+</ul>
+
+<p>MDN also says the app must be served over <code>https</code> (or from localhost during development).</p>
+
+<p>What about the service worker? Many people think it is required. MDN says: "While not a requirement for a PWA to be installable, many PWAs use service workers to provide an offline experience." So a service worker is for offline use and similar features. It is not what makes the app installable. Still, if your app is data-heavy, ask yourself if it should work with a weak connection.</p>
+
+<h2>2. How users install it</h2>
+
+<p><strong>Android and Chrome.</strong> Chromium browsers can promote the app for installation when the manifest meets the list above. MDN says: "For a web app to be promoted for installation by a supporting browser, it needs to meet some technical requirements." Other browsers act differently. MDN says Firefox, Edge, Opera and other browsers "instead add a browser-badged home-screen shortcut that opens the site in the browser." So the experience is not the same on every Android phone.</p>
+
+<p><strong>iPhone and iPad.</strong> The sources below describe a manual install: the user adds the app by hand. WebKit's post <a href="https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/">Web Push for Web Apps on iOS and iPadOS</a> (February 16, 2023) describes it: the user can "tap the Share button to open the Share menu" and then tap "Add to Home Screen." MDN adds that on iOS 16.4 and later, PWAs can be installed from the Share menu in Safari, Chrome, Edge, Firefox and Orion. On iOS 16.3 and earlier, only Safari can do it.</p>
+
+<p>The practical meaning: most of your users will not find "Add to Home Screen" on their own. If you go the PWA route, add a short hint in your app that shows them where to tap.</p>
+
+<h2>3. What a web app does differently on phones</h2>
+
+<p><strong>Push notifications on iPhone.</strong> The same WebKit post says: "A web app that has been added to the Home Screen can request permission to receive push notifications." After that, iOS or iPadOS prompts the user to give permission. The request must come from a direct user action, such as tapping a subscribe button in your app. In short: on iOS, web push is tied to the Home Screen install, and the user must agree.</p>
+
+<p><strong>No store page.</strong> A PWA is not in the App Store or Google Play. People who search the store will not find it. You need to send them to your website.</p>
+
+<p><strong>Device features.</strong> Browsers give web apps access to some phone features through web APIs, but support differs per browser and per phone. Before you promise a feature (camera, Bluetooth, background tasks), check it for the browsers you care about. MDN has a compatibility table at the bottom of each API page. Then test on a real phone.</p>
+
+<h2>4. The store route: wrap the app with Capacitor</h2>
+
+<p>If you want to be in the stores, a common way is to wrap your existing web app. <a href="https://capacitorjs.com/docs">Capacitor</a> introduces itself as "a cross-platform native runtime". It uses what it calls "a modern native container approach", and says apps "run natively on iOS, Android, and more." Your web app runs inside a native shell. You then build that shell in Xcode (iOS) and Android Studio (Android) and send it to the stores.</p>
+
+<p>Capacitor also has plugins for native features, written in Swift for iOS and Java for Android. The docs say: "If it works in the browser, it probably works in a mobile app when using Capacitor." Treat the word "probably" seriously. Test on real phones.</p>
+
+<h2>5. Accounts and costs</h2>
+
+<p>The stores need developer accounts. The amounts below are quoted from the vendors' own pages.</p>
+
+<ul>
+<li><strong>Apple:</strong> Apple's <a href="https://developer.apple.com/programs/whats-included/">Developer Program page</a> says: "The Apple Developer Program is 99 USD per membership year, or in local currency where available." You can enroll as an individual or an organization.</li>
+<li><strong>Google Play:</strong> Google's <a href="https://support.google.com/googleplay/android-developer/answer/6112435">developer account help page</a> says: "There is a US$25 one-time registration fee." It names two account types, personal and organization. Personal accounts have extra requirements: they "must complete specific app testing requirements" before publishing, and the owner must confirm access to an Android device through the Play Console mobile app.</li>
+</ul>
+
+<p>Fees are the small part. Expect also: filling in store listings, screenshots, privacy information, and answering review questions. Plan time for that. How much depends on your app.</p>
+
+<h2>6. The rule that decides it: Apple guideline 4.2</h2>
+
+<p>Apple's <a href="https://developer.apple.com/app-store/review/guidelines/">App Review Guidelines</a> have a section called 4.2 Minimum Functionality. It starts: "Your app should include features, content, and UI that elevate it beyond a repackaged website. If your app is not particularly useful, unique, or "app-like," it doesn't belong on the App Store."</p>
+
+<p>Guideline 4.2.2 adds: "Other than catalogs, apps shouldn't primarily be marketing materials, advertisements, web clippings, content aggregators, or a collection of links."</p>
+
+<p>In plain words: if you wrap your website and change nothing, Apple can say no. Your wrapper has to be an app, not a window onto a site. The guidelines do not give a checklist for where the line is. A web app with real accounts, real tasks and real data is a stronger case than a brochure site. Ask what the app gives that the plain site does not. Typical answers are device features that make daily use easier, such as notifications or camera access, if your app truly needs them. Keep those honest and useful.</p>
+
+<p><strong>Google Play.</strong> Google's <a href="https://support.google.com/googleplay/android-developer/answer/9898783">policy page</a> has a minimum functionality section with this line: "We do not allow apps that only have limited functionality and content." It names static apps "without app-specific functionalities" as an example. That page has no specific wording about website wrappers.</p>
+
+<h2>7. A simple decision guide</h2>
+
+<p>A PWA is probably enough when:</p>
+
+<ul>
+<li>Users already come to you by link, email or search, and mostly want a Home Screen icon.</li>
+<li>You want to launch fast and spend little.</li>
+<li>Your app does not need device features that mobile browsers lack.</li>
+<li>You are fine that the app is not found in store search.</li>
+</ul>
+
+<p>The stores are worth it when:</p>
+
+<ul>
+<li>Your customers expect to find you in the App Store or Google Play, for example a business buyer who asks for "the app".</li>
+<li>You need a native feature the browser cannot give you reliably on both platforms.</li>
+<li>You can add real app value (see section 6), not only a wrapper.</li>
+<li>You can keep up with store accounts, updates and review questions.</li>
+</ul>
+
+<p>Not sure? Do the PWA first. It is a small step, and the same fixes you make for it also help a later store version.</p>
+
+<h2>8. What to fix first, either way</h2>
+
+<ul>
+<li><strong>Mobile layout.</strong> Most AI-built apps are made on a laptop screen. See <a href="/blog/ai-built-app-broken-on-phones-fixes">why AI-built apps break on phones</a>.</li>
+<li><strong>Speed.</strong> A slow app feels worse as an installed app than in a tab. See <a href="/blog/slow-ai-built-app-fixes">how to fix a slow AI-built app</a>.</li>
+<li><strong>Sign-in.</strong> Google and Apple sign-in often use redirects, and these can break inside a native wrapper. See <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with social sign-in</a>. Test sign-in inside the wrapper, not only in the browser.</li>
+<li><strong>Real phones.</strong> Test on real devices, not only on a desktop browser with a small window. Here is <a href="https://testswap.dev/blog/test-on-phones-you-dont-own">a guide to testing on phones you don't own</a>.</li>
+</ul>
+
+<h2>9. Checklist</h2>
+
+<ul>
+<li>The app is served over https.</li>
+<li>The manifest has a name, <code>start_url</code>, display setting and 192px and 512px icons.</li>
+<li>You checked install on a real Android phone in Chrome.</li>
+<li>You checked "Add to Home Screen" on a real iPhone, and users get a hint on where to tap.</li>
+<li>Push notifications (if you need them) are asked for after a user tap, and you tested the Home Screen install on iPhone.</li>
+<li>The layout works on small screens and the app loads fast.</li>
+<li>Sign-in works after install and inside a wrapper, if you build one.</li>
+<li>For the stores: you have an Apple account (99 USD per year as Apple states) and a Google Play account (US$25 one time as Google states).</li>
+<li>For the stores: you can say what the app does that the plain website does not (guideline 4.2).</li>
+<li>Privacy information and store listing texts are ready.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including making them installable on phones or getting them ready for the App Store and Google Play. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
