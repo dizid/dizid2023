@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'let-users-delete-account-what-to-remove',
+    title: "Let users delete their account: what to remove and where",
+    description: "Add a 'Delete account' option to an AI-built app: Apple, Google and GDPR rules, plus Supabase, Firebase and Stripe cleanup. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'ai-built-web-app-on-phones-pwa-or-app-store',
     title: "Your AI-built app on phones: installable web app or App Store?",
     description: "Installable web app or App Store and Google Play? What each needs, what Apple guideline 4.2 says, and a simple decision guide. Checked in November 2026.",

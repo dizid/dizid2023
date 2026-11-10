@@ -1,0 +1,133 @@
+<p>Your app lets people sign up. It has no "delete my account" button, or the button only hides the profile. Then Apple rejects the build, Google Play flags the listing, or a user emails you and asks you to erase their data. It is easy to miss in apps built with Lovable, Bolt, Cursor or Replit: sign-up gets built first, and the way out often never does. Vendor and legal facts below come from the official pages, checked in November 2026. This is not legal advice.</p>
+
+<p><strong>Short answer:</strong> Deleting an account means deleting the person everywhere their data lives. That is the login, their rows in your tables, their files, and the copies in other services such as Stripe or your email tool. Apple and Google both require an in-app way to start it. Google also wants a web link. Most of the work is on the server, because the delete call needs a secret key that must never be in the browser. Hiding the profile or "deactivating" the account is not enough.</p>
+
+<h2>1. Who requires it</h2>
+
+<h3>Apple</h3>
+
+<p>App Review Guideline <a href="https://developer.apple.com/app-store/review/guidelines/">5.1.1(v)</a> says: "If your app supports account creation, you must also offer account deletion within the app." Apple's page <a href="https://developer.apple.com/support/offering-account-deletion-in-your-app/">Offering account deletion in your app</a> adds the details:</p>
+
+<ul>
+<li>"Offer to delete the entire account record, along with associated personal data."</li>
+<li>"Only offering to temporarily deactivate or disable an account is insufficient."</li>
+<li>You may ask the user to confirm, but "apps that make it unnecessarily difficult for someone to delete their account will not pass review."</li>
+<li>If the user has an auto-renewable subscription through Apple, tell them that billing continues through Apple and ask them to cancel first.</li>
+</ul>
+
+<h3>Google Play</h3>
+
+<p>Google's <a href="https://support.google.com/googleplay/android-developer/answer/13327111">account deletion requirement</a> says that if users can create an account in your app, you must "provide users with an in-app path to delete their app accounts and associated data." You must also "provide a web link resource where users can request app account deletion and associated data deletion." The web link matters for people who already uninstalled the app. It should not make them download it again.</p>
+
+<p>The same page says data you share with service providers should also be removed, and you should ask those providers to do the same. It also allows you to keep some data for reasons such as security, fraud prevention or regulatory compliance. If you do, "you must clearly inform users about your data retention practices," for example in your privacy policy.</p>
+
+<h3>GDPR</h3>
+
+<p>If you have users in the EU, they have a right to erasure. <a href="https://gdpr-info.eu/art-17-gdpr/">Article 17</a> starts: "The data subject shall have the right to obtain from the controller the erasure of personal data concerning him or her". In plain words: a person can ask you to delete their personal data, and in many cases you must. There are exceptions, so check your own situation. See also the <a href="/blog/gdpr-checklist-small-app">GDPR checklist for a small app</a>.</p>
+
+<h2>2. What "delete" must cover</h2>
+
+<p>Make a list of every place a user's data lives. For a typical AI-built app it looks like this:</p>
+
+<ul>
+<li><strong>The auth user.</strong> The login record itself.</li>
+<li><strong>Rows in your tables.</strong> Profiles, posts, orders, settings, messages. Anything with a user id.</li>
+<li><strong>Files in storage.</strong> Avatars, uploads, documents.</li>
+<li><strong>Copies in other services.</strong> The Stripe customer, your email list provider, analytics, error tracking, support tools.</li>
+</ul>
+
+<p>Some data you may need to keep, for example invoices you need for your accounting. Whether and how long you must keep something depends on your country and your business. Check your own legal duties, and ask an accountant or lawyer. Whatever you keep, say so in your privacy policy, and keep only what you need.</p>
+
+<p>Ask your AI tool to find the list for you. It often misses tables that were added later, so check the result against your database.</p>
+
+<h2>3. Supabase</h2>
+
+<h3>The login needs the admin API</h3>
+
+<p>The <a href="https://supabase.com/docs/reference/javascript/auth-admin-deleteuser">deleteUser reference</a> says: "Delete a user. Requires a <code>service_role</code> key." It also warns: "This function should only be called on a server. Never expose your <code>service_role</code> key in the browser."</p>
+
+<p>So the "Delete account" button must call a server function (for example an Edge Function). That function checks who is logged in, then deletes that user and nobody else. Never take the user id from the request body without checking it against the logged-in session. If your service role key is in front-end code, fix that first. See <a href="/blog/api-key-exposed-ai-built-app-check">the API key check</a>.</p>
+
+<p>The same reference has a <code>shouldSoftDelete</code> option. It is off by default. The page says a soft-deleted user can still be identified through a hashed user ID. For a real erasure, leave it off.</p>
+
+<h3>Your tables: cascade or clean up</h3>
+
+<p>Supabase's page on <a href="https://supabase.com/docs/guides/auth/managing-user-data">managing user data</a> says to reference the <code>auth.users</code> table to keep data safe: "Specify <code>on delete cascade</code> in the reference." With that, deleting the auth user deletes the linked rows. Tables made by an AI tool often miss this. Ask your tool to check every table that has a user id. If a table cannot cascade, delete its rows in your server function before you delete the user.</p>
+
+<h3>Storage files are a trap</h3>
+
+<p>The same page warns: "You cannot delete a user if they are the owner of any objects in Supabase Storage." It says you get an error when you try to delete such a user. The fix it gives is to delete that user's storage objects, or give them to another user. So the order matters: remove the files first, then the user. The docs page does not say that files are deleted for you, so plan to delete them yourself.</p>
+
+<h3>The session may live on</h3>
+
+<p>The page also notes that deleting a user "does not automatically sign out a user." An access token that was already issued stays valid until it expires. Deleting through <code>auth.admin.deleteUser()</code> removes the user's sessions and invalidates the refresh tokens, so no new access tokens can be issued. Sign the person out in the app after the delete anyway.</p>
+
+<h2>4. Firebase</h2>
+
+<h3>The login</h3>
+
+<p>Firebase's <a href="https://firebase.google.com/docs/auth/web/manage-users">manage users page</a> says: "You can delete a user account with the <code>delete</code> method." There is a catch: "To delete a user, the user must have signed in recently." Deleting an account is one of the security-sensitive actions. If the sign-in is too old, "the action fails with an error." The fix is to ask the user for their password or sign-in again, call <code>reauthenticateWithCredential</code>, then retry. You can also delete a user from the server with the Admin SDK.</p>
+
+<h3>Firestore and Storage are separate</h3>
+
+<p>Deleting the Auth user does not remove the user's Firestore documents or Storage files. They are separate products. You delete them yourself, in a server function, or with the Firebase extension <a href="https://extensions.dev/extensions/firebase/delete-user-data">Delete User Data</a>. Its description: "Deletes data keyed on a userId from Cloud Firestore, Realtime Database, or Cloud Storage when a user deletes their account." It only deletes the paths you set up for it. So you still need the list from section 2, and you must keep it up to date when you add new tables.</p>
+
+<h2>5. Stripe</h2>
+
+<p>If the user ever paid, there is a Stripe customer. The <a href="https://docs.stripe.com/api/customers/delete">delete customer</a> reference says it "permanently deletes a customer. It cannot be undone. Also immediately cancels any active subscriptions on the customer." It also says deleting a customer "removes all credit card details and prevents any further operations."</p>
+
+<p>Two things follow. First, think about the order. If you delete the customer by mistake while someone still has an active plan, the plan is gone at once. Decide whether you want to cancel at the end of the period first. On Apple, subscriptions bought in the iOS app are billed by Apple, so follow Apple's note from section 1.</p>
+
+<p>Second, you may need payment records for your books. Stripe keeps its own records. Check your own legal duties before you decide what to remove from your side.</p>
+
+<h2>6. Backups</h2>
+
+<p>Deleted data can still exist in backups until those backups expire. That is normal, but you should know it. Find out how long your backups are kept, and write it in your privacy policy in plain words. Do not restore an old backup without deleting the people who asked to be erased since. See <a href="/blog/app-database-backups-supabase-neon-firebase">database backups for Supabase, Neon and Firebase</a>.</p>
+
+<h2>7. The flow users see</h2>
+
+<ol>
+<li><strong>A clear button.</strong> Put "Delete account" in the account settings, where people look for it. Apple says to make it easy to find.</li>
+<li><strong>A confirmation step.</strong> Say what will be removed, and that it cannot be undone. One extra step is fine. A maze is not.</li>
+<li><strong>A re-login if needed.</strong> Ask for the password or send a sign-in code. This also stops someone with a stolen open session from deleting the account. See <a href="/blog/harden-login-ai-built-app-supabase-firebase">hardening login in an AI-built app</a>.</li>
+<li><strong>The delete itself.</strong> Run on the server. Files first, then rows, then third-party copies, then the login.</li>
+<li><strong>An email that confirms it.</strong> Send it to the address on the account. Say what was deleted and what you keep, if anything.</li>
+</ol>
+
+<p>You also need a way for people without the app, for Google Play and for GDPR requests. A simple web page works: the user signs in and deletes, or sends a request from the email on the account. Put the link in your Play listing and your privacy policy. Apple says not to make app users go through email or chat, so the in-app button must work by itself. Email is a fallback for those who cannot sign in.</p>
+
+<p>When someone emails you, do not delete on the word of an unknown sender. Reply to the address on the account, or ask them to confirm from it. Then run the same deletion you built for the button, so there is one process, not two.</p>
+
+<h2>8. Prompts for your AI tool</h2>
+
+<ul>
+<li>"List every table, storage bucket and third-party service that holds data linked to a user id. Show how each one is deleted today."</li>
+<li>"Add a server function that deletes the current logged-in user. It must read the user id from the session, never from the request. Use the service role key only on the server."</li>
+<li>"Check every foreign key to the users table. Add on delete cascade where it is safe, and tell me where it is not."</li>
+<li>"In the delete function, remove the user's storage files first, then the rows, then the Stripe customer, then the auth user. Return a clear error if a step fails."</li>
+<li>"Add a Delete account button in settings with a confirm step and a recent sign-in check. After success, sign out and send a confirmation email."</li>
+</ul>
+
+<p>Then test it with a throwaway account that has data in every table, a file and a test-mode payment. Check each place by hand afterward.</p>
+
+<h2>9. Checklist</h2>
+
+<ul>
+<li>A Delete account button exists in the app, not only a deactivate option.</li>
+<li>There is a confirm step and a recent sign-in check.</li>
+<li>Deletion runs on the server and checks who is logged in.</li>
+<li>The service role key is not in the browser.</li>
+<li>Auth user, table rows and storage files are all removed.</li>
+<li>Supabase: files are removed before the user, and foreign keys cascade.</li>
+<li>Firebase: Firestore and Storage data are deleted too, by code or by the extension.</li>
+<li>The Stripe customer and other third-party copies are handled.</li>
+<li>You know what you must keep, and your privacy policy says so.</li>
+<li>Backup retention is known and written down.</li>
+<li>A web page or link exists for deletion requests, for Google Play.</li>
+<li>A confirmation email goes out.</li>
+<li>Tested with a throwaway account and checked in every place.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including a delete-my-account flow that removes the data everywhere it lives. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
