@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useHead } from '@unhead/vue'
 import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
 import WhoShouldUseSection from '../components/WhoShouldUseSection.vue'
@@ -29,6 +30,17 @@ useBreadcrumbSchema([
 ])
 
 const formData = ref({ name: '', email: '', project: '', budget: '', message: '' })
+
+// Links like /hire?project=fix-finish#contact-hire (from /hire/fix-ai-built-app) preselect
+// the project type. Set after mount, so the prerendered form and hydration still match.
+const PROJECT_OPTIONS = ['ai-chat-assistant', 'ai-notice', 'fix-finish', 'ai-integration', 'mvp', 'saas', 'consulting', 'other']
+const route = useRoute()
+onMounted(() => {
+  const requested = route.query.project
+  if (typeof requested === 'string' && PROJECT_OPTIONS.includes(requested) && !formData.value.project) {
+    formData.value.project = requested
+  }
+})
 const isSubmitting = ref(false)
 const isSubmitted = ref(false)
 const submitError = ref(null)

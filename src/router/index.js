@@ -32,6 +32,11 @@ export const routes = [
     component: () => import('../views/MvpDevelopmentView.vue')
   },
   {
+    path: '/hire/fix-ai-built-app',
+    name: 'fix-ai-built-app',
+    component: () => import('../views/FixAiBuiltAppView.vue')
+  },
+  {
     path: '/fixed-price-mvp-for-non-technical-founders',
     name: 'fixed-price-mvp',
     component: () => import('../views/FixedPriceMvpView.vue')
