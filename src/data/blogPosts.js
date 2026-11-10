@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'password-reset-magic-link-expired-invalid',
+    title: "Reset or magic link says expired? Causes and fixes",
+    description: "Reset or magic link says expired or invalid in your AI-built app? Email scanners, redirect URLs, PKCE and limits, with fixes. Checked in November 2026.",
+    datePublished: '2026-11-14',
+    dateModified: '2026-11-14'
+  },
+  {
     slug: 'security-headers-ai-built-app-csp-hsts',
     title: "Security headers for your AI-built app: what to add first",
     description: "Scan says missing security headers? What CSP, HSTS and the rest do, and how to add them on Netlify or Vercel without breaking Stripe. Checked in Nov 2026.",
