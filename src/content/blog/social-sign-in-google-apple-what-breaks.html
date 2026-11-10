@@ -81,6 +81,8 @@
 <li><strong>Delete account.</strong> Check that the user's data is removed and that signing in again with the same provider starts clean.</li>
 </ol>
 
+<p>Email and password sign-in has its own safety settings, such as rate limits, leaked password checks and MFA: see <a href="/blog/harden-login-ai-built-app-supabase-firebase">securing the login of your app</a>.</p>
+
 <h2>What I did on my own app</h2>
 
 <p>On my music app TuneCraft (tunecraft.music) I added Google sign-in with Firebase, using the redirect flow. I am now adding GitHub, Facebook and X buttons there as a test before I use them on other apps. Each provider needed its own developer-console registration, and the account owner has to do that. It cannot be done from code, so ask your developer early who owns the provider accounts.</p>
