@@ -1,6 +1,6 @@
 <p>"I keep getting logged out." "It logged me out on my iPhone." "I have to sign in again every day." If you built your app with Lovable, Bolt, Cursor or Replit, or by hand with Vite, React or Vue, on Supabase Auth or Firebase Auth, you have probably heard one of these. Vendor facts below come from the official docs, checked in November 2026.</p>
 
-<p><strong>Short answer:</strong> I would check these in this order. First, whether you or a template set a session time limit. Second, whether the user is on Safari or an iPhone and the session sits in localStorage. Third, whether the user is on a different domain (www, a preview URL) than the one they signed in on. Fourth, whether the app creates more than one auth client or refreshes in several tabs. Fifth, whether your own code calls sign out when something fails. Then look at the logs.</p>
+<p><strong>Short answer:</strong> I would check these in this order. First, whether a session setting ends logins on purpose: a time limit, an inactivity timeout or one session per user. Second, whether the user is on Safari or an iPhone and the session sits in localStorage. Third, whether the user is on a different domain (www, a preview URL) than the one they signed in on. Fourth, whether the app creates more than one auth client or refreshes in several tabs. Fifth, whether your own code calls sign out when something fails. Then look at the logs.</p>
 
 <h2>1. How a login stays alive</h2>
 
@@ -20,17 +20,19 @@
 
 <p>If you want the security side of sessions, such as how long people should stay logged in, that is in <a href="/blog/harden-login-ai-built-app-supabase-firebase">the login hardening post</a>. This post is about the opposite problem: logouts nobody wanted.</p>
 
-<h2>2. Cause: a session time limit you or a template set</h2>
+<h2>2. Cause: session settings that end logins on purpose</h2>
 
 <p>Supabase can end sessions on purpose. The sessions guide lists "Time-boxed sessions, which terminate after a fixed amount of time" and an inactivity timeout, which "terminates sessions that haven't been refreshed within the timeout duration." Both are options in the project's Auth settings. The page notes "This feature is only available on Pro Plans and up", so check your plan before you count on these settings, and check what is set if you did not set them yourself. The page also says that "the actual duration of a session is the configured timeout plus the JWT expiration time", so a user may be logged out later than the number you typed.</p>
+
+<p>One more setting causes the classic "it logs me out on my laptop when I use my phone" complaint. Under the same Pro-plan section, Supabase offers "Single session per user". The guide says: "When this is enabled, the session from the most recent sign in will remain active, while the rest are terminated." It also notes that "the effect will only be noticed at intervals of the JWT expiration time", so the other device seems to log out at a random moment, up to an hour later. If users switch between devices, check this setting first.</p>
 
 <p>The Firebase page I read does not describe a setting like this, so I leave Firebase out here. If someone is logged out on Firebase, look at the other causes.</p>
 
 <h2>3. Cause: Safari and iPhone storage rules</h2>
 
-<p>This is the one behind "it only happens on iPhone". Most browser-based auth clients keep the session in localStorage. WebKit, the engine behind Safari, limits that. In its post <a href="https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/">Full Third-Party Cookie Blocking and More</a> (March 2020), WebKit says Intelligent Tracking Prevention is "deleting all of a website's script-writable storage after seven days of Safari use without user interaction on the site." The list of affected storage includes IndexedDB, LocalStorage, SessionStorage and "Service Worker registrations and cache."</p>
+<p>This is the one behind "it only happens on iPhone". Browser-only apps usually keep the session in the browser's own storage, such as localStorage. WebKit, the engine behind Safari, limits that. In its post <a href="https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/">Full Third-Party Cookie Blocking and More</a> (March 2020), WebKit says Intelligent Tracking Prevention is "deleting all of a website's script-writable storage after seven days of Safari use without user interaction on the site." The list of affected storage includes IndexedDB, LocalStorage, SessionStorage and "Service Worker registrations and cache."</p>
 
-<p>What that means for your app, as I read it: if the session lives in localStorage and a user does not touch your site in Safari for a stretch of Safari use, the session can be gone and they have to sign in again. This applies to Safari and WebKit as WebKit describes it. I would not assume it explains logouts in Chrome or Firefox.</p>
+<p>What that means for your app, as I read it: if the session lives in localStorage and a user has not interacted with your site during seven days of Safari use, the session can be gone and they have to sign in again. This applies to Safari and WebKit as WebKit describes it. I would not assume it explains logouts in Chrome or Firefox.</p>
 
 <p>WebKit also has a note for apps added to the Home Screen: "Web applications added to the home screen are not part of Safari and thus have their own counter of days of use." And: "We do not expect the first-party in such a web application to have its website data deleted." So a user who opens your site in a Safari tab and a user who opens it from the Home Screen can have different experiences. If you are choosing between a web app and a store app, see <a href="/blog/ai-built-web-app-on-phones-pwa-or-app-store">installable web app or App Store</a>.</p>
 
@@ -78,7 +80,8 @@
 
 <ul>
 <li>Session time limits and inactivity timeout checked in the Auth settings, and your plan confirmed.</li>
-<li>Tested on a real iPhone, after a few days without opening the app.</li>
+<li>Single session per user checked, if users work on more than one device.</li>
+<li>You know where the session lives on iPhone Safari, and what WebKit's seven-day rule does to it.</li>
 <li>One canonical domain, with a redirect from www and previews.</li>
 <li>One auth client in the code.</li>
 <li>Tested with two tabs open for over an hour.</li>
