@@ -17,7 +17,7 @@
 
 <p>The tool you use for auth has its own list on top of the provider's list. Supabase has a <a href="https://supabase.com/docs/guides/auth/redirect-urls">redirect URL allow list</a>. It supports wildcards, and its guide shows patterns for Netlify and Vercel preview deploys. It recommends exact paths for production rather than broad patterns. Firebase has authorized domains: its <a href="https://firebase.google.com/docs/auth/web/google-signin">Google sign-in guide</a> says that to use a custom domain you add it to the authorized domains list in the Firebase console.</p>
 
-<p>Apps built with Lovable, Bolt or Replit often get a new preview URL for each deploy. A login that worked yesterday can break on a new URL for this reason alone.</p>
+<p>Hosts such as Netlify and Vercel give each preview deploy its own URL. A login that works on the live site can fail on a preview for this reason alone, and a new domain or a www redirect can break it the same way.</p>
 
 <h2>2. Google: leave "Testing" before real users arrive</h2>
 
@@ -73,7 +73,7 @@
 <ol>
 <li><strong>Fresh browser.</strong> Use a private window with no old sessions. Your own browser hides first-time problems.</li>
 <li><strong>Every environment.</strong> Local, a preview deploy, production, and both <code>www</code> and non-<code>www</code>.</li>
-<li><strong>Every provider on phone and desktop.</strong> A phone is where most people will sign in.</li>
+<li><strong>Every provider on phone and desktop.</strong> Many people will sign in on a phone, where the flow often looks different.</li>
 <li><strong>In-app browsers.</strong> Open your link from Instagram or Facebook. Google's <a href="https://developers.google.com/identity/protocols/oauth2/policies">OAuth policies</a> say apps must not send a Google OAuth request to an embedded user-agent. Those in-app browsers are usually of that kind, though Google does not name them on that page, so test it. A common fix is a banner that asks the user to open the page in Safari or Chrome.</li>
 <li><strong>Redirect flow on custom domains.</strong> Firebase's <a href="https://firebase.google.com/docs/auth/web/redirect-best-practices">redirect best practices</a> say redirect sign-in does not work in browsers that block third-party storage, and that apps on a custom domain need extra setup. Test in Chrome, Safari and Firefox.</li>
 <li><strong>Sign out, sign in again.</strong> The second sign-in differs from the first, as Apple's name shows.</li>
