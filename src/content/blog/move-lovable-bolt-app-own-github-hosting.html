@@ -67,6 +67,8 @@
 
 <p>Google, Apple and other providers keep their own callback URL lists. Add the new domain there too. See <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with social sign-in</a>.</p>
 
+<p>Your own functions may also only allow the old address. If the new site shows "blocked by CORS policy" in the browser console, see <a href="/blog/cors-error-ai-built-app-fix">the CORS fix</a>.</p>
+
 <h2>6. Custom domain and DNS</h2>
 
 <p>Test on the host's own address first. Switch the domain last. Netlify's <a href="https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/">external DNS guide</a> says a subdomain needs a CNAME record, and an apex domain needs an ALIAS, ANAME or flattened CNAME record, or an A record as a fallback. It also warns that it may take a full day for DNS changes to spread. Use the exact values your host shows.</p>
