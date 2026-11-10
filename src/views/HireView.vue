@@ -560,18 +560,17 @@ const stats = [
   text-align: center;
   max-width: 800px;
   margin: 0 auto;
-  /* Same fade-up as before, but in CSS: it starts at first paint instead of after the
-     JavaScript has loaded (the hero used to stay invisible until then on slow phones). */
+  /* Slide-up in CSS, so it starts at first paint instead of after the JavaScript has
+     loaded. No fade from transparent: phones count the headline as shown (LCP) only once
+     it's fully visible, so a fade added its whole 0.8 s to the page's load time. */
   animation: hero-in 0.8s ease both;
 }
 
 @keyframes hero-in {
   from {
-    opacity: 0;
     transform: translateY(30px);
   }
   to {
-    opacity: 1;
     transform: translateY(0);
   }
 }
