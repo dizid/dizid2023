@@ -1,0 +1,134 @@
+<p>You built an app with Lovable, Bolt, Cursor or Replit. Now you want to know if anyone uses it. Maybe you have no analytics at all. Maybe you pasted in Google Analytics and then wondered if you need a cookie banner. This post gives you the few numbers worth watching, the tool types to pick from, and the cookie question in plain words. Vendor and legal facts below come from each source's own pages, checked in November 2026. This is not legal advice.</p>
+
+<p><strong>Short answer:</strong> Measure five things: where visitors come from, sign-ups, the one action that shows a user got value, payments, and where people drop off. Use a simple tool that does not need cookies if you can. Google Analytics is not wrong, but it brings the cookie and consent work with it. Whether you need a banner depends on your own setup, so read the sources below and check your own situation. Do not put emails or names into your analytics.</p>
+
+<h2>1. Measure few things</h2>
+
+<p>A small app does not need 40 charts. It needs answers to a few questions. Pick these five and ignore the rest for now.</p>
+
+<ol>
+<li><strong>Visitors per source.</strong> Where do people come from: Google, a social post, a newsletter, a directory, a link someone shared? This tells you where to spend your time.</li>
+<li><strong>Sign-ups.</strong> How many visitors create an account, join a waitlist or send the contact form?</li>
+<li><strong>Activation.</strong> This is the one action that means a user got value. For an invoicing app it may be "sent first invoice". For a notes app it may be "saved first note". Pick one action. Not five. A sign-up is not activation. Many people sign up and never do the thing your app is for.</li>
+<li><strong>Payments.</strong> Count paid sign-ups, upgrades and cancellations. Your payment provider already has the money numbers. Analytics only needs to tell you which source and which step led to them.</li>
+<li><strong>Drop-off.</strong> Write your path as steps: visit, sign up, activate, pay. Then look at where most people stop. That step is your next fix. If many visit and few sign up, look at the page. If many sign up and few activate, look at the first-use experience.</li>
+</ol>
+
+<p>Set your own targets by comparing your numbers week to week. This post gives no benchmarks, because they depend on your product and your traffic. Improvement against your own last month is what counts.</p>
+
+<h2>2. The tool types</h2>
+
+<p>There are four types of tool a small app owner meets. Each handles cookies differently, so read what each vendor says about itself.</p>
+
+<h3>Google Analytics 4 (GA4)</h3>
+
+<p>GA4 is free to start, powerful and widely known. It is also the one that most often raises the banner question. Google's developer page on <a href="https://developers.google.com/analytics/devguides/collection/ga4/cookies-user-id">cookies and user identification</a> says: "Remarketing and Google Analytics both use cookies to help do things like run your ads or measure your success." The page points to a separate cookie reference for the full list.</p>
+
+<p>Google also offers consent mode, which lets your site pass a visitor's choice to Google's tags. Google's <a href="https://developers.google.com/tag-platform/security/concepts/consent-mode">consent mode page</a> says: "While consent is <code>denied</code>, the Google tags send measurements without cookies." It adds that when users deny consent for storage, tags "don't store cookies (web) or device identifiers (apps)". Google's <a href="https://support.google.com/analytics/answer/9976101">Analytics help page</a> says: "When analytics_storage='denied', cookieless pings are sent to Google Analytics." It also says the data from those pings "is used for behavioral and conversion modeling, to fill the gaps in your data."</p>
+
+<p>Two points follow. First, consent mode still sends pings to Google when someone says no. Whether that is fine for your site is a question for you, not for Google's docs. Second, consent mode needs a consent banner or similar tool that actually collects the choice. Google's <a href="https://developers.google.com/tag-platform/security/guides/consent">consent guide</a> says "consent mode doesn't save consent choices", so your site must send them and keep them.</p>
+
+<h3>Cookie-less tools: Plausible and Umami</h3>
+
+<p>Plausible and Umami are small analytics tools built around privacy. Both say they work without cookies.</p>
+
+<p>Plausible's <a href="https://plausible.io/data-policy">data policy</a> says: "We do not use cookies, browser cache or local storage to identify visitors." It also says: "We do not store raw User-Agent strings or IP addresses." The same page says "No cookie banner required."</p>
+
+<p>Umami's <a href="https://docs.umami.is/docs/faq">FAQ</a> says: "Umami's web tracker does not use cookies." It is more careful about the banner: "Whether your website needs a cookie notice depends on the other services you use and applicable requirements." It also says: "GDPR compliance depends on how you configure and use it."</p>
+
+<p>Notice the difference. Plausible says no banner is required. Umami says it depends. Both are the vendor's own words about its own product.</p>
+
+<h3>Cloudflare Web Analytics</h3>
+
+<p>Cloudflare's <a href="https://developers.cloudflare.com/web-analytics/">Web Analytics docs</a> describe it as "Privacy-first analytics for your website without changing DNS or using Cloudflare proxy." The <a href="https://developers.cloudflare.com/web-analytics/about/">about page</a> says: "Cloudflare Web Analytics does not collect or use your visitors' personal data." It says a "JavaScript snippet (also known as a beacon) collects metrics using the Performance API." The pages checked for this post do not say anything about cookies, so do not assume either way. Ask Cloudflare or read their latest privacy documents before you rely on it.</p>
+
+<h3>Your host's own analytics: Netlify and Vercel</h3>
+
+<p>If your app is on Netlify or Vercel, you may already have analytics one click away.</p>
+
+<p>Netlify's <a href="https://docs.netlify.com/manage/monitoring/web-analytics/how-web-analytics-works/">docs</a> say the data "comes from our Content Delivery Network (CDN) server logs" and that "there's no client-side code involved." They also say: "Because site activity is tracked anonymously without cookies or personally identifying information, Web Analytics is fully GDPR compliant." That is Netlify's claim. Server logs tell you page requests, not what happens inside your app after login, such as sign-ups or payments.</p>
+
+<p>Vercel's <a href="https://vercel.com/docs/analytics/privacy-policy">privacy page</a> says Web Analytics lets you track traffic "without using any third-party cookies, instead end users are identified by a hash created from the incoming request." Note the wording: it says third-party cookies. It also says some URLs "can include sensitive data and personal information" and that you can configure it so that none is collected.</p>
+
+<p>No tool wins for everyone. A simple rule: for a small app, start with a cookie-less tool or your host's analytics. Move to GA4 only when you have a question the simple tools cannot answer, such as detailed ad campaign reports.</p>
+
+<h2>3. The cookie question in plain words</h2>
+
+<p>This is not legal advice. It is a plain reading of public sources, so you know what to ask.</p>
+
+<p>The EU rule is the ePrivacy Directive, Article 5(3). It is not only about cookies. The European Data Protection Board (EDPB) writes in its <a href="https://edpb.europa.eu/system/files/2024-10/edpb_guidelines_202302_technical_scope_art_53_eprivacydirective_v2_en_0.pdf">Guidelines 2/2023</a> that "the storing of information, or the gaining of access to information already stored, in the terminal equipment of a subscriber or user" is only allowed "on the basis of consent or necessity for specific purposes". In plain words: if your site stores something on the visitor's device, or reads something stored there, you need consent, unless an exception applies. The exception in the Directive's text covers storage or access "strictly necessary in order for the provider of an information society service explicitly requested by the subscriber or user to provide the service."</p>
+
+<p>The EDPB also reminds readers that the rule applying "does not systematically mean that consent needs to be collected", because in each case it must be assessed whether consent is needed or an exemption applies. The EDPB guidelines say they do not analyse those exemptions. They do not say whether analytics is exempt.</p>
+
+<p>What does this mean for you?</p>
+
+<ul>
+<li>If your tool stores nothing on the device and reads nothing from it, as the vendors above say about themselves, the device-storage rule may not be triggered by the tool. Other rules still apply, such as GDPR for personal data.</li>
+<li>If your tool sets cookies, such as GA4's normal setup, the question is whether an exception applies or you need consent. Do not guess. Check your own situation.</li>
+<li>A "no banner needed" line on a vendor's page is the vendor's claim. It is not a ruling about your site. Your site may also load other things that set cookies: a chat widget, an embedded video, an ad pixel, a font service. One of those can create the need for a banner even when your analytics tool does not.</li>
+</ul>
+
+<p>For Dutch sites, the Autoriteit Persoonsgegevens explains its view on its <a href="https://www.autoriteitpersoonsgegevens.nl/en/themes/internet-and-smart-devices/cookies">cookies page</a>. It names "limited analytics cookies", which "collect information about the visit to a website or app, such as the number of visitors and the most visited pages". It says: "Do limited analytics cookies have no or little impact on your privacy? In that case, a website owner does not need your consent to place these cookies," and points to the Telecommunications Act, Article 11.7a. If those cookies process personal data, the page adds that the owner "needs a legal basis", and the use must be stated in the privacy statement. Tracking cookies do need consent. Whether your setup counts as "limited" is the part to check. For the wider data side of your app, see <a href="/blog/gdpr-checklist-small-app">the GDPR checklist for a small app</a>.</p>
+
+<h2>4. Events in a single-page app</h2>
+
+<p>Apps built with Lovable, Bolt, Cursor or Replit are often single-page apps. The page does not reload when a user moves from "Pricing" to "Sign up". The address changes in the browser, but the tool may not notice. If you add a plain script, you may count only the first page and miss the rest.</p>
+
+<p>Check how your tool handles route changes. Some do it for you:</p>
+
+<ul>
+<li>Plausible's <a href="https://plausible.io/docs/script-extensions">script docs</a> say the script "attaches listeners to the History API and will automatically trigger pageviews when you use <code>history.pushState</code>."</li>
+<li>Cloudflare's <a href="https://developers.cloudflare.com/web-analytics/faq/">FAQ</a> says: "For Single Page Applications, additional metrics are sent for every route change to capture the page load event."</li>
+<li>Vercel's privacy page says all page views are tracked, "including both fresh page loads and client-side page transitions."</li>
+</ul>
+
+<p>Test it. Open your app, click through three pages, and look in the tool's live view. If you see one page view instead of three, ask your AI tool to send a page view on every route change.</p>
+
+<p>Then add events for the actions in section 1. Keep the names plain and consistent: <code>signup_completed</code>, <code>first_note_saved</code>, <code>payment_completed</code>. Send each event once, after the action really succeeds, not when the button is clicked. A failed payment must not count as a payment. Plausible's <a href="https://plausible.io/docs/custom-event-goals">docs</a> warn that the goal name in its settings "must match the event name your site is sending, character for character including capitalisation." Typos in event names are the most common reason a chart stays empty.</p>
+
+<h2>5. Do not track personal data</h2>
+
+<p>You want counts, not identities. Keep emails, names, phone numbers and user IDs out of event properties. Keep them out of URLs too, because the URL is often sent with every page view.</p>
+
+<p>Vercel's privacy page gives this example: automatic page view tracking may record a URL such as <code>https://acme.com/[name of individual]/invoice/[12345]</code>. It says for custom events you "may want to prevent sending sensitive or personal information, such as email addresses." Plausible's <a href="https://plausible.io/docs/script-extensions">script docs</a> say you can redact user-specific URLs, which is "especially helpful to redact and aggregate multiple pages whose URLs contain identifiers that are specific to users." Cloudflare's FAQ says it will "not log query strings to avoid collecting potentially sensitive data."</p>
+
+<p>Practical rules:</p>
+
+<ul>
+<li>Use a route like <code>/invoice/view</code> for tracking, not <code>/invoice/jane-smith-12345</code>.</li>
+<li>Do not put the email into a sign-up event. The event "signup_completed" is enough. Your database already knows who signed up.</li>
+<li>Do not put a token, a reset link or a magic-link code in a URL that analytics can see.</li>
+<li>Ask your AI tool to list every event it added and every property each event sends. Read that list.</li>
+</ul>
+
+<h2>6. A 20-minute setup plan</h2>
+
+<ol>
+<li><strong>Minutes 0 to 3:</strong> Write your five numbers on paper. Name your one activation action.</li>
+<li><strong>Minutes 3 to 6:</strong> Pick a tool type. Default: a cookie-less tool or your host's analytics. Read that vendor's own cookie and privacy page and note what it says.</li>
+<li><strong>Minutes 6 to 10:</strong> Add the tracking script to the app's main HTML file, once. Deploy.</li>
+<li><strong>Minutes 10 to 13:</strong> Click through the live app. Confirm each route change shows up as a page view.</li>
+<li><strong>Minutes 13 to 17:</strong> Ask your AI tool to add three events: sign-up completed, the activation action, payment completed. Tell it to send no emails, names or IDs.</li>
+<li><strong>Minutes 17 to 20:</strong> Trigger each event yourself on the live site. Confirm it appears. Create a goal or funnel in the tool for sign-up, activation, payment.</li>
+</ol>
+
+<p>Then do two small things in the following week. Update your privacy policy so it names the tool and what it collects. And look at the dashboard once a week, at the same time, not daily.</p>
+
+<h2>7. Checklist</h2>
+
+<ul>
+<li>Five numbers chosen: sources, sign-ups, activation, payments, drop-off.</li>
+<li>One activation action named.</li>
+<li>Tool picked, and its own cookie and privacy page read.</li>
+<li>Other scripts on the site checked for cookies: chat widgets, videos, ad pixels, fonts.</li>
+<li>Page views are counted on every route change.</li>
+<li>Events fire only after the action succeeds.</li>
+<li>No emails, names, tokens or user IDs in events or URLs.</li>
+<li>Privacy policy names the analytics tool.</li>
+<li>If you use GA4 with consent mode, a real consent tool collects and keeps the choice.</li>
+<li>You decided on the banner question for your own situation, not from a vendor's claim.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including analytics that answer real questions without a wall of cookie banners. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>

@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'analytics-small-app-what-to-measure-cookies',
+    title: "Analytics for a small app: what to measure, and cookies",
+    description: "The five numbers a small app needs, which analytics tool to pick, and when you need a cookie banner, incl. the Dutch rule. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'ai-built-app-launch-day-traffic-spike',
     title: "Will your AI-built app survive a launch-day spike?",
     description: "Where an AI-built app breaks when hundreds arrive at once, and how to prepare: connections, timeouts, email limits, caching. Checked in November 2026.",
