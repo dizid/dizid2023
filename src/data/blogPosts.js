@@ -117,7 +117,7 @@ export const blogPosts = [
     title: "AI-built app? 5 database checks for Supabase, Firebase, Neon",
     description: "Built your app with Lovable, Bolt, Cursor or v0? Five checks for Supabase, Firebase and Neon that show if strangers can read your users' data.",
     datePublished: '2026-11-09',
-    dateModified: '2026-11-09'
+    dateModified: '2026-11-10'
   },
   {
     slug: 'lessons-shipping-5-ai-apps-solo',

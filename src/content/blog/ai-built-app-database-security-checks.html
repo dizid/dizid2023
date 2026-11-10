@@ -20,7 +20,7 @@
 
 <p><strong>How to check:</strong> variables starting with <code>VITE_</code> (Vite) or <code>NEXT_PUBLIC_</code> (Next.js) <a href="https://vite.dev/guide/env-and-mode">end up in</a> the <a href="https://nextjs.org/docs/app/guides/environment-variables">JavaScript sent to the browser</a>. Search your code and live site's JavaScript (DevTools, Sources) for <code>service_role</code>, <code>sb_secret_</code> and <code>private_key</code>. Found one? Move it to the server and <a href="https://supabase.com/docs/guides/api/api-keys">rotate the key</a>: Supabase blocks secret keys in browsers, but a leaked key still works from other tools.</p>
 
-<p>In LaunchPilot, my Supabase app, the browser only gets the project URL and public key; the secret key stays in serverless functions.</p>
+<p>In LaunchPilot, my Supabase app, the browser only gets the project URL and public key; the secret key stays in serverless functions. Moving an app off Lovable or Bolt is a good moment to sort public from secret keys; see <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving your app to your own GitHub and hosting</a>.</p>
 
 <h2>3. Firebase: rules not left in test mode</h2>
 
@@ -55,7 +55,7 @@
 
 <h2>If you're not sure</h2>
 
-<p>If a result confuses you, or you have too many endpoints to test by hand, ask someone who does this often. For an experienced developer, a check like this takes an hour or two. Most fixes are small: a missing policy, a rule that is too wide, or an API function that skips the user check.</p>
+<p>If a result confuses you, or you have too many endpoints to test by hand, ask someone who does this often. For an experienced developer, a check like this takes an hour or two. Most fixes are small: a missing policy, a rule that is too wide, or an API function that skips the user check. Related: <a href="/blog/stop-fake-bot-signups-app">stopping fake sign-ups</a> and <a href="/blog/app-database-backups-supabase-neon-firebase">checking your backups</a>.</p>
 
 <h2>Get a database safety check for your AI-built app</h2>
 
