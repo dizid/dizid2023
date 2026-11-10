@@ -1,0 +1,112 @@
+<p>Your app lives inside Lovable or Bolt. You want to own the code, hand it to a developer, or host it on Netlify, Vercel or Cloudflare Pages, and you fear breaking it. Here is how I would approach it. Each vendor fact comes from the vendor's own docs. Docs change, so open the linked page before you rely on a detail.</p>
+
+<p><strong>Short answer:</strong> getting the code onto GitHub is the easy part. The hard part is the database, user accounts, stored files, secret keys, login redirects and payment webhooks. Move those on purpose, test the new copy, and only then change the domain.</p>
+
+<h2>1. Get the code out</h2>
+
+<p><strong>Lovable.</strong> Lovable's <a href="https://docs.lovable.dev/integrations/github">GitHub integration</a> creates a new repository for your project, private by default. You cannot link an existing one. Sync runs both ways: changes in Lovable go to GitHub, and changes pushed to the active branch come back into Lovable. It syncs one branch at a time, by default the repository's default branch (usually <code>main</code>).</p>
+
+<p>The same page explains what happens if you change things later:</p>
+
+<ul>
+<li>Renaming the repository, account or organization keeps sync running.</li>
+<li>Transferring the repository only keeps sync if your Lovable workspace also has a GitHub connection for the new owner. Otherwise Lovable disconnects the project.</li>
+<li>Deleting the repository stops the sync. Reconnecting creates a new repository, not the old one.</li>
+</ul>
+
+<p>So you can keep editing in Lovable after connecting GitHub. If a developer should own the repository, check the transfer rules first.</p>
+
+<p><strong>Bolt.</strong> Bolt's <a href="https://support.bolt.new/integrations/git">Git integration page</a> says sync also runs both ways. Bolt saves your work to GitHub automatically and checks GitHub every 30 seconds for changes made outside Bolt. You can build in Bolt, work in GitHub, and come back to Bolt. The Bolt project stays on the <code>main</code> branch, so you cannot switch it to another branch.</p>
+
+<p>For a one-off copy, Vercel's guide on <a href="https://vercel.com/kb/guide/bolt-vercel-drop">deploying a Bolt app</a> says you open the project, click the project title in the top left, then Export, then Download. That gives a <code>.zip</code> with the source code. I did not find this on Bolt's own help pages, so check your version.</p>
+
+<h2>2. Code on GitHub is not the whole app</h2>
+
+<p>The repository holds the front end and perhaps some server functions, not your data. Ask: where are the database, the user accounts, the uploaded files and the secret keys?</p>
+
+<p><strong>Lovable Cloud.</strong> The <a href="https://docs.lovable.dev/integrations/cloud">Lovable Cloud docs</a> say it is a built-in backend with a database, storage, authentication, realtime and functions, using Supabase's open-source foundation. They also say Lovable "does not move a project from the built-in backend to your own Supabase project in one step". The move is manual: you export and restore the database into your own Supabase project, move the storage files and code, and set up authentication, secrets and other services again. The docs do not say whether user accounts can be exported, so ask Lovable support.</p>
+
+<p>The page also warns that removing the built-in backend permanently deletes the database, its backups, user accounts and storage files. Remove nothing until the new setup is verified.</p>
+
+<p><strong>Bolt.</strong> Bolt's <a href="https://support.bolt.new/integrations/supabase">Supabase page</a> says Bolt has a built-in database and that you can claim an existing Bolt database in Supabase. Claiming needs a Supabase organization owner, and using Supabase with Bolt needs a Pro or Teams plan. It also says there is no supported flow for moving a Supabase database into a Bolt database. Check data ownership with Bolt.</p>
+
+<p>If your app already uses your own Supabase project, the data stays where it is. Then the move is mostly code, settings and domain. Either way, take a backup first. See <a href="/blog/app-database-backups-supabase-neon-firebase">what Supabase, Neon and Firebase back up</a>.</p>
+
+<h2>3. Environment variables and keys</h2>
+
+<p>Vite's <a href="https://vite.dev/guide/env-and-mode">env guide</a> says variables with the <code>VITE_</code> prefix are exposed in client-side code after bundling. Anyone can read them in the browser, so never put secret keys in them. The same guide says to add <code>*.local</code> to <code>.gitignore</code> so local env files stay out of version control.</p>
+
+<p>Sort your keys into two lists:</p>
+
+<ul>
+<li><strong>Public by design.</strong> A Supabase URL and public (anon) key, a Stripe publishable key. Fine in <code>VITE_</code> variables.</li>
+<li><strong>Secret.</strong> Stripe secret keys, webhook signing secrets, email API keys, a Supabase service role key. Server code and the host's environment settings only.</li>
+</ul>
+
+<p>Search the repository for keys pasted into code. If a real secret was ever committed, create a new key and retire the old one. Git keeps history, so deleting the line is not enough.</p>
+
+<p>On the new host, add the variables in the project settings. Vercel's <a href="https://vercel.com/docs/environment-variables">environment variables page</a> says a change applies only to new deployments, so redeploy after you edit. It also lets you paste in a whole <code>.env</code> file, which helps when you move a project.</p>
+
+<h2>4. Build settings on the new host</h2>
+
+<p>For a Vite app the usual values are build command <code>npm run build</code> and publish directory <code>dist</code>. Netlify's <a href="https://docs.netlify.com/build/configure-builds/overview/">build docs</a> explain both settings, and say you can set them in the dashboard or in <code>netlify.toml</code>, where the file wins over the dashboard. Those docs do not list Vite defaults, so check the values against your <code>package.json</code>. Vercel says it detects the framework and builds automatically.</p>
+
+<h3>The "refresh gives 404" problem</h3>
+
+<p>Many AI-built apps are single-page apps. The browser router handles <code>/pricing</code>, but the server has no such file. Refresh on <code>/pricing</code> and you get a 404. Each host needs a fallback rule:</p>
+
+<ul>
+<li><strong>Netlify.</strong> The <a href="https://docs.netlify.com/manage/routing/redirects/rewrites-proxies/">rewrites docs</a> give a <code>_redirects</code> rule: <code>/*  /index.html  200</code>.</li>
+<li><strong>Vercel.</strong> The <a href="https://vercel.com/docs/frameworks/frontend/vite">Vite on Vercel page</a> says deep links do not work out of the box in a single-page Vite app. You add a <code>vercel.json</code> with a rewrite from <code>/(.*)</code> to <code>/index.html</code>.</li>
+<li><strong>Cloudflare Pages.</strong> Its <a href="https://developers.cloudflare.com/pages/configuration/serving-pages/">routing docs</a> say that without a top-level <code>404.html</code>, Pages treats the project as a single-page app and serves the root for unknown paths.</li>
+</ul>
+
+<h2>5. Sign-in after the move</h2>
+
+<p>If you use Supabase Auth, the new address must be allowed. Supabase's <a href="https://supabase.com/docs/guides/auth/redirect-urls">redirect URL guide</a> says the Site URL is the default redirect when your code gives none, and is important for email confirmations and password resets. It also says the <code>redirectTo</code> URL should match its Redirect URLs list. If the Site URL still points at the old address, confirmation emails send people there.</p>
+
+<p>Google, Apple and other providers keep their own callback URL lists. Add the new domain there too. See <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with social sign-in</a>.</p>
+
+<h2>6. Custom domain and DNS</h2>
+
+<p>Test on the host's own address first. Switch the domain last. Netlify's <a href="https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/">external DNS guide</a> says a subdomain needs a CNAME record, and an apex domain needs an ALIAS, ANAME or flattened CNAME record, or an A record as a fallback. It also warns that it may take a full day for DNS changes to spread. Use the exact values your host shows.</p>
+
+<p>Before you switch, write down your current DNS records, especially email ones, and change only the website records.</p>
+
+<h2>7. Payments and webhooks</h2>
+
+<p>If your app takes payments, the webhook URL changes with the domain. Stripe's <a href="https://docs.stripe.com/webhooks">webhook docs</a> say endpoints must be public HTTPS URLs, and that each endpoint has its own signing secret. If you use the same endpoint for test and live keys, the secret is different for each. So when you register the new URL, copy its secret into the new host's environment settings.</p>
+
+<p>Stripe counts a redirect as a failed delivery, so do not leave the old URL redirecting. Set the endpoint to the final URL. After the switch, open the endpoint's Event deliveries tab and check that nothing shows Failed. More in <a href="/blog/stripe-payments-ai-built-app-launch">taking payments in an AI-built app</a>.</p>
+
+<h2>A move checklist</h2>
+
+<ol>
+<li><strong>Back up and list.</strong> Export the database, download the files, and list every service and key the app uses.</li>
+<li><strong>Connect GitHub</strong> and confirm the code is there.</li>
+<li><strong>Set up the new backend</strong> if you leave Lovable Cloud or Bolt's database, and restore the data.</li>
+<li><strong>Create the host project.</strong> Set the build command, publish directory and the SPA fallback.</li>
+<li><strong>Add the environment variables</strong> and redeploy.</li>
+<li><strong>Update auth.</strong> Site URL, redirect URLs, provider callback URLs.</li>
+<li><strong>Test on the host's own address.</strong> Sign up, sign in, reset a password, upload a file, refresh on a deep link, and make a test payment.</li>
+<li><strong>Move the Stripe webhook</strong> and check deliveries.</li>
+<li><strong>Switch the domain.</strong> Check HTTPS, with and without <code>www</code>.</li>
+<li><strong>Keep the builder version</strong> as a fallback for a while. Delete the old backend last.</li>
+</ol>
+
+<h2>What usually breaks</h2>
+
+<p>Things to check, not predictions:</p>
+
+<ul>
+<li>A page refresh gives a 404 (missing fallback rule).</li>
+<li>The app loads but shows empty data (a missing environment variable, or the data was not moved).</li>
+<li>Sign-in or password reset sends users to the old address.</li>
+<li>Uploaded images are missing (files not moved).</li>
+<li>Payments succeed but the app does not update (old webhook URL or old signing secret).</li>
+<li>Emails stop after a DNS change.</li>
+</ul>
+
+<h2>Want this move done for you?</h2>
+
+<p>I move and fix apps built with Lovable, Bolt, Cursor or Replit: code, data, hosting, domain, sign-in and payments, tested before the switch. If you plan to bring in a developer, see <a href="/blog/hiring-developer-app-access-handover">what access to hand over</a>, and if you doubt the code itself, <a href="/blog/fix-or-rebuild-ai-built-app">fix or rebuild an AI-built app</a>. Or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>

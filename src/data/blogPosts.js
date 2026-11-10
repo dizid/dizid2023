@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'move-lovable-bolt-app-own-github-hosting',
+    title: "Move your Lovable or Bolt app to your own GitHub and hosting",
+    description: "Moving a Lovable or Bolt app to your own GitHub and host? What moves with the code, what does not, and a step-by-step checklist to test before DNS.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'social-sign-in-google-apple-what-breaks',
     title: "Adding Google, Apple or GitHub sign-in: what breaks in production",
     description: "Adding Google, Apple or GitHub sign-in? The redirect, consent screen, Apple rule and duplicate-account problems that break it, plus a test checklist.",
