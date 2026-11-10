@@ -38,7 +38,7 @@ const faqs = [
   },
   {
     question: 'How much experience does Dizid have?',
-    answer: "25+ years in IT, from enterprise work at Microsoft to shipping 20+ modern SaaS products solo. Recent projects include LaunchPilot.marketing, Unplugged.cv, and Site Improver — see the full portfolio at /projects."
+    answer: "25+ years in IT, from enterprise work at Microsoft to shipping 20+ modern SaaS products solo. Recent projects include Foreground.info, HappyRoam.travel, and Site Improver — see the full portfolio at /projects."
   },
   {
     question: 'How can I work with Dizid?',
@@ -70,8 +70,9 @@ const faqs = [
           Sprints (adding Claude API or GPT features to an existing app), MVP Web Apps
           (full-stack builds with authentication, database, and payments), and full
           SaaS products (user management, billing, dashboards, and AI features, built
-          and deployed end to end). Recent examples include LaunchPilot.marketing (an
-          AI marketing automation platform), Unplugged.cv (an AI-first CV builder), and
+          and deployed end to end). Recent examples include Foreground.info (a scanner
+          that shows whether AI assistants recommend a business), HappyRoam.travel (a
+          Thailand travel app with paid AI tools), and
           Site Improver (an automated website-rebuilding tool) — all built solo, from
           concept to production.
         </p>
