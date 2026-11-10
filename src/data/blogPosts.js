@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'european-accessibility-act-small-apps-webshops',
+    title: "The European Accessibility Act for small apps and webshops",
+    description: "Does the European Accessibility Act apply to your webshop or app? What it covers, the micro-enterprise exemption, key dates and a 30-minute self-check.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'scheduled-jobs-cron-netlify-vercel-supabase',
     title: "Scheduled jobs for a small app: cron on Netlify, Vercel, Supabase",
     description: "A job that silently stopped? Where to run scheduled jobs on Netlify, Vercel, Supabase or GitHub Actions: documented limits, UTC, safe repeats, heartbeats.",

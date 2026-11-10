@@ -1,0 +1,72 @@
+<p>The European Accessibility Act (EAA) has applied since 28 June 2025. If you run a small webshop, booking site or app for EU customers, you may have heard it affects you. Below is what the directive itself says about scope, the exemption for very small businesses and the dates, followed by a 30-minute check you can do yourself. It is a technical guide, not legal advice. Your national authority or a lawyer can tell you how it applies to your company.</p>
+
+<p><strong>Short answer:</strong> the EAA covers e-commerce services offered to consumers. Businesses with fewer than 10 people and a turnover or balance sheet of at most €2 million are exempt for services. Everyone else selling to consumers online should make sure keyboard, screen reader and low-vision users can browse, order and pay.</p>
+
+<h2>1. What the directive covers</h2>
+
+<p><a href="https://eur-lex.europa.eu/eli/dir/2019/882/oj/eng">Directive (EU) 2019/882</a> lists what is in scope in Article 2. For services, it names electronic communications, access to audiovisual media, parts of air, bus, rail and waterborne passenger transport (websites, apps and e-ticketing), consumer banking, e-books and e-commerce services. The <a href="https://commission.europa.eu/strategy-and-policy/policies/justice-and-fundamental-rights/disability/union-equality-strategy-rights-persons-disabilities-2021-2030/european-accessibility-act_en">European Commission's EAA page</a> gives the same overview.</p>
+
+<p>For a webshop or booking site, the relevant part is the definition in Article 3: e-commerce services are "services provided at a distance, through websites and mobile device-based services by electronic means and at the individual request of a consumer with a view to concluding a consumer contract". Two things follow:</p>
+
+<ul>
+<li><strong>Consumers.</strong> The directive applies to services provided to consumers, meaning people buying outside their trade or profession. A tool sold only to businesses does not fit this definition.</li>
+<li><strong>A contract is concluded.</strong> A webshop, a paid booking flow or an app where users buy something fits. A brochure site with no ordering does not match the definition. If unsure, ask.</li>
+</ul>
+
+<p>The Dutch government's page for entrepreneurs uses the same reading: <a href="https://ondernemersplein.overheid.nl/wetten-en-regels/regels-voor-digitale-toegankelijkheid/">an e-commerce service is a website or app where you offer a product or service to consumers</a>.</p>
+
+<h2>2. The exemption for very small businesses</h2>
+
+<p>Article 4(5) says: "Microenterprises providing services shall be exempt from complying with the accessibility requirements referred to in paragraph 3 of this Article and any obligations relating to the compliance with those requirements."</p>
+
+<p>Article 3 defines a microenterprise as "an enterprise which employs fewer than 10 persons and which has an annual turnover not exceeding EUR 2 million or an annual balance sheet total not exceeding EUR 2 million". So you need both: fewer than 10 people, and either turnover or balance sheet at or under €2 million.</p>
+
+<ul>
+<li>The exemption is for <strong>services</strong>, as the article is written for microenterprises providing services.</li>
+<li>Dutch sources describe the size limit in slightly different words. The <a href="https://www.rijksoverheid.nl/themas/familie-zorg-en-gezondheid/leven-met-een-beperking/producten-en-diensten-toegankelijker-voor-mensen-met-beperking">Rijksoverheid page</a> says small businesses with fewer than 10 employees and a turnover of at most €2 million are not required to comply, while the <a href="https://www.acm.nl/nl/node/27870">ACM page</a> speaks of "10 or more employees" and/or a turnover above €2 million. When your numbers are close to a limit, read the directive and the Dutch law, or ask.</li>
+</ul>
+
+<h2>3. Dates and transition rules</h2>
+
+<p>Member States had to adopt the rules by 28 June 2022 and apply them from 28 June 2025 (Article 31). Article 2(2) applies the directive to services provided to consumers after that date. Article 32 adds transition rules: service contracts agreed before 28 June 2025 may continue without alteration until they expire, but no longer than five years. Service providers may keep using products they lawfully used before that date until 28 June 2030. A webshop you build or redesign today should simply meet the requirements.</p>
+
+<p>There are also limits. Article 14 says the requirements apply only as far as they do not fundamentally alter the service or impose a disproportionate burden. You must assess and document that, and report it to the authority.</p>
+
+<h2>4. What "accessible" means in practice</h2>
+
+<p>The directive's requirements in Annex I are general. The Annex examples for websites include text descriptions of pictures, all functionality available from a keyboard, enough time to read, predictable behaviour and compatibility with assistive technologies. It lists no technical tests.</p>
+
+<p>The technical reference is the European standard EN 301 549, whose web part is built on WCAG (the Web Content Accessibility Guidelines). Under Article 15, products and services that conform to a harmonised standard whose reference is published in the Official Journal are presumed to meet the requirements. I could not confirm from official sources which version of the standard has that status for the EAA today. The older version, 3.2.1, is built on <a href="https://digital-strategy.ec.europa.eu/en/policies/latest-changes-accessibility-standard">WCAG 2.1</a>, and the <a href="https://www.etsi.org/deliver/etsi_en/301500_301599/301549/04.01.01_60/en_301549v040101p.pdf">newer 4.1.1 from ETSI</a> is aligned with WCAG 2.2. It states that the presumption applies once it is cited in the Official Journal. In practice, aiming for WCAG 2.2 level AA is a sensible target, but it is a yardstick, not a legal guarantee.</p>
+
+<h2>5. Who enforces it</h2>
+
+<p>Enforcement is national. Article 30 leaves penalties to each Member State and requires them to be "effective, proportionate and dissuasive". In the Netherlands, the ACM <a href="https://www.acm.nl/nl/node/27870">checks webshops and communication services</a>; the Commissariaat voor de Media covers e-books and audiovisual services. The Rijksoverheid page says the supervisor can give a warning or impose a fine, and does not state amounts. ACM says that in the first period it focuses mainly on critical problems. Elsewhere, look up your own country's authority.</p>
+
+<h2>6. The 30-minute self-check</h2>
+
+<p>These steps follow the <a href="https://www.w3.org/WAI/test-evaluate/preliminary/">W3C's easy checks</a>. Test the home page, a product page, the cart, sign-in and payment.</p>
+
+<ol>
+<li><strong>Keyboard only (5 min).</strong> Unplug the mouse and use Tab, Shift+Tab, Enter and Space. Can you reach every link, menu and button, add to cart and pay? Can you leave every popup?</li>
+<li><strong>Visible focus (2 min).</strong> You should always see where you are on the page. CSS resets often remove the outline.</li>
+<li><strong>Alt text (3 min).</strong> Product and informative images need a text alternative that says what the image is for. Decorative images should have an empty alt. A tool can tell you that alt text is missing, but not whether it is any good.</li>
+<li><strong>Form labels and errors (5 min).</strong> Every field needs a real label, not only placeholder text. Submit the checkout empty and read the errors: they should say what is wrong and be easy to find.</li>
+<li><strong>Colour contrast (3 min).</strong> The W3C gives 4.5:1 as the minimum for normal-size text. Check grey text and text on photos.</li>
+<li><strong>Zoom to 200% (3 min).</strong> Zoom the browser and check on a phone. Nothing should be cut off or overlap, and the checkout must still work.</li>
+<li><strong>Video (2 min).</strong> Videos need captions, and controls that work with a keyboard.</li>
+<li><strong>Run a tool (5 min).</strong> The Lighthouse <a href="https://developer.chrome.com/docs/lighthouse/overview">accessibility audit is built into Chrome DevTools</a>. <a href="https://wave.webaim.org/">WAVE</a> and the <a href="https://www.deque.com/axe/devtools/">axe DevTools extension</a> also flag many common errors. They find some problems, not all, so they come after the manual checks, not instead of them. The W3C warns that a page can pass quick checks and still have significant barriers.</li>
+</ol>
+
+<h2>7. Tell customers how you meet the requirements</h2>
+
+<p>Article 13 requires service providers to prepare information on how their service meets the requirements and to make it public. Annex V says this information goes in the general terms and conditions or an equivalent document. It should give a general description of the service and a description of how the relevant accessibility requirements are met. Write it only after you have checked the site, and keep it honest and short.</p>
+
+<p>If you find a service that does not meet the requirements, Article 13(4) says you must take corrective measures and tell the competent national authority.</p>
+
+<h2>Not legal advice</h2>
+
+<p>This post explains the directive's text as I read it on 10 November 2026. Whether the law applies to your company, and how your country has written it into national law, depends on your size, your activity and your country. Check with your national authority or a lawyer. For the data-protection side of the same kind of site, see the <a href="/blog/gdpr-checklist-small-app">GDPR checklist for a small app</a>. For a wider pre-launch review, see the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist for AI-built apps</a>.</p>
+
+<h2>Want this checked on your site?</h2>
+
+<p>I run the technical side of this check on webshops, booking sites and apps built with Lovable, Bolt, Shopify, WordPress or by a freelancer: keyboard paths, focus, labels, errors, contrast and the checkout. I then fix what fails. <a href="/hire">Send me the details on the hire page</a> and I'll reply within 24 hours.</p>
