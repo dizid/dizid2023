@@ -95,7 +95,7 @@ const skillCategories = [
   justify-content: center;
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-lg);
-  color: var(--color-accent);
+  color: var(--color-accent-light);
   font-size: var(--text-lg);
 }
 

@@ -106,7 +106,7 @@ useHead({
 }
 
 .faq-question i {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
   flex-shrink: 0;
 }
 

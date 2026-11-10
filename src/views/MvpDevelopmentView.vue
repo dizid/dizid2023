@@ -191,7 +191,7 @@ const faqs = [
 }
 
 .case-subtitle {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
   font-size: var(--text-sm);
   margin-bottom: var(--space-2);
 }
@@ -219,7 +219,7 @@ const faqs = [
 }
 
 .case-footer a {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 @media (max-width: 768px) {

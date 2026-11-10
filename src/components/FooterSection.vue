@@ -73,7 +73,7 @@ const currentYear = new Date().getFullYear()
 }
 
 .dot {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .footer-tagline {
@@ -93,7 +93,7 @@ const currentYear = new Date().getFullYear()
 }
 
 .footer-nav a:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .footer-links {

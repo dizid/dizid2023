@@ -195,7 +195,7 @@ const liveUrl = computed(() => props.project.url || props.project.live)
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-lg);
   font-size: var(--text-xl);
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .featured .project-icon {
@@ -228,7 +228,7 @@ const liveUrl = computed(() => props.project.url || props.project.live)
 }
 
 .project-link.primary:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .project-title {

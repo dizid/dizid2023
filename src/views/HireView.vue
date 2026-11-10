@@ -684,7 +684,7 @@ const stats = [
 }
 
 .service-title a:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .service-description {
@@ -834,11 +834,11 @@ const stats = [
   gap: var(--space-2);
   font-size: var(--text-sm);
   font-weight: 500;
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .case-link:hover {
-  color: var(--color-accent-light);
+  color: var(--color-text-primary);
 }
 
 .more-projects {
@@ -976,7 +976,7 @@ const stats = [
 
 .contact-method-hire i {
   width: 20px;
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 /* Form */

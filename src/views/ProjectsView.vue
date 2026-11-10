@@ -151,7 +151,7 @@ onMounted(async () => {
 }
 
 .back-link:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .page-title {

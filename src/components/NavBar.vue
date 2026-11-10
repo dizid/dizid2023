@@ -135,7 +135,7 @@ onUnmounted(() => {
 }
 
 .logo-dot {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .nav-links {
@@ -171,7 +171,7 @@ onUnmounted(() => {
 }
 
 .nav-link.active {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .nav-link.active::after {

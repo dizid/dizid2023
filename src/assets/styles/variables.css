@@ -9,7 +9,7 @@
   /* Text Colors */
   --color-text-primary: #f0f0f5;
   --color-text-secondary: #a0a0b0;
-  --color-text-muted: #6b6b7a;
+  --color-text-muted: #858594; /* was #6b6b7a: 3.2-3.8:1 on the dark backgrounds; now 4.6-5.4:1 (WCAG AA) */
 
   /* Accent Colors */
   --color-accent: #6366f1;

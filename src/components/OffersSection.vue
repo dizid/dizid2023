@@ -95,7 +95,7 @@ import QuickOffers from './QuickOffers.vue'
 }
 
 .offer-title a:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .offer-description {

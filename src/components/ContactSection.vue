@@ -263,7 +263,7 @@ const resetForm = () => {
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-lg);
   font-size: var(--text-lg);
-  color: var(--color-accent);
+  color: var(--color-accent-light);
 }
 
 .method-info {
@@ -282,7 +282,7 @@ const resetForm = () => {
 }
 
 .method-arrow {
-  color: var(--color-accent);
+  color: var(--color-accent-light);
   transition: transform var(--transition-fast);
 }
 
