@@ -1,0 +1,117 @@
+<p>Your app is built in English with Lovable, Bolt, Cursor or Replit. Now customers in the Netherlands or Germany ask for it in their own language. You paste "translate to Dutch" into the tool, and half the page changes. The rest stays English, dates look wrong, and Google still shows only one version. I checked the facts about Google, MDN, vue-i18n and i18next against their own docs in November 2026.</p>
+
+<p><strong>Short answer:</strong> decide which language and which parts first. Give every public page one URL per language, like <code>/nl/pricing</code>. Move all text into translation files with keys, and format dates, numbers and prices with the browser's <code>Intl</code> tools. Then tell Google about each version with <code>hreflang</code> tags and set <code>lang</code> on every page. Do not use a switch that only changes the text in place.</p>
+
+<h2>1. Decide first</h2>
+
+<p>Before you touch code, answer four questions.</p>
+
+<ul>
+<li><strong>Which language?</strong> One extra language is far easier than three. Pick the language your real customers use.</li>
+<li><strong>Which parts?</strong> Public pages (home, pricing, blog), the app screens behind the login, emails, legal pages (privacy, terms) and error messages. Each of these is a separate piece of work.</li>
+<li><strong>Who checks the translations?</strong> Machine translation is fine for a first draft. A fluent person should read every text before it goes live, especially buttons, prices and legal text.</li>
+<li><strong>Which URL shape?</strong> This one matters for search, so see the next part.</li>
+</ul>
+
+<h2>2. One URL per language</h2>
+
+<p>Google's guide <a href="https://developers.google.com/search/docs/specialty/international/managing-multi-regional-sites">Managing multi-regional and multilingual sites</a> says: "Google recommends using different URLs for each language version of a page" rather than "cookies or browser settings to adjust the content language on the page."</p>
+
+<p>So a button that swaps the text on the same URL is the wrong shape for public pages. A page with its own address is also much easier to link to and to check. The same page lists subdirectories (<code>example.com/de/</code>), subdomains (<code>de.example.com</code>) and country domains (<code>example.de</code>) as options. For a small app, a subdirectory is the simplest: one domain, one deployment, one set of analytics.</p>
+
+<p>The page also says to avoid automatically redirecting users between language versions, and not to redirect based on what you think the user's language may be. Offer a visible language link instead. Do not force it.</p>
+
+<p>Another warning from the same page: translating only the boilerplate text of your pages while keeping the bulk of your content in one language can create a bad user experience. A Dutch menu around English articles is exactly that.</p>
+
+<h2>3. Structure in code</h2>
+
+<p><strong>Keep all visible text in translation files.</strong> Each text gets a key, and each language has a file with the same keys. The component asks for the key, not the sentence.</p>
+
+<ul>
+<li><strong>Vue:</strong> <a href="https://vue-i18n.intlify.dev/guide/essentials/started.html">vue-i18n</a> describes <code>messages</code> as "the hierarchical object structure with each locale as the top property", and you call it in a template with <code>$t('message.hello')</code>.</li>
+<li><strong>React:</strong> <a href="https://react.i18next.com/">react-i18next</a> is "the React binding for i18next". Its examples pass a key to <code>t</code>, like <code>t('simpleContent')</code>.</li>
+</ul>
+
+<p><strong>Do not build sentences from pieces.</strong> Code like <code>"You have " + count + " items"</code> cannot be translated well, because word order differs per language. Use one full sentence with a placeholder in the file instead.</p>
+
+<p><strong>Plurals need the library, not an <code>if</code>.</strong> In vue-i18n you write the variants in one message with a pipe, like <code>'car | cars'</code>, and the number you pass picks the variant. In <a href="https://www.i18next.com/translation-function/plurals">i18next</a> plurals are separate keys such as <code>key_one</code> and <code>key_other</code>, chosen with a <code>count</code> option. Its docs warn that without <code>count</code> there is "no fallback to the 'key' value".</p>
+
+<p><strong>Format dates, numbers and money with <code>Intl</code>.</strong> Do not write them as text in the translation file. MDN says <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat"><code>Intl.NumberFormat</code></a> "enables language-sensitive number formatting". Its example formats 123456.789 as a euro amount for <code>de-DE</code> and gets "123.456,79 €". The English reader would expect a comma and a dot the other way around. <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat"><code>Intl.DateTimeFormat</code></a> does the same for dates: MDN shows one date as "12/19/2012" for <code>en-US</code> and "19/12/2012" for <code>en-GB</code>. A day and month the wrong way round is a real mistake in a booking or invoice screen.</p>
+
+<p><strong>Expect longer text.</strong> German and Dutch words are often longer than the English ones, so a label that fits a button in English can overflow it. Test the layout with the longest texts, on a phone, before you call it done. If a layout breaks, let the text wrap. Do not shrink the font.</p>
+
+<h2>4. Search per language</h2>
+
+<p><strong>hreflang.</strong> Google's page <a href="https://developers.google.com/search/docs/specialty/international/localized-versions">Tell Google about localized versions of your page</a> says: "There are three ways to indicate multiple language/locale versions of a page to Google." They are HTML tags, HTTP headers and the sitemap. Pick one and keep it consistent. Three rules from that page matter most:</p>
+
+<ul>
+<li>"Each language version must list itself as well as all other language versions."</li>
+<li>"If two pages don't both point to each other, the tags will be ignored." So the English page links to the Dutch one, and the Dutch page links back.</li>
+<li>"The reserved x-default value is used when no other language/region matches the user's browser setting." Point it at the version you want unknown visitors to see.</li>
+</ul>
+
+<p>The value is a language code, optionally followed by a region code, separated by a dash, like <code>nl</code> or <code>nl-NL</code>. Per the page, "You can't specify the country code by itself."</p>
+
+<p><strong>The <code>lang</code> attribute.</strong> Set it on <code>&lt;html&gt;</code> for every page: <code>en</code> on the English pages and <code>nl</code> on the Dutch ones. MDN's page on the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/lang"><code>lang</code> attribute</a> says it is recommended "especially due to accessibility concerns", and that the aim is "to allow assistive technologies such as screen readers to invoke the correct pronunciation". A single-page app that sets <code>lang="en"</code> once in <code>index.html</code> will tell a screen reader that the Dutch text is English. This also fits the checks in <a href="/blog/european-accessibility-act-small-apps-webshops">the European Accessibility Act post</a>.</p>
+
+<p><strong>Own title and description per language.</strong> A Dutch page with an English title is a half translation that shows up in the search results. Give each version its own title, meta description and a canonical that points to itself. Put every version in <code>sitemap.xml</code>.</p>
+
+<p><strong>The page must be in the HTML.</strong> All of this only works if crawlers receive the real text. Many AI-built apps send an almost empty page and draw the content with JavaScript. If that is your app, fix it first. See <a href="/blog/spa-seo-lovable-bolt-google-cant-see">Google can't see your Lovable or Bolt app</a>.</p>
+
+<h2>5. What goes wrong</h2>
+
+<ul>
+<li><strong>Half-translated pages.</strong> Text hardcoded in components never reaches the translation file. Buttons, placeholders, alt texts and page titles are the usual leftovers.</li>
+<li><strong>Emails still in English.</strong> Emails are built somewhere else, often in a server function or in a provider's template. The user's language has to be stored with the account so those can pick it. If emails land in spam as well, see <a href="/blog/app-emails-spam-spf-dkim-dmarc">SPF, DKIM and DMARC for app emails</a>.</li>
+<li><strong>Error messages in English.</strong> Messages from your backend or from a login provider often come back as plain English text. Map the error codes to your own keys.</li>
+<li><strong>Wrong formats.</strong> Dates and prices written by hand, or formatted with a fixed locale, show the wrong order or the wrong decimal sign.</li>
+<li><strong>The language is lost.</strong> The user picks Dutch, logs in, and the app is English again. Or a refresh resets it. The language should come from the URL for public pages, and from a saved setting on the account after login.</li>
+<li><strong>Legal pages missing.</strong> If you sell to EU customers, the privacy policy and terms should exist in the language your customers read. A translated app with an English-only privacy page is a gap. Have it checked by a person who knows the topic. The <a href="/blog/gdpr-checklist-small-app">GDPR checklist for a small app</a> covers what the privacy page needs to say.</li>
+<li><strong>Links that drop the language.</strong> A link in the Dutch page that goes to <code>/pricing</code> sends the visitor back to English. Every internal link needs the language prefix.</li>
+</ul>
+
+<h2>What I do on my own sites</h2>
+
+<p>On my own sites I keep English at / and Dutch under /nl. Foreground (foreground.info) works that way: foreground.info/nl is the Dutch version.</p>
+
+<h2>How to ask your AI tool, or a developer</h2>
+
+<p>"Make it multilingual" is too vague, and the tool will rewrite things you did not ask about. Name the pages, the URLs and what must stay the same. Two examples:</p>
+
+<ul>
+<li><em>"Move every visible text on /, /pricing and /about into translation files with keys, using i18n. Keep the English text exactly as it is. Add Dutch under /nl, keep English at /. Add hreflang tags (with x-default), a lang attribute on the html element, and a separate title and meta description per language. Do not change the layout."</em></li>
+<li><em>"Format all dates, numbers and prices with the Intl API, using the current language. Do not build sentences by joining strings. Use the library's plural support. List any text you could not move into the files."</em></li>
+</ul>
+
+<p>Machine translation can write the first Dutch draft. Have someone fluent read it before you publish. Then check the result yourself, as below.</p>
+
+<h2>How to check the result</h2>
+
+<ol>
+<li><strong>View source per language.</strong> Right-click, then <strong>View page source</strong> on <code>/nl/pricing</code>. Is the Dutch text in the HTML? Is <code>lang="nl"</code> on the <code>html</code> tag? Are the title and description Dutch? Are the <code>hreflang</code> links there, one for each version plus x-default?</li>
+<li><strong>Look for leftover English.</strong> Open a Dutch page, select all, and scan it. Check buttons, form hints, empty states and error messages, not only the headlines. You can also use <code>curl</code> and <code>grep</code> for a few common English words on the Dutch URL.</li>
+<li><strong>Click through as a Dutch user.</strong> Sign up, log in, refresh, and reset a password. Does the language stay? Do the emails arrive in Dutch?</li>
+<li><strong>Check a price and a date</strong> in each language.</li>
+<li><strong>Try a long word</strong> on a phone-sized screen.</li>
+</ol>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>You chose the language, the parts to translate, and who checks the text.</li>
+<li>Each public page has its own URL per language, and every internal link keeps the language.</li>
+<li>No visible text is hardcoded in components.</li>
+<li>Plurals, dates, numbers and prices go through the i18n library and <code>Intl</code>.</li>
+<li>Each page has <code>lang</code>, its own title and description, and a canonical to itself.</li>
+<li><code>hreflang</code> links go both ways and include x-default.</li>
+<li>All versions are in <code>sitemap.xml</code>, and the text is in the HTML.</li>
+<li>Emails, errors and legal pages exist in the new language.</li>
+<li>The language survives login and refresh.</li>
+<li>Layout holds with the longest texts, on a phone.</li>
+</ol>
+
+<p>Going live soon? Also run the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including adding Dutch or German without breaking the app or its search results. I work in Dutch and English. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>

@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'add-second-language-dutch-german-ai-built-app',
+    title: "Add Dutch or German to your AI-built app without breaking it",
+    description: "Adding Dutch or German to a Lovable, Bolt or Cursor app: one URL per language, hreflang, Intl formats and what breaks. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'file-uploads-ai-built-app-checks',
     title: "File uploads in an AI-built app: privacy, limits and costs",
     description: "Who can open the files your users upload? Check public buckets, size limits, image costs and deleted files in an AI-built app. Checked in November 2026.",
