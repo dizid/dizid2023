@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'own-domain-lovable-bolt-app-dns-ssl-www',
+    title: "Put your Lovable or Bolt app on your own domain: DNS, SSL, www",
+    description: "Move your Lovable or Bolt app to your own domain: which DNS records, www or not, HTTPS errors and what else breaks. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'harden-login-ai-built-app-supabase-firebase',
     title: "Secure the login of your AI-built app: 7 settings to check",
     description: "Seven login settings to check in Supabase and Firebase: rate limits, leaked passwords, MFA, CAPTCHA and sessions. Checked in November 2026.",

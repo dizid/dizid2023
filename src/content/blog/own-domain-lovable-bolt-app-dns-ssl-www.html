@@ -1,0 +1,136 @@
+<p>Your app runs on an address like <code>something.lovable.app</code>, a <code>bolt.host</code> address or a <code>netlify.app</code> address. You bought a domain and want the app there. The steps are short. The words are not friendly: A record, CNAME, apex, TTL, certificate. This post explains them in plain English and lists what else breaks when the address changes. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> You have two routes. Route one: use the builder's own custom-domain feature. Route two: host the app yourself on Netlify or Vercel and point your domain there. Either way you add one or two DNS records at the place that manages your domain's DNS, using the exact values the platform shows you. Pick one main address, www or no www, and redirect the other. Expect a certificate warning until the platform has issued HTTPS for your domain. Then update every service that knows the old address: sign-in, API allowed origins, payment webhooks, email and your sitemap. Do not delete email records.</p>
+
+<h2>1. Two routes: builder feature or your own hosting</h2>
+
+<h3>Route one: the builder's custom domain feature</h3>
+
+<p>Lovable's <a href="https://docs.lovable.dev/features/custom-domain">custom domain docs</a> say: "Custom domains are available on paid plans." They also say that after a downgrade to Free you cannot connect new domains, but existing connections keep working. Lovable asks for an A record, a TXT verification record, and an AAAA record if it lists one. It does not print the IP address in the docs. You copy it from the setup window in your project.</p>
+
+<p>Bolt's <a href="https://support.bolt.new/cloud/domains/connect">connect a domain guide</a> says you can connect a domain only to a published site. In Bolt you go to Domains &amp; Hosting and choose "Connect a domain you own". Then you add the DNS records at your registrar. That guide does not mention plan requirements, so check your own plan screen.</p>
+
+<h3>Route two: host it yourself on Netlify or Vercel</h3>
+
+<p>If you moved the code to your own GitHub and your own host, you attach the domain there instead. The move itself is in <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving a Lovable or Bolt app to your own GitHub and hosting</a>. Do the move first, test on the host's own address, and switch the domain last.</p>
+
+<h2>2. DNS in plain words</h2>
+
+<p>DNS is the phone book of the internet. You tell it "this name goes to that place". Each line in the book is a record. Three types matter here:</p>
+
+<ul>
+<li><strong>A record:</strong> points a name to an IP address (a number).</li>
+<li><strong>CNAME record:</strong> points a name to another name. The platform then decides the final address.</li>
+<li><strong>TXT record:</strong> holds text. Platforms use it to check that the domain is yours.</li>
+</ul>
+
+<p>Two kinds of names matter too. The <strong>apex</strong> (also called root or naked domain) is <code>example.com</code>. A <strong>subdomain</strong> is <code>www.example.com</code> or <code>app.example.com</code>.</p>
+
+<h3>Why the apex is awkward</h3>
+
+<p>Vercel's <a href="https://vercel.com/docs/domains/troubleshooting">troubleshooting page</a> explains it. The DNS standard says that if a CNAME exists at a name, no other data should be present. An apex also needs other records, such as NS and often MX for email. So a CNAME at the apex is not allowed. Subdomains like <code>www</code> can have one.</p>
+
+<p>Some DNS providers work around this. They call it ALIAS, ANAME or CNAME flattening. Cloudflare's <a href="https://developers.cloudflare.com/dns/cname-flattening/">CNAME flattening page</a> says Cloudflare "finds the IP address that a CNAME points to" and returns the final IP address instead. Not every registrar offers this. That is why platforms give an A record as a fallback.</p>
+
+<h3>What the platforms ask for today</h3>
+
+<ul>
+<li><strong>Netlify</strong> (<a href="https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/">external DNS guide</a>). Apex: an ALIAS, ANAME or flattened CNAME to <code>apex-loadbalancer.netlify.com</code>, or as a fallback an A record to <code>75.2.60.5</code>. For <code>www</code>: a CNAME to your own site's Netlify subdomain, for example <code>brave-curie-12345.netlify.app</code>. Use your own site name, not the example.</li>
+<li><strong>Vercel</strong> (<a href="https://vercel.com/docs/domains/working-with-domains/add-a-domain">add a domain</a>). Apex: an A record. Subdomain: a CNAME record. Each project has its own CNAME value. Vercel's troubleshooting page says the A record value can differ between projects and warns that an address copied from another project or an old guide can leave the domain in an "Invalid Configuration" state. Copy the values from your project's Settings, then Domains.</li>
+<li><strong>Bolt</strong> (<a href="https://support.bolt.new/cloud/domains/connect">connect guide</a>). For <code>www</code>: a CNAME to <code>site-dns.bolt.host</code>. For the root: ALIAS, ANAME or flattened CNAME to the same name, or an A record to the IP shown on Bolt's DNS page. The guide warns: "Look for ALIAS (or ANAME, or Flattened CNAME), not AAAA." An AAAA record does not connect your domain.</li>
+<li><strong>Lovable</strong> (<a href="https://docs.lovable.dev/features/custom-domain">docs</a>). A record to the IP shown in the setup window, plus a TXT record at host <code>_lovable</code> whose value starts with <code>lovable_verify=</code>.</li>
+</ul>
+
+<p>Two practical tips. The host field is often <code>@</code> for the apex, but some registrars want it blank. And remove old A, AAAA or CNAME records for the same name first. Vercel's docs say leftover records from a previous host cause conflicts.</p>
+
+<h2>3. www or no www</h2>
+
+<p>Your visitors will type both. Pick one as the main address. Redirect the other to it. Do not serve the same site on both, because Google then sees two copies.</p>
+
+<ul>
+<li><strong>Netlify:</strong> its <a href="https://docs.netlify.com/manage/domains/manage-domains/manage-multiple-domains/">multiple domains page</a> says that if you set <code>www</code> as primary, Netlify "will automatically redirect the apex domain to the <code>www</code> subdomain", and the other way round. With external DNS it says: "we strongly recommend setting the <code>www</code> subdomain (or another subdomain) as your primary domain."</li>
+<li><strong>Vercel:</strong> its <a href="https://vercel.com/docs/domains/working-with-domains/deploying-and-redirecting">redirect docs</a> say: "We recommend using the <code>www</code> subdomain as your primary domain, with a redirect from the non-<code>www</code> domain to it." You set the redirect in the project's Domains settings.</li>
+<li><strong>Lovable:</strong> keep the option "Redirect www.yourdomain.com to yourdomain.com" on (it is the default) when you use a root domain. The docs say these are 302 temporary redirects, and that 301 permanent redirects between project domains are not supported.</li>
+<li><strong>Bolt:</strong> its guide says that for a domain bought outside Bolt, "you can set the main domain as primary, but not any of its subdomains".</li>
+</ul>
+
+<p>Netlify's docs add that when you add an apex domain it adds <code>www</code> automatically, so set DNS for both names.</p>
+
+<h2>4. HTTPS and the certificate warning</h2>
+
+<p>HTTPS needs a certificate for your domain. The platform issues it for you, and it only works after your DNS points to the platform. Until then, the browser shows a warning, or the site does not load at all. This is normal during the switch.</p>
+
+<ul>
+<li><strong>Netlify</strong> (<a href="https://docs.netlify.com/manage/domains/secure-domains-with-https/https-ssl/">HTTPS docs</a>): "If you add a custom domain, we will automatically provision a certificate with Let's Encrypt." Its <a href="https://docs.netlify.com/manage/domains/troubleshooting-tips/">troubleshooting page</a> says validation "cannot be completed until the DNS records for your custom domain are pointing to our servers". It also says old DNS caches must expire first, and that proxies such as Cloudflare must be switched off for the check.</li>
+<li><strong>Vercel</strong> (<a href="https://vercel.com/docs/domains/working-with-ssl">SSL docs</a>): it "will automatically try to generate a certificate for every domain once it is added to a project", and it "will only work once the certificate validation request is successful, which happens once DNS records are added and propagated". It uses Let's Encrypt.</li>
+<li><strong>Bolt</strong> (<a href="https://support.bolt.new/cloud/domains/ssl-https">SSL and HTTPS</a>): "Set up your DNS first, then Bolt will provision HTTPS." For external domains it says this "may take up to 24 hours after DNS is correctly configured".</li>
+<li><strong>Lovable:</strong> issues a free certificate automatically. If the status stays at "Issuing certificate" for 72 hours, its docs say to contact Lovable Support.</li>
+</ul>
+
+<h3>CAA records</h3>
+
+<p>A CAA record says which companies may issue certificates for your domain. Most domains have none, and that is fine. If yours has one, it must allow the platform's authority. Vercel's docs say to add <code>0 issue "letsencrypt.org"</code>, and Lovable's docs give the same example. If you did not create a CAA record, leave this alone.</p>
+
+<h2>5. Propagation and TTL</h2>
+
+<p>When you change a DNS record, the world does not update at once. Resolvers keep old answers for a while. The TTL ("time to live") is how long. Cloudflare's <a href="https://developers.cloudflare.com/dns/manage-dns-records/reference/ttl/">TTL page</a> says it "controls how long each record is cached". A long TTL means a slow change. A short one means a fast change.</p>
+
+<p>The platforms give these time ranges. Netlify: "It may take a full day for the settings to propagate". Lovable: "up to 72 hours to propagate", though most go live within a few hours. Bolt: most domains connect within a few hours, up to 24 hours. Vercel says a nameserver change can take 24 to 48 hours, and normal records usually move faster.</p>
+
+<p>Vercel also gives one useful tip. Before you change a record, lower its TTL (its example is 60 seconds) and wait for the old TTL to expire. Then a rollback is quick if something goes wrong. Raise the TTL again when all works. Do this a day before switch day.</p>
+
+<h2>6. What else must learn the new address</h2>
+
+<p>The app is the easy part. Other services still have the old address saved. Go through this list.</p>
+
+<ul>
+<li><strong>Sign-in.</strong> Redirect URLs and allowed sites in your auth provider and in Google or Apple sign-in must include the new domain. See <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with Google and Apple sign-in</a>.</li>
+<li><strong>Allowed origins (CORS).</strong> Your backend functions may only accept the old address, and <code>www</code> and no-www count as different origins. See <a href="/blog/cors-error-ai-built-app-fix">fixing CORS errors in an AI-built app</a>.</li>
+<li><strong>Stripe webhooks.</strong> If the webhook URL points at your app's address, register the new URL and copy its new signing secret to your settings. Stripe's <a href="https://docs.stripe.com/webhooks">webhook docs</a> say endpoints must be public HTTPS URLs.</li>
+<li><strong>Email.</strong> If you send email from the same domain, SPF, DKIM and DMARC must be right. See <a href="/blog/app-emails-spam-spf-dkim-dmarc">why app emails go to spam</a>.</li>
+<li><strong>Canonical tags and sitemap.</strong> They should name the new main address, with the same www choice as your redirect. See <a href="/blog/spa-seo-lovable-bolt-google-cant-see">why Google can't see your app</a>.</li>
+<li><strong>Old builder address.</strong> People may have it bookmarked or Google may have it indexed. The builder docs checked for this post do not describe redirecting the old builder address, so check your builder's settings and do not assume it happens. Updating your own links and sitemap is the part you control.</li>
+</ul>
+
+<h2>7. Common errors and what they mean</h2>
+
+<h3>DNS_PROBE_FINISHED_NXDOMAIN</h3>
+
+<p>The browser asked DNS for your name and got "no such name". Usual causes: a typo, a record added at the wrong place (see below), or a record added a few minutes ago that has not spread yet.</p>
+
+<h3>Certificate error or "not secure"</h3>
+
+<p>Normal in the first hours. If it stays: check the records match the platform's values exactly, remove old conflicting records, and switch off any proxy (for example Cloudflare's orange cloud). Lovable's docs say to use "DNS only" (gray cloud) for its records if you see Cloudflare error 1001 or 1003. Vercel's docs say a proxy answers with its own addresses, so the check fails. On Netlify, check the HTTPS section of Domain management for the exact message.</p>
+
+<h3>The registrar's parking page still shows</h3>
+
+<p>Your domain still points to the registrar's default page. Either the new records are missing, or an old A record for the parking page is still there next to yours. Remove the old record. If the records are right, wait for the TTL to run out.</p>
+
+<h3>Records added at the wrong place</h3>
+
+<p>Your registrar and your DNS host can be two different services. If the domain's nameservers point to Cloudflare, records you add in the registrar's panel are ignored. Edit DNS where the nameservers say it lives. Vercel's docs show the command <code>dig NS example.com +short</code> to see who is in charge.</p>
+
+<h3>Email stopped working</h3>
+
+<p>MX records tell the world where your mail goes. If they are deleted or lost, mail stops arriving. This happens when people clear "old" records, or when they switch nameservers without copying everything. Vercel's docs say to copy MX records and TXT records before changing nameservers. The safe rule: <strong>do not delete MX or TXT records you did not create.</strong> Change only the website records, which are the A, AAAA and CNAME records for the names you are moving. Write down all your current records before you start.</p>
+
+<h2>8. Switch-day checklist</h2>
+
+<ol>
+<li>One day before: lower the TTL on the records you will change.</li>
+<li>Write down or screenshot every current DNS record, especially MX and TXT.</li>
+<li>Find out where DNS is managed: <code>dig NS example.com +short</code>, or ask your registrar.</li>
+<li>Add the domain in the builder or host first. Copy the exact record values it shows.</li>
+<li>Decide the main address (www or no www) and set the redirect for the other.</li>
+<li>Remove old A, AAAA or CNAME records for the names you move. Leave MX and TXT alone.</li>
+<li>Add the new records. Add both the apex and <code>www</code>.</li>
+<li>Check that the platform shows the domain as connected. Wait for the certificate.</li>
+<li>Open both <code>https://example.com</code> and <code>https://www.example.com</code>. One should redirect to the other.</li>
+<li>Update auth redirect URLs, allowed origins, the Stripe webhook, the email sending domain, canonical tags and the sitemap.</li>
+<li>Test sign-up, sign-in, a test payment and a password reset email on the new domain. Send and receive one normal email.</li>
+<li>When all works, raise the TTL back.</li>
+</ol>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including moving them to your own domain without breaking sign-in, payments or email. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
