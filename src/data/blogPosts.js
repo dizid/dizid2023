@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'spa-seo-lovable-bolt-google-cant-see',
+    title: "Google can't see your Lovable or Bolt app: check and fix it",
+    description: "Pages missing from Google or ChatGPT? Why Lovable and Bolt apps send crawlers an empty page, how to check in 10 minutes, and the fixes in order of value.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'ai-built-app-broken-on-phones-fixes',
     title: "Your AI-built app looks broken on phones: the fixes that matter",
     description: "Your app works on a laptop but breaks on phones? Fix sideways scrolling, cut-off screens, zooming forms and tiny buttons, with prompts for your AI tool.",

@@ -1,0 +1,92 @@
+<p>You built an app with Lovable or Bolt, put it online, and Google barely shows it. Search for your own pages and nothing comes up. Ask ChatGPT about your product and it has never heard of it. The cause is often not your content. It is how the page is delivered. Facts about Google, Lovable, Netlify and React Router come from their own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> many AI-built apps are single-page apps: the browser builds the page with JavaScript, so the first HTML a crawler gets is almost empty. Google can usually run the JavaScript, later. Many other crawlers can't, and you can't count on them. Check what a crawler really receives (10 minutes, below). If it is empty, give each public page its own title, description and canonical, and build those pages as real HTML at build time.</p>
+
+<h2>1. Why it happens</h2>
+
+<p>A single-page app (SPA) sends one small HTML file: a root <code>div</code> and some script tags. The scripts then draw the page in the visitor's browser. Lovable's <a href="https://docs.lovable.dev/features/seo-aeo">SEO docs</a> mention "older React + Vite apps". I did not find a Bolt doc page that says how Bolt apps are built, so open your own <code>package.json</code> and see whether it lists React and Vite.</p>
+
+<p>Google's <a href="https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics">JavaScript SEO basics</a> say: "Google processes JavaScript web apps in three main phases:" crawling, rendering and indexing. The page also says Googlebot "queues all pages with a <code>200</code> HTTP status code for rendering", and a page may wait in that queue. So Google can see your JavaScript content, but later and with extra steps. The same page adds that server-side or pre-rendering "is still a great idea", because it also helps crawlers that can't run JavaScript.</p>
+
+<p>That matters for AI search. In December 2024, Vercel and MERJ published <a href="https://vercel.com/blog/the-rise-of-the-ai-crawler">a study of AI crawlers</a>. It says: "The results consistently show that none of the major AI crawlers currently render JavaScript." It is one study, almost two years old, so it is not a permanent fact. It is still reason enough not to count on AI crawlers running your scripts. More on AI search: <a href="/blog/get-recommended-by-chatgpt-geo-basics">getting recommended by ChatGPT</a>.</p>
+
+<h2>2. A twist: what Lovable does for you</h2>
+
+<p>Lovable's <a href="https://docs.lovable.dev/features/seo-aeo">SEO docs</a> say new apps created from May 13, 2026 (June 22, 2026 on Enterprise plans) "use TanStack Start with server-side rendering (SSR)", and that "Every request returns fully rendered HTML, for humans and crawlers."</p>
+
+<p>For older React + Vite apps, the docs say Lovable uses "on-request pre-rendering on deployed public URLs", and that "Pre-rendering is only served to <strong>verified crawlers</strong>." Unverified bots "see the regular single-page app". The docs also say: "Content that loads late may be missing." The docs I read only cover apps hosted by Lovable. They say nothing about an app you moved elsewhere. If you moved it (see <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving your app to your own GitHub and hosting</a>), I can't promise that the pre-rendering comes with it, so test your own site.</p>
+
+<h2>3. Typical symptoms</h2>
+
+<ul>
+<li><strong>Every page has the same title and description.</strong> Lovable's docs list "Duplicate titles, placeholder text, weak descriptions, or wrong canonical URLs" among the things its review checks.</li>
+<li><strong>The canonical tag points to the home page on every URL.</strong> Search Console may show <strong>Duplicate, Google chose different canonical than user</strong>. Google's <a href="https://support.google.com/webmasters/answer/7440203">page indexing report help</a> describes it as: "This page is marked as canonical for a set of pages, but Google thinks another URL makes a better canonical."</li>
+<li><strong>Pages the crawler saw but did not index.</strong> The same help page lists <strong>Crawled - currently not indexed</strong>: "The page was crawled by Google but not indexed." It adds that this is "a common message for many sites", so it has many possible causes. An empty or duplicate page is one of them.</li>
+<li><strong>Made-up URLs return 200.</strong> Netlify's <a href="https://docs.netlify.com/manage/routing/redirects/rewrites-proxies/">rewrite docs</a> show the usual SPA rule <code>/*  /index.html  200</code> and say it will "serve the <code>index.html</code> instead of giving a <code>404</code> no matter what URL the browser requests". Search Console may then report <strong>Soft 404</strong>: "The page request returns what we think is a soft 404 response."</li>
+<li><strong>Blog or product pages are missing from <code>sitemap.xml</code>,</strong> or the sitemap does not exist. Lovable's docs say it "creates a <code>robots.txt</code> with every new project, but not always a sitemap".</li>
+<li><strong>A list page that says "Loading..."</strong> in the HTML, because the list is fetched by JavaScript after the page loads.</li>
+</ul>
+
+<h2>4. How to check in 10 minutes</h2>
+
+<ol>
+<li><strong>View source, not Inspect.</strong> In Chrome, right-click and choose <strong>View page source</strong>. This is the HTML as delivered. <strong>Inspect</strong> shows the page after JavaScript has run. If your headline and text are in Inspect but not in View source, a crawler that skips JavaScript sees an empty page.</li>
+<li><strong>Use <code>curl</code>.</strong> Run <code>curl -s https://yoursite.com/some-page | grep "a phrase from the page"</code>. No output means the text is not in the HTML. Also look at the <code>&lt;title&gt;</code> and canonical lines in the result.</li>
+<li><strong>Search Console, URL Inspection.</strong> Per Google's <a href="https://support.google.com/webmasters/answer/9012289">URL Inspection help</a>, click <strong>Test live URL</strong>, then <strong>View tested page</strong>. You see "the raw HTML returned", and a <strong>Screenshot</strong> tab. A passing test does not promise indexing.</li>
+<li><strong>Open <code>/sitemap.xml</code> and <code>/robots.txt</code>.</strong> Is every public page in the sitemap? Does <code>robots.txt</code> have a <code>Sitemap:</code> line? Google's <a href="https://developers.google.com/search/docs/crawling-indexing/robots/intro">robots.txt intro</a> says it is used "primarily to manage crawler traffic" and is "not a mechanism for keeping a web page out of Google", so check that it does not block pages you want found.</li>
+<li><strong>Open a made-up URL,</strong> like <code>/this-page-does-not-exist</code>. It should say not found, and the status should be 404. Use <code>curl -I</code> to see the status.</li>
+</ol>
+
+<h2>5. Fixes, in order of value</h2>
+
+<p><strong>a) Give each public page its own title, description and canonical.</strong> Google's JavaScript guide says "You can use JavaScript to set or change the meta description as well as the <code>&lt;title&gt;</code> element" and "You can use JavaScript to set the canonical URL". Libraries like react-helmet-async or Unhead do this. But on its own this only helps crawlers that run JavaScript. The tags are still set after the page loads. The guide also says the best way to set the canonical is HTML, and a JavaScript value should match the HTML one.</p>
+
+<p><strong>b) Build the public pages as real HTML at build time (prerendering).</strong> Every public route becomes its own HTML file with the text in it. With React Router, the <a href="https://reactrouter.com/how-to/pre-rendering">pre-rendering docs</a> say: "Pre-rendering is enabled via the <code>prerender</code> config in <code>react-router.config.ts</code>." That page is for framework mode only, so a plain Vite app that uses React Router as a library can't use it as is. The docs also say the value <code>true</code> "will not include any dynamic paths (i.e., <code>/blog/:slug</code>) because the parameter values are unknown", so for blog posts you pass the list of paths. The other routes are a static site generator for the public pages, or a framework that renders on the server. Which one fits depends on your app. The <a href="/blog/fix-or-rebuild-ai-built-app">fix or rebuild</a> post helps you judge it.</p>
+
+<p><strong>c) A complete <code>sitemap.xml</code> and a <code>robots.txt</code> that points to it.</strong> Google's <a href="https://developers.google.com/search/docs/crawling-indexing/sitemaps/overview">sitemap overview</a> says a sitemap "helps search engines discover URLs on your site, but it doesn't guarantee that all the items in your sitemap will be crawled and indexed". List every public page, with full URLs on your own domain.</p>
+
+<p><strong>d) Real 404s for unknown URLs.</strong> Google's <a href="https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics">JavaScript guide</a> has a section called "Avoid <code>soft 404</code> errors in single-page apps". It gives two options: a JavaScript redirect to a URL that returns a <code>404</code>, or a <code>noindex</code> robots meta tag on error pages. If your host rewrites everything to <code>index.html</code>, a prerendered site fixes most of this, because real pages are real files and the rest can fall through to a 404 page.</p>
+
+<p><strong>e) Skip dynamic rendering.</strong> That means serving crawlers a different, pre-built version than users get. Google's <a href="https://developers.google.com/search/docs/crawling-indexing/javascript/dynamic-rendering">dynamic rendering page</a> says: "Dynamic rendering is a workaround and not a recommended solution". Prefer fix (b).</p>
+
+<p>The part of your app behind a login does not need any of this. It does not need to rank. Leave it as it is.</p>
+
+<h2>What I did on my own sites</h2>
+
+<p>These are my apps, checked in the code in November 2026. I have no traffic numbers to show, and I won't invent any.</p>
+
+<ul>
+<li><strong>TuneCraft (tunecraft.music):</strong> the landing page used to be an empty app shell for crawlers that don't run JavaScript. It is now prerendered at build time, so about 250 words of real text are in the HTML. Its Privacy and Terms pages got the same fix.</li>
+<li><strong>WuXing Zodiac (wuxingzodiac.me):</strong> its 5 blog posts were invisible to search. Each post URL served the home page with a canonical to the home page, the posts were not in the sitemap, and <code>/blog</code> said "Loading posts...". Now <code>/blog</code> and every post are built as static pages with their own title, description and canonical, and they are in the sitemap.</li>
+<li><strong>dizid.com itself</strong> is prerendered at build time (vite-ssg), so every page and post is real HTML.</li>
+</ul>
+
+<h2>How to ask your AI tool, or a developer</h2>
+
+<p>"Improve my SEO" is too vague. Name the pages, the tags and what must stay the same. Two examples:</p>
+
+<ul>
+<li><em>"Give each public page its own title (under 60 characters), meta description (under 155 characters) and canonical URL on https://yoursite.com, for /, /pricing, /about and each blog post. Do not change anything behind the login. Do not change the design."</em></li>
+<li><em>"Build the public pages /, /pricing, /about, /privacy, /terms and /blog/* as static HTML at build time, so the text is in the HTML file without running JavaScript. Generate sitemap.xml with all of them, and make unknown URLs return a real 404. Keep the logged-in app working as a normal single-page app. Tell me what you changed."</em></li>
+</ul>
+
+<p>The second prompt is a bigger change. Try it on a copy of your project first, and use <code>curl</code> from step 4 to see if it worked. If each prompt breaks something else, start with <a href="/blog/testing-ai-built-app-first-tests">the first tests worth writing</a>.</p>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>View source shows your real headline and text, not an empty root <code>div</code>.</li>
+<li>Each public page has its own title, description and canonical.</li>
+<li>The canonical points to the page itself, not to the home page.</li>
+<li><code>sitemap.xml</code> lists every public page, and <code>robots.txt</code> points to it and does not block them.</li>
+<li>A made-up URL returns a real 404.</li>
+<li>List pages (blog, products) have their items in the HTML, not "Loading...".</li>
+<li>Search Console URL Inspection, live test, shows your text in the tested page.</li>
+<li>The logged-in part of the app still works.</li>
+</ol>
+
+<p>Before a launch, also go through the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>. Slow pages hurt too: see <a href="/blog/slow-ai-built-app-fixes">why your AI-built app is slow</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including making the public pages visible to Google and AI search without breaking the app. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
