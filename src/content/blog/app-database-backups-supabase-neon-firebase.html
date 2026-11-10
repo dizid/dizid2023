@@ -1,0 +1,70 @@
+<p>Most app owners assume their database host keeps backups. Some plans do, some don't, and almost none cover everything. The uploaded photos, the invoices in your storage bucket and the mistake you only notice ten days later are usually outside what is kept. Below: what Supabase, Neon and Firebase actually keep on each plan (checked against their documentation in November 2026), what none of them back up, and a 15-minute check you can do today.</p>
+
+<p><strong>Short answer:</strong> on free plans you should assume you have little or nothing you can restore. On paid plans you get days, not months, and only of the database itself. If losing your data would hurt, add one copy you control, make sure files are copied too, and do one test restore.</p>
+
+<h2>What your database host keeps for you</h2>
+
+<h3>Supabase</h3>
+
+<ul>
+<li><strong>Daily backups on paid plans only.</strong> Supabase's <a href="https://supabase.com/docs/guides/platform/backups">backup docs</a>: "We automatically back up all Pro, Team, and Enterprise Plan projects on a daily basis." Pro keeps the last 7 days, Team 14, Enterprise up to 30. For free projects the docs recommend that you "regularly export" your data yourself.</li>
+<li><strong>Point-in-time recovery is a paid add-on</strong> on Pro and up: about $100 a month for a 7-day window. With it you can go back to a moment, not just to last night.</li>
+<li><strong>Files are not included.</strong> "Database backups do not include objects you store via the Storage API." Your users' uploads need their own copy.</li>
+</ul>
+
+<h3>Neon</h3>
+
+<ul>
+<li><strong>A restore window, not a set of backups.</strong> Neon lets you <a href="https://neon.com/docs/introduction/branch-restore">restore a branch to any moment</a> inside its <a href="https://neon.com/docs/postgres/backup-restore/history-window">history window</a>, down to the millisecond, and keeps the old state as a backup branch.</li>
+<li><strong>The window is short by default.</strong> Free: 6 hours. Launch: 1 day by default, up to 7 days. Scale: 1 day by default, up to 30. If you are on a paid plan and never changed the setting, you can go back one day.</li>
+</ul>
+
+<h3>Firebase (Firestore)</h3>
+
+<ul>
+<li><strong>Nothing is on by default.</strong> <a href="https://firebase.google.com/docs/firestore/pitr">Point-in-time recovery</a> "is disabled by default"; once enabled it keeps 7 days and needs billing turned on.</li>
+<li><strong>Scheduled backups need the Blaze plan.</strong> <a href="https://firebase.google.com/docs/firestore/backups">Scheduled backups</a> can run daily or weekly and be kept up to 14 weeks; you pay for their storage, and they are not available on the free Spark plan.</li>
+<li><strong>Cloud Storage files are separate.</strong> A Firestore backup covers the database, not the images and documents in your storage buckets.</li>
+</ul>
+
+<h2>What none of them cover</h2>
+
+<ul>
+<li><strong>Your files.</strong> Profile photos, uploaded documents, generated PDFs. They live in object storage, which has its own rules and usually no automatic backup.</li>
+<li><strong>Mistakes you find late.</strong> A bad import or a bug that slowly overwrites data can go unnoticed for weeks. A 1-day or 7-day window doesn't reach back that far.</li>
+<li><strong>Losing the account.</strong> If the hosting account is closed, unpaid or locked, its backups go with it. A copy in a place you control is the only protection.</li>
+<li><strong>Things outside the database.</strong> Your environment settings, payment provider setup and email templates. Write down where each one lives.</li>
+</ul>
+
+<h2>A backup nobody checks is not a backup</h2>
+
+<p>A pattern I keep running into: a weekly backup job stops without anyone noticing. It was set up to email its result, but the email goes out from a test or unverified sender address that never reaches an inbox, so nobody can see that the emails have stopped as well. The data is unprotected for months while everyone assumes it is fine.</p>
+
+<p>Two habits prevent this. First, alert on <em>failure</em>, not on success: a message when a backup doesn't run gets noticed, a weekly "all fine" gets filtered. Second, restore a backup now and then. Until you have restored one, you don't know it works.</p>
+
+<h2>A simple setup for a small app</h2>
+
+<ol>
+<li><strong>Know your window and raise it if needed.</strong> On Neon Launch, setting the history window to 7 days costs a little storage and gives you a week instead of a day. On Supabase Pro, the 7 daily backups are already there.</li>
+<li><strong>Keep one copy you control.</strong> A scheduled database dump (for Postgres, <code>pg_dump</code>; for Firestore, a scheduled export) to storage in a different account, kept for a few weeks. A small scheduled job on GitHub Actions or your host's cron is enough.</li>
+<li><strong>Copy your files too.</strong> Sync the storage bucket to a second location on the same schedule.</li>
+<li><strong>Keep the copy private.</strong> A database dump contains your users' personal data. Store it encrypted or in a private bucket, and delete old copies, as your privacy policy promises.</li>
+<li><strong>Get told when it fails.</strong> One email or chat message when the job fails, sent from an address you know arrives.</li>
+<li><strong>Test a restore every few months.</strong> Restore into a separate database or branch, open the app against it, check that recent records and files are there.</li>
+</ol>
+
+<h2>The 15-minute check</h2>
+
+<ol>
+<li>Open your database dashboard. Which plan are you on, and what does it say about backups or the restore window?</li>
+<li>Write down how far back you can go today: 0, 6 hours, 1 day, 7 days?</li>
+<li>Check where uploaded files live and whether anything copies them.</li>
+<li>Find the last backup or dump file. What is its date?</li>
+<li>Ask yourself: if the data from last Tuesday were wrong and you noticed today, could you get it back?</li>
+</ol>
+
+<p>If two or more answers are "I don't know", that is your next task, before the next feature.</p>
+
+<h2>Want it set up for you?</h2>
+
+<p>I add backups that run, copy files, report failures and have been restored at least once, for apps on Supabase, Neon and Firebase, including ones built with Lovable, Bolt or Cursor. Read the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a> for the rest of what I check, or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>

@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'app-database-backups-supabase-neon-firebase',
+    title: "Does your app have backups? What Supabase, Neon and Firebase keep",
+    description: "What Supabase, Neon and Firebase really back up on each plan, what they never do (your uploaded files), and a 15-minute check that you can restore.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'small-web-app-running-costs',
     title: "What does a small web app cost to run? My real monthly bills",
     description: "What a small web app costs per month: hosting, database, email, AI and payments, with real bills from my own live apps and the hidden costs to watch.",
