@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'csv-import-ai-built-app-excel-semicolons',
+    title: "Let users import a spreadsheet (CSV) without the mess",
+    description: "How to add CSV import to your AI-built app: semicolons, encoding, dates, server checks, row errors and safe re-imports. Checked in November 2026.",
+    datePublished: '2026-11-14',
+    dateModified: '2026-11-14'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",

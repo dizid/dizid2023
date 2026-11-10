@@ -1,0 +1,92 @@
+<p>You added "import from Excel" to your app. Now the mail arrives. "My import is all in one column." "The names have weird characters." "The dates are wrong." "Half the rows are missing." "I imported twice and now everything is doubled." Apps built with Lovable, Bolt, Cursor and Replit all hit this, and it is most common with Dutch, German and other European users. Facts below come from RFC 4180, Microsoft Support, Papa Parse, MDN, the PostgreSQL docs, the Supabase docs and OWASP, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> a CSV file is not one format. Separator, text encoding, number style and date style change from computer to computer. So do not guess. Detect the separator, show a preview, let the user map the columns, check every row on the server, report errors by row number, and make a second import of the same file harmless.</p>
+
+<h2>1. What CSV is, and what it is not</h2>
+
+<p>CSV means comma-separated values. The best-known description is <a href="https://www.rfc-editor.org/rfc/rfc4180">RFC 4180</a>. Its status line says: "This memo provides information for the Internet community. It does not specify an Internet standard of any kind." The RFC itself says the format "has never been formally documented" before it. So it is a description of common practice, not a strict rule that every program follows.</p>
+
+<p>What it describes: fields are "separated by commas", and "Fields containing line breaks (CRLF), double quotes, and commas should be enclosed in double-quotes." A double quote inside a quoted field is written as two double quotes. It also admits that "some programs, such as Microsoft Excel, do not use double quotes at all". And on text encoding it says only: "Common usage of CSV is US-ASCII", with other character sets possible through a "charset" parameter.</p>
+
+<p>Lesson: do not split lines on commas yourself. That breaks the first time a name or address contains a comma or a line break. Use a parser library, and treat what comes in as untrusted.</p>
+
+<h2>2. Comma or semicolon</h2>
+
+<p>This is the "all in one column" mail. <a href="https://support.microsoft.com/en-us/office/import-or-export-text-txt-or-csv-files-5250ac4c-663c-47ce-937b-339e391393ba">Microsoft's page on importing and exporting text and CSV files</a> says: "When you save a workbook as a .csv file, the default list separator (delimiter) is a comma. You can change this to another separator character using Windows Region settings." It also explains how to get a semicolon in Excel only: "changing the default decimal separator to a comma - this forces Excel to use a semi-colon for the list separator."</p>
+
+<p>So a computer set up with a decimal comma can produce semicolon files. The page does not list countries, and I will not guess which ones. The point for your app: you will receive both kinds.</p>
+
+<table>
+<tr><th></th><th>Comma file</th><th>Semicolon file</th></tr>
+<tr><td>Header</td><td><code>name,price</code></td><td><code>name;price</code></td></tr>
+<tr><td>Row</td><td><code>Zoë,"12,50"</code></td><td><code>Zoë;12,50</code></td></tr>
+</table>
+
+<p>A parser that only knows commas reads the second file as one column. The fix is auto-detect. The <a href="https://www.papaparse.com/docs">Papa Parse docs</a> describe the <code>delimiter</code> option: "Leave blank to auto-detect from a list of most common delimiters, or any values passed in through delimitersToGuess." In the docs' default config it is <code>delimiter: ""</code> with the comment "auto-detect", and the default guess list includes the semicolon. If it cannot decide, the docs list an error code, "UndetectableDelimiter". Show that to the user and let them pick the separator from a small dropdown.</p>
+
+<h2>3. Weird characters: encoding</h2>
+
+<p>When é, ü or ø turn into garbage, the file was saved in one text encoding and read as another. The Papa Parse FAQ answers "Why do non-ASCII characters look weird?" with "It's probably an encoding issue." Its <code>encoding</code> option is "The encoding to use when opening local files. If specified, it must be a value supported by the FileReader API." Let the user switch the encoding in the preview.</p>
+
+<p>The other direction matters too, when your app exports a CSV that people open in Excel. Microsoft's page <a href="https://support.microsoft.com/en-us/office/opening-csv-utf-8-files-correctly-in-excel-8a935af5-3416-4edd-ba7e-3dfd2bc4a032">Opening CSV UTF-8 files correctly in Excel</a> says: "You can open a CSV file encoded with UTF-8 normally if it was saved with BOM (Byte Order Mark)." So write a BOM at the start of your exported file. I found no official page that says how Papa Parse treats a BOM on import, so test that with a real file from Excel before you trust it.</p>
+
+<h2>4. Dates and numbers</h2>
+
+<p>The text <code>1.234,56</code> is one thousand two hundred thirty-four and fifty-six cents in much of Europe. The text <code>1,234.56</code> is the same amount in the US. The date <code>03/04/2026</code> is 3 April for one person and 4 March for another. Nothing in the file says which one you have.</p>
+
+<p>Do not let the browser guess. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse">Date.parse page</a> has a section on non-standard date strings that starts with a note: "This section contains implementation-specific behavior that may be inconsistent across browsers or different versions of browsers." So <code>new Date("03/04/2026")</code> is a gamble.</p>
+
+<p>Safer: in the mapping step, ask "Which date style is in this file?" and "Which number style?" with a live preview of the first rows. Then parse with your own code for exactly that style, and reject values that do not fit. For the date traps after import, see <a href="/blog/wrong-day-dates-time-zones-ai-built-app">wrong-day dates and time zones</a>.</p>
+
+<h2>5. The import flow that avoids support mail</h2>
+
+<ol>
+<li><strong>Upload.</strong> Set a file size limit and a row limit. Microsoft's page above says Excel can import or export "up to 1,048,576 rows and 16,384 columns", so expect big files. See <a href="/blog/file-uploads-ai-built-app-checks">file upload checks</a>.</li>
+<li><strong>Preview.</strong> Show the first five to ten rows in a table, with the detected separator and encoding.</li>
+<li><strong>Map columns.</strong> Let the user say which column is the email, which is the name.</li>
+<li><strong>Validate every row on the server.</strong> The browser check is a convenience. The server check is the real one. See <a href="/blog/form-validation-server-side-ai-built-app">form checks in your AI-built app</a>.</li>
+<li><strong>Show row-level errors.</strong> "Row 14: email missing." "Row 31: date not valid."</li>
+<li><strong>Import all valid rows, or none.</strong> Use one database transaction. The PostgreSQL tutorial says a transaction "bundles multiple steps into a single, all-or-nothing operation" (<a href="https://www.postgresql.org/docs/current/tutorial-transactions.html">PostgreSQL docs</a>). Decide the rule up front and say it on screen.</li>
+<li><strong>Make a re-import safe.</strong> Pick a unique key per row, such as the email or an order number, and add a unique constraint. Then use an upsert. The <a href="https://www.postgresql.org/docs/current/sql-insert.html">PostgreSQL INSERT page</a> says "ON CONFLICT DO UPDATE guarantees an atomic INSERT or UPDATE outcome". Importing the same file twice then updates rows instead of doubling them. More in <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>.</li>
+</ol>
+
+<h2>6. When your app exports CSV: formula injection</h2>
+
+<p>If you let users export back to CSV, a cell that starts with a formula character can run in the spreadsheet. <a href="https://owasp.org/www-community/attacks/CSV_Injection">OWASP's CSV Injection page</a> says: "When a spreadsheet program such as Microsoft Excel or LibreOffice Calc is used to open a CSV, any cells starting with = will be interpreted by the software as a formula." Its list of characters to watch is the equals sign, plus, minus and at, and also tab, carriage return and line feed. OWASP warns that the usual quote tricks "are not reliable in Microsoft Excel after saving and re-opening the CSV file" and describes a tab-prefix method with a trade-off.</p>
+
+<h2>7. Supabase and Firebase</h2>
+
+<p>The <a href="https://supabase.com/docs/guides/database/import-data">Supabase import guide</a> describes a CSV import in the dashboard: "If you're working with small datasets in development, you can experiment with CSV import in the Supabase dashboard," and it notes "the size limit is 100MB". That is a tool for you as the owner, in the Table Editor. It is not a feature your users can use, so your app still needs its own import flow. The Supabase tables guide also covers Postgres's <code>COPY</code> command for bulk loads, with <code>DELIMITER</code> and <code>HEADER</code> options. I did not find an official page on CSV import for Firestore, so I leave Firebase out. Check the current Firebase docs for your case.</p>
+
+<h2>Prompts to paste into Lovable, Bolt or Cursor</h2>
+
+<p><strong>1. Preview and mapping.</strong></p>
+<pre>Add a CSV import for the contacts table. Steps: upload, preview, map columns, import. Parse with Papa Parse, leave the delimiter option empty so it auto-detects, and let the user override the separator and encoding. Show the first 10 rows in a table. Show a column mapping step where each file column maps to a database field. If the delimiter cannot be detected, show a clear message and a separator dropdown.</pre>
+
+<p><strong>2. Server checks and one transaction.</strong></p>
+<pre>Validate every imported row on the server, not only in the browser. Return a list of errors with the row number and the reason, for example "Row 14: email missing". Insert the valid rows in one database transaction. If the user chose "all or nothing", roll back everything when any row fails. Set a maximum file size and row count and reject larger files with a clear message.</pre>
+
+<p><strong>3. Safe re-import.</strong></p>
+<pre>Add a unique constraint on contacts.email per account. Import with an upsert (INSERT ... ON CONFLICT DO UPDATE) so importing the same file twice updates rows and creates no duplicates. After the import, show how many rows were added, updated and skipped.</pre>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>The parser is a library, not a split on commas.</li>
+<li>The separator is detected, with a manual override.</li>
+<li>The user sees a preview before anything is saved.</li>
+<li>Accented characters survive. You tested a file saved from Excel.</li>
+<li>Date and number style are chosen or confirmed, never guessed silently.</li>
+<li>Every row is checked on the server.</li>
+<li>Errors show a row number and a reason.</li>
+<li>Import is all valid rows or none, inside one transaction.</li>
+<li>A unique key and an upsert make a second import harmless.</li>
+<li>File size and row count have limits.</li>
+<li>Exported files are checked for cells that start with =, +, - or @.</li>
+</ol>
+
+<p>Related: <a href="/blog/add-second-language-dutch-german-ai-built-app">adding Dutch and German to your app</a> covers the language side of serving European users.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including import and export flows that hold up with real spreadsheets. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
