@@ -22,7 +22,7 @@
 <li><strong>Verify the signature</strong> in the <code>Stripe-Signature</code> header. Otherwise anyone who finds the URL can send a fake "paid" event. It needs the raw request body, so a framework that parses the body first breaks the check.</li>
 <li><strong>Answer fast.</strong> Return a 2xx before slow work; Stripe suggests a queue.</li>
 <li><strong>Expect retries.</strong> In live mode Stripe retries a failed delivery for up to three days with exponential backoff.</li>
-<li><strong>Expect duplicates and wrong order.</strong> Delivery order isn't guaranteed and an event can arrive twice. Store processed event IDs, and fetch the current object from the API when you need the latest state.</li>
+<li><strong>Expect duplicates and wrong order.</strong> Delivery order isn't guaranteed and an event can arrive twice. Store processed event IDs, and fetch the current object from the API when you need the latest state. How to do that step by step: <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>.</li>
 </ul>
 
 <h2>3. Double charges and idempotency</h2>

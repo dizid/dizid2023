@@ -16,7 +16,7 @@
 
 <h2>2. Size and type limits</h2>
 
-<p>Do not trust the upload form. <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/accept">MDN</a> says about the file input's <code>accept</code> attribute that it "doesn't validate the types of the selected files; it provides hints for browsers." It adds that "you should make sure that expected requirement is validated server-side." The real check belongs in the storage rules or on the server.</p>
+<p>Do not trust the upload form. <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/accept">MDN</a> says about the file input's <code>accept</code> attribute that it "doesn't validate the types of the selected files; it provides hints for browsers." It adds that "you should make sure that expected requirement is validated server-side." The real check belongs in the storage rules or on the server. The same rule holds for every other form field: see <a href="/blog/form-validation-server-side-ai-built-app">why browser form checks aren't enough</a>.</p>
 
 <p>On Supabase, the limits sit in two places. The <a href="https://supabase.com/docs/guides/storage/uploads/file-limits">file limits page</a> describes a global limit that applies to all buckets. It says "For Free projects, the limit can't exceed 50 MB", and that on the Pro Plan and up you can raise it to a higher maximum. You can also set a smaller limit per bucket, and "it can't be higher than this global limit." The bucket docs add that "Upload restrictions like max file size and allowed content types are also defined at the bucket level." For an avatar bucket, set a small limit and allow only image types.</p>
 

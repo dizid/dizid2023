@@ -63,7 +63,7 @@
 <p>Treat every job as one that can run twice, or not at all. Vercel says this about its own delivery. For any platform, three habits help:</p>
 
 <ul>
-<li><strong>Make it idempotent.</strong> Running twice must give the same result as running once. "Set status to sent" is safe. "Add 10 credits" is not.</li>
+<li><strong>Make it idempotent.</strong> Running twice must give the same result as running once. "Set status to sent" is safe. "Add 10 credits" is not. More on this in <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>.</li>
 <li><strong>Record what you did.</strong> Mark each digest or reminder as sent, and query for all work not yet done. Then the next run catches up after a missed one.</li>
 <li><strong>Use a lock.</strong> If a run can take longer than the interval, let the job exit when another run is active. Vercel suggests a lock for this.</li>
 </ul>

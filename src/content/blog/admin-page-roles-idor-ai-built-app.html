@@ -56,7 +56,7 @@
 <li>Read the sign-in token from the request.</li>
 <li>Verify it on the server.</li>
 <li>Get the user ID and role from the verified token or from your database, and decide.</li>
-<li>Never take "isAdmin" or a user ID from the request body or the URL. The caller can write anything there.</li>
+<li>Never take "isAdmin" or a user ID from the request body or the URL. The caller can write anything there. The same goes for prices and other form values: see <a href="/blog/form-validation-server-side-ai-built-app">why browser form checks aren't enough</a>.</li>
 </ol>
 
 <p>On Firebase, <a href="https://firebase.google.com/docs/auth/admin/verify-id-tokens">the Admin SDK can verify an ID token</a> to "retrieve the <code>uid</code> from it" and securely identify the signed-in user on your server. That page also notes it "does not check whether or not the token has been revoked." On Supabase, <a href="https://supabase.com/docs/guides/auth/jwts">the JWT guide</a> says to rely on <code>supabase.auth.getClaims()</code> to verify the signature. The <a href="https://supabase.com/docs/reference/javascript/auth-getuser">getUser reference</a> says it "performs a network request to the Supabase Auth server", so the result can be used for authorization decisions.</p>
