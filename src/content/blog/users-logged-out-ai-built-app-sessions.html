@@ -56,7 +56,7 @@
 
 <p>This one is common in generated code. Look for a sign out call inside an error handler: a failed API call, a 401 from your own backend, a network error while offline. One bad request then ends a good session. Also look for code that clears localStorage or the whole storage on startup or after a deploy, and for a redirect to the login page that runs before the session has been loaded.</p>
 
-<p>A stale build after a deploy can also look like a logout, because old files talk to a changed backend. If things break only after you publish, read <a href="/blog/ai-built-app-works-in-editor-breaks-live">why an app works in the editor and breaks live</a>.</p>
+<p>A stale build after a deploy can also look like a logout, because old files talk to a changed backend. If things break only after you publish, read <a href="/blog/ai-built-app-works-in-editor-breaks-live">why an app works in the editor and breaks live</a>. If buttons stop doing anything right after a deploy, see <a href="/blog/buttons-stop-working-after-deploy-stale-files">buttons that stop working after a deploy</a>.</p>
 
 <h2>7. How to diagnose it</h2>
 
