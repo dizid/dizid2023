@@ -63,7 +63,7 @@
 <li><strong>Use a different sender setup in preview.</strong> A test key from your email provider, or a switch in the code that sends everything to one inbox.</li>
 </ul>
 
-<p>Two facts I could confirm. Stripe's testing page says it does not email customers from sandboxes by default. And Supabase's <a href="https://supabase.com/docs/guides/auth/auth-smtp">custom SMTP page</a> says its default email service "will refuse to deliver messages to addresses that are not part of the project's team," with a limit of 2 messages per hour that "can change without notice." So that default sender is safe for tests by accident, but too limited to test many sign-ups. For real sending, see <a href="/blog/app-emails-spam-spf-dkim-dmarc">why app emails land in spam</a>.</p>
+<p>Two facts I could confirm. Stripe's testing page says it does not email customers from sandboxes by default. And Supabase's <a href="https://supabase.com/docs/guides/auth/auth-smtp">custom SMTP page</a> says its default email service "will refuse to deliver messages to addresses that are not part of the project's team," with a limit of 2 messages per hour that "can change without notice." So the default sender won't email strangers during tests, but it is too limited to test many sign-ups. For real sending, see <a href="/blog/app-emails-spam-spf-dkim-dmarc">why app emails land in spam</a>.</p>
 
 <h2>6. Sign-in on preview URLs</h2>
 
