@@ -44,7 +44,7 @@
 
 <h3>Supabase Cron</h3>
 
-<p><a href="https://supabase.com/docs/guides/cron">Supabase Cron</a> is a Postgres module built on <code>pg_cron</code>. A job can run SQL, call a database function or make an HTTP request, such as to an Edge Function. The docs recommend no more than 8 jobs running at once, and each job no longer than 10 minutes. Run history is in the <code>cron.job_run_details</code> table, and the <a href="https://supabase.com/docs/guides/cron/quickstart">quickstart</a> warns that those records are not cleaned up automatically. Check the time zone your jobs use in the docs before you rely on a local time.</p>
+<p><a href="https://supabase.com/docs/guides/cron">Supabase Cron</a> is a Postgres module built on <code>pg_cron</code>. A job can run SQL, call a database function or make an HTTP request, such as to an Edge Function. The docs recommend no more than 8 jobs running at once, and each job no longer than 10 minutes. Run history is in the <code>cron.job_run_details</code> table, and the <a href="https://supabase.com/docs/guides/cron/quickstart">quickstart</a> warns that those records are not cleaned up automatically. Check the time zone your jobs use in the docs before you rely on a local time. Why dates go a day off in the app itself: see <a href="/blog/wrong-day-dates-time-zones-ai-built-app">dates and time zones</a>.</p>
 
 <p>To call an Edge Function, the <a href="https://supabase.com/docs/guides/functions/schedule-functions">scheduling guide</a> combines <code>pg_cron</code> with <code>pg_net</code>. It says to keep the project URL and secret key in Supabase Vault, and not to use the publishable key, because anyone can read it.</p>
 
