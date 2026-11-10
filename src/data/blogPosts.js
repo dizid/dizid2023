@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'live-updates-realtime-or-polling-ai-built-app',
+    title: "Live updates in your AI-built app: realtime or polling?",
+    description: "Realtime, polling or refresh? What each costs in Supabase and Firestore, and how to keep it secure and stable on phones. Checked in November 2026.",
+    datePublished: '2026-11-12',
+    dateModified: '2026-11-12'
+  },
+  {
     slug: 'small-app-maintenance-monthly-routine',
     title: "App maintenance for a small app: a monthly routine",
     description: "What to check each month, quarter and year to keep a small web app healthy: alerts, bills, backups, Node.js versions. Checked in November 2026.",

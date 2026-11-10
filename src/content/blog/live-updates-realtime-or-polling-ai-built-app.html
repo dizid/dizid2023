@@ -1,0 +1,106 @@
+<p>Your app shows an order list, a chat, a dashboard or a booking calendar. Someone else changes something, and your screen stays the same until you reload. Or you fixed that with "realtime", and now the bill jumps, the connection drops on phones, or a user sees rows that are not theirs. Apps built with Lovable, Bolt, Cursor and Replit hit this often. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> most small apps do not need realtime everywhere. Use it for the one screen that really needs it, keep it behind the same access rules as the rest of your data, and know what it costs. For everything else, refresh after an action or poll slowly.</p>
+
+<h2>Three ways to get fresh data</h2>
+
+<ul>
+<li><strong>Refresh on an action.</strong> Fetch again after the user saves, clicks refresh or opens the page. Enough when only the user changes the data, or others change it rarely.</li>
+<li><strong>Polling.</strong> Ask the server every N seconds. Enough when a delay of 10 to 60 seconds is fine, like an admin order list or a dashboard.</li>
+<li><strong>Realtime subscription.</strong> The server pushes changes over an open connection. Worth it when people wait for each other and a delay feels broken, like chat or a shared board.</li>
+</ul>
+
+<p>Polling is boring and works everywhere. Realtime feels better but adds open connections, more rules to secure and sometimes a metered bill. Pick the cheapest way that does not annoy your users.</p>
+
+<h2>Supabase Realtime</h2>
+
+<p>The <a href="https://supabase.com/docs/guides/realtime">Realtime overview</a> lists three features. Postgres Changes: "Listen to database changes in real-time." Broadcast: "Send low-latency messages between clients." Presence: "Track and synchronize user state across clients." Presence is for things like who is online.</p>
+
+<h3>Postgres Changes and your access rules</h3>
+
+<p>The <a href="https://supabase.com/docs/guides/realtime/postgres-changes">Postgres Changes guide</a> says: "Postgres Changes authorizes every event against each subscriber." So your Row Level Security policies apply. Two details matter:</p>
+
+<ul>
+<li>You must switch the table on. The guide says: "Go to your project's Publications settings, and under <code>supabase_realtime</code>, toggle on the tables you want to listen to."</li>
+<li>Deletes are the exception. The guide warns: "RLS policies are not applied to <code>DELETE</code> statements," because "there is no way for Postgres to verify that a user has access to a deleted record."</li>
+</ul>
+
+<p>If you do not have RLS basics yet, start with <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a>. The <a href="https://supabase.com/docs/guides/realtime/authorization">Realtime authorization page</a> adds that for Broadcast and Presence you control access with "Row Level Security policies to the <code>realtime.messages</code> table", and that to enforce private channels "you need to disable the 'Allow public access' setting in Realtime Settings."</p>
+
+<h3>Cost of authorization, and scale</h3>
+
+<p>The Postgres Changes guide explains that "throughput scales with the number of subscribers, not the write rate." It also says: "If you expect more than ~3,000 concurrent subscribers on the same changes, use Broadcast to stream database changes instead." For a small app this is rarely your first problem. It is worth knowing before a launch, see <a href="/blog/ai-built-app-launch-day-traffic-spike">the launch day traffic spike</a>.</p>
+
+<h3>Limits per plan</h3>
+
+<p>The <a href="https://supabase.com/docs/guides/realtime/limits">Realtime limits page</a> lists quotas per plan. At the time I checked, the Free plan allowed 200 concurrent connections and 100 messages per second, and the Pro plan 500 concurrent connections and 500 messages per second. The same table has limits for channel joins, Presence and payload sizes. Check the page for your plan before you rely on a number.</p>
+
+<h2>Firestore real-time listeners</h2>
+
+<p>In Firestore you attach a listener with <code>onSnapshot</code>. The <a href="https://firebase.google.com/docs/firestore/query-data/listen">listen to real-time updates page</a> says: "An initial call using the callback you provide creates a document snapshot immediately", and "each time the contents change, another call updates the document snapshot." Listeners start from the local cache: "Cloud Firestore snapshot listeners take an initial snapshot from the local cache."</p>
+
+<p>You must stop them yourself: "you must detach your listener so that your event callbacks stop getting called." In the web examples, <code>onSnapshot</code> returns a function. Call it when the screen goes away.</p>
+
+<h3>How listeners are billed</h3>
+
+<p>The <a href="https://firebase.google.com/docs/firestore/pricing">Firestore pricing page</a> says you are charged "a read each time a document in the result set is added or updated", and also when "a document is removed from the result set because the document has changed". Deleted documents are not charged as reads. The page's reconnect rule depends on offline persistence. With persistence enabled, if the listener is disconnected "for more than 30 minutes", you are charged "as if you had issued a brand-new query." With persistence disabled, you are charged as a new query whenever the listener disconnects and reconnects. So a phone that goes in and out of coverage can cost more reads than you expect. A listener on a big collection can re-read all of it. For the bill side, see <a href="/blog/avoid-surprise-bill-vercel-netlify-supabase-firebase">avoiding a surprise bill</a>.</p>
+
+<h3>Security rules and limits</h3>
+
+<p>The <a href="https://firebase.google.com/docs/firestore/security/rules-query">rules and queries page</a> says "security rules are not filters" and that "If a query could potentially return documents that the client does not have permission to read, the entire request fails." That page does not mention listeners by name. The listen page only says that a listen "may occasionally fail", for example "due to security permissions", and then the listener gets no more events. So build your query to match your rules, and show an error if it fails. I did not find listener limits on the <a href="https://firebase.google.com/docs/firestore/quotas">quotas page</a>, so I do not state any.</p>
+
+<h2>Neon and plain Postgres apps</h2>
+
+<p>If your app talks to Postgres without a realtime service, you have two simple options. Poll an endpoint every 10 to 30 seconds, only on the screen that needs it. Or add a hosted realtime or pub-sub service and send an event when a row changes. The second is more work and adds a vendor, so I would start with polling and move only if polling is not good enough. Whatever you pick, the endpoint must check who is asking, as for every other read.</p>
+
+<h2>Phones and flaky networks</h2>
+
+<p>A phone sleeps the tab, switches from wifi to mobile data, or goes through a tunnel. The connection drops and the screen can silently go stale. Two habits fix most of it:</p>
+
+<ul>
+<li><strong>Refetch when the tab comes back.</strong> MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API">Page Visibility API</a> page says the API provides "events you can watch for to know when a document becomes visible or hidden." Listen for <code>visibilitychange</code>, and when the page is visible again, reload the data and check the subscription is alive.</li>
+<li><strong>Show a "reconnecting" state.</strong> A small banner like "Reconnecting, data may be old" is better than a screen that looks live but is not. When the connection returns, refetch, then show the data.</li>
+</ul>
+
+<p>Test it by turning airplane mode on and off with the app open. More on phone problems in <a href="/blog/ai-built-app-broken-on-phones-fixes">the phone fixes post</a>.</p>
+
+<h2>Common mistakes in AI-built apps</h2>
+
+<ul>
+<li><strong>Subscribing in a component that mounts many times.</strong> Each mount opens a new subscription and the old one never closes. Unsubscribe when the component unmounts: <code>removeChannel</code> in Supabase, which per the <a href="https://supabase.com/docs/reference/javascript/removechannel">reference</a> "Unsubscribes, removes and tears down a single channel", or the function returned by <code>onSnapshot</code> in Firestore.</li>
+<li><strong>Subscribing to a whole table.</strong> Use a filter for one room, one user or one order. The Postgres Changes guide says to "Use the <code>filter</code> parameter for granular changes".</li>
+<li><strong>Trusting messages without access rules.</strong> A realtime channel is another way to read your data. Secure it as you secure the database.</li>
+<li><strong>Polling every second for every visitor.</strong> One hundred visitors is one hundred requests a second. Poll slower, and stop polling when the tab is hidden.</li>
+</ul>
+
+<p>If the app is also slow, read <a href="/blog/slow-ai-built-app-fixes">why your AI-built app is slow</a>.</p>
+
+<h2>Prompts for your AI tool</h2>
+
+<ul>
+<li><em>"List every place this app subscribes to realtime updates or polls. For each, show the file, the table or collection, whether there is a filter, and whether it unsubscribes when the component unmounts."</em></li>
+<li><em>"On the orders page only, subscribe to changes for the current user's orders, with a filter on user_id. Unsubscribe on unmount. Don't add realtime to other pages."</em></li>
+<li><em>"When the browser tab becomes visible again, or the connection comes back, refetch the data and resubscribe. Show a 'Reconnecting' banner while the connection is down."</em></li>
+<li><em>"Replace this realtime subscription with polling every 30 seconds, paused while the tab is hidden. Keep the same loading and error states."</em></li>
+</ul>
+
+<p>Ask for one change per prompt and test it with two browsers, one logged in as each user.</p>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Each screen uses the cheapest way that works: refresh, polling or realtime.</li>
+<li>Realtime is only on screens where a delay feels broken.</li>
+<li>Row Level Security or security rules are on, and tested with two users.</li>
+<li>Subscriptions use a filter and do not cover a whole table.</li>
+<li>Every subscription is closed on unmount. No duplicates after navigating around.</li>
+<li>The app refetches when the tab becomes visible and after a reconnect.</li>
+<li>A "reconnecting" state shows when the connection is down.</li>
+<li>Polling is slow and stops when the tab is hidden.</li>
+<li>You checked your plan's limits and what listener reads cost on the vendor's page.</li>
+<li>Deletes do not leak: you tested what other users receive.</li>
+</ol>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including live updates that go stale, duplicate subscriptions and realtime that costs too much. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
