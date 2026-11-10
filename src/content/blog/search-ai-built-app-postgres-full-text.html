@@ -1,0 +1,187 @@
+<p>Your app has a search box. It takes seconds to answer. Or it finds "bike" but not "bikes". Or a customer types "fietsen" and gets nothing, although you sell fietsen. Apps built with Lovable, Bolt, Cursor and Replit often ship a search that works on ten test rows and falls apart on real data. Most of these apps run on Supabase (which is Postgres), some on Neon (also Postgres), some on Firebase. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Generated search is usually a plain "contains" match, or the browser downloads all rows and filters them. Both miss word forms and get slower as your data grows. In Postgres, fix it in two steps. First, use full-text search: a stored search column in the right language, a GIN index, and a ranked query. Second, if people make typos or type half a word, add the pg_trgm extension. Always search on the server, never by downloading all rows. Test with a list of awkward searches, and time the query before and after. Back up first, and try changes on a copy.</p>
+
+<h2>1. Why the generated search is slow and misses things</h2>
+
+<h3>The usual "contains" search</h3>
+
+<p>Ask an AI tool for a search box and you often get a query like <code>where name ilike '%bike%'</code>. It means: "the text contains these letters, upper or lower case". It looks right in a demo. It has three problems.</p>
+
+<ul>
+<li><strong>No word forms.</strong> It matches letters, not words. "bike" will match "bikes" by luck, because the letters are inside. But "mice" will never match "mouse", and "running" will not match "run". The PostgreSQL docs <a href="https://www.postgresql.org/docs/current/textsearch-intro.html">on full text search</a> say that <code>LIKE</code> and <code>ILIKE</code> have "no linguistic support, even for English."</li>
+<li><strong>Weak with several words.</strong> Someone types "red bike". The text has to contain exactly "red bike" in that order, with that space. A product called "bike, red" is missed.</li>
+<li><strong>No ranking.</strong> Every match is equal. The same docs say these operators "provide no ordering (ranking) of search results, which makes them ineffective when thousands of matching documents are found."</li>
+</ul>
+
+<h3>Why it gets slow</h3>
+
+<p>With a few hundred rows, nobody notices. With a hundred thousand rows, the database may have to look at every row for every search. This is called a sequential scan. A normal index (a B-tree) does not rescue you here. The PostgreSQL docs on <a href="https://www.postgresql.org/docs/current/indexes-types.html">index types</a> say the optimizer can use a B-tree index for <code>LIKE</code> if the pattern is a constant "anchored to the beginning of the string", for example <code>col LIKE 'foo%'</code>, "but not <code>col LIKE '%bar'</code>." A search that puts a wildcard at the start, as <code>'%bike%'</code> does, cannot use that kind of index.</p>
+
+<p>There is a good fix for this, covered in section 4: a trigram index. It does support these searches.</p>
+
+<h3>The other common version: filtering in the browser</h3>
+
+<p>Some generated apps load every row into the page, then filter them with JavaScript. It feels fast with 50 rows. With 5,000 rows the page downloads a lot of data on every visit, and phones suffer most. It is also a privacy problem: the browser has received every row, including rows the visitor never looks at. Anyone can open the network tab and read them. See section 7.</p>
+
+<h2>2. Postgres full-text search in plain words</h2>
+
+<p>Postgres has a search system built in. The docs call it full text search. It works in three steps: turn the stored text into a list of normalised words, turn the search phrase into the same kind of words, and match them. In the docs' words, a document is "the unit of searching", such as a magazine article or an email message. For you, a document is usually one row: a product, a post, a job.</p>
+
+<h3>The pieces</h3>
+
+<ul>
+<li><code>to_tsvector</code> parses and normalises a piece of text into a searchable list of words (a "tsvector").</li>
+<li><code>to_tsquery</code> builds a search query from words you already normalised. It is strict about its syntax.</li>
+<li><code>websearch_to_tsquery</code> is the one to use for a search box. The <a href="https://www.postgresql.org/docs/current/textsearch-controls.html">docs</a> say it "will never raise syntax errors, which makes it possible to use raw user-supplied input for search." It understands quotes for phrases, the word <code>or</code>, and a dash to exclude a word.</li>
+<li><code>@@</code> is the match operator: does this document match this query?</li>
+<li><code>ts_rank</code> gives each match a score. The docs say it "ranks vectors based on the frequency of their matching lexemes." Sort by it, highest first.</li>
+</ul>
+
+<p>A first example on the docs' own pattern, where <code>products</code>, <code>name</code> and <code>description</code> are example names (use your own): <code>select name from products where to_tsvector('english', name || ' ' || description) @@ websearch_to_tsquery('english', 'red bikes');</code></p>
+
+<p>The docs show the same idea: <code>to_tsvector('english', 'fat cats ate fat rats') @@ to_tsquery('english', 'fat &amp; rat')</code> is true. "rats" matches "rat", because both are reduced to a common base form.</p>
+
+<h3>Why the language setting matters</h3>
+
+<p>The word 'english' in those examples is a text search configuration. The docs say a configuration "specifies all options necessary to transform a document into a tsvector: the parser to use to break text into tokens, and the dictionaries to use to transform each token into a lexeme." That is where stemming happens: reducing word forms to a base form. The docs say that each Snowball stemming algorithm "understands how to reduce common variant forms of words to a base, or stem, spelling within its language."</p>
+
+<p>So the language you pick decides what counts as the same word. The docs list stemmers for Dutch (<code>dutch_stem</code>), German (<code>german_stem</code>) and English (<code>english_stem</code>), plus a <code>simple</code> dictionary that, per the docs, just converts "the input token to lower case" and checks it against stop words. That means:</p>
+
+<ul>
+<li><code>english</code>, <code>dutch</code>, <code>german</code>: word forms are reduced, so "fiets" and "fietsen" can match. Use the language of your content.</li>
+<li><code>simple</code>: no word forms at all, just lower case. Useful for names, codes and mixed-language text. It will not match plurals.</li>
+<li>Use the same configuration when you store the text and when you search. An English search over Dutch text misses Dutch word forms.</li>
+</ul>
+
+<p>Not sure which configurations your database has? Run <code>select cfgname from pg_ts_config;</code> in the SQL editor. If your app has more than one language, see <a href="/blog/add-second-language-dutch-german-ai-built-app">adding a second language (Dutch, German) to an AI-built app</a>. A single column in one config will not serve two languages well. Plan one search column per language, or use <code>simple</code> for mixed content.</p>
+
+<h2>3. The fast version: a stored column and a GIN index</h2>
+
+<p>The docs on <a href="https://www.postgresql.org/docs/current/textsearch-tables.html">tables and indexes</a> say a search without an index works, "although these queries will work without an index, most applications will find this approach too slow, except perhaps for occasional ad-hoc searches." They then show two ways to make it fast. The simpler to use is a stored generated column: "To keep this column automatically up to date with its source data, use a stored generated column." Then you put a GIN index on it. Example (names are examples, and Dutch text is assumed):</p>
+
+<ul>
+<li><code>alter table products add column search_text tsvector generated always as (to_tsvector('dutch', coalesce(name, '') || ' ' || coalesce(description, ''))) stored;</code></li>
+<li><code>create index products_search_idx on products using gin (search_text);</code></li>
+<li><code>select name, ts_rank(search_text, q) as rank from products, websearch_to_tsquery('dutch', 'rode fietsen') as q where search_text @@ q order by rank desc limit 20;</code></li>
+</ul>
+
+<p>The <code>coalesce</code> parts matter: if a column is empty (null), joining it with text would otherwise make the whole result empty. The docs give this same pattern. They list the benefit of the separate column too: "it is not necessary to explicitly specify the text search configuration in queries in order to make use of the index", and searches are faster because the words do not need to be recalculated. The cost is disk space. The docs note the expression-index approach "requires less disk space".</p>
+
+<p>One trap the docs warn about for the other approach, an index on an expression: only a query that uses the two-argument <code>to_tsvector</code> with the same configuration name will use that index. With the stored column you avoid this.</p>
+
+<p>Adding a column and an index to a big table takes time and locks, so take a backup first (see <a href="/blog/app-database-backups-supabase-neon-firebase">backups for Supabase, Neon and Firebase</a>) and try it on a copy. The steps for making database changes safely are in <a href="/blog/change-app-database-without-losing-data">changing your database without losing data</a>.</p>
+
+<h3>Using it from Supabase</h3>
+
+<p>Supabase has its own <a href="https://supabase.com/docs/guides/database/full-text-search">full-text search guide</a>. It uses the same pieces: a generated column, then <code>create index books_fts on books using gin (fts);</code>. In supabase-js you search with <code>textSearch()</code>, for example <code>supabase.from('products').textSearch('search_text', 'rode fietsen', { config: 'dutch', type: 'websearch' })</code>. The guide describes <code>websearch_to_tsquery()</code> as providing "an intuitive search syntax similar to popular web search engines." The <a href="https://supabase.com/docs/reference/javascript/textsearch">textSearch reference</a> shows examples with <code>type: 'plain'</code>, <code>type: 'phrase'</code> and <code>type: 'websearch'</code>, and a <code>config</code> of <code>"english"</code>. The reference does not explain these options in words. They line up with the Postgres functions of similar names (plain text, phrase, web search). For a search box, <code>websearch</code> is the friendliest. Test it, and set <code>config</code> to the same language as your column.</p>
+
+<h2>4. Typos and half-typed words: pg_trgm</h2>
+
+<p>Full-text search fixes word forms. It does not fix typos. "fietz" will not become "fiets". For that, Postgres has the <code>pg_trgm</code> extension. The <a href="https://www.postgresql.org/docs/current/pgtrgm.html">docs</a> say it "provides functions and operators for determining the similarity of alphanumeric text based on trigram matching, as well as index operator classes that support fast searching for similar strings." A trigram is a group of three letters; two texts that share many groups are similar.</p>
+
+<ul>
+<li><code>similarity(a, b)</code> returns a number "from zero (indicating that the two strings are completely dissimilar) to one (indicating that the two strings are identical)."</li>
+<li>The <code>%</code> operator is true when the similarity is above the threshold set by <code>pg_trgm.similarity_threshold</code>. The docs give the default as 0.3.</li>
+<li>The docs say that GIN and GiST trigram indexes support these operators and "additionally support trigram-based index searches for LIKE, ILIKE, ~, ~* and = queries."</li>
+</ul>
+
+<p>The last point is useful: if your app already has <code>ilike '%bike%'</code> and you only need it faster, a trigram index is the direct fix. Set up (example names): <code>create extension if not exists pg_trgm;</code> then <code>create index products_name_trgm_idx on products using gin (name gin_trgm_ops);</code>. A typo-tolerant query: <code>select name, similarity(name, 'fietz') as score from products where name % 'fietz' order by score desc limit 20;</code></p>
+
+<p>In Supabase you can enable extensions in the Dashboard (Database, then Extensions) or with SQL. Supabase's <a href="https://supabase.com/docs/guides/database/extensions">extensions page</a> shows this form: <code>create extension pgtap with schema extensions;</code>, and notes that this "is the equivalent of enabling the extension." That page did not list pg_trgm when I checked, so confirm it in your Dashboard. The Postgres docs say pg_trgm is "trusted", so a user with <code>CREATE</code> privilege on the database can install it. On Neon, which is Postgres, the SQL is the same; check Neon's own extension list for your plan.</p>
+
+<p>Trigram matching works on letters, not on language. It will not know that "fietsen" is the plural of "fiets". The two tools do different jobs, so many apps use both: full-text search first for word forms and ranking, trigram as a fallback when the first returns nothing. Keep it simple. Add the second tool only if your test searches show you need it.</p>
+
+<h2>5. Firebase and Firestore</h2>
+
+<p>Search on Firestore is different from Postgres. Firestore's <a href="https://firebase.google.com/docs/firestore/solutions/search">text search page</a> says: "Use text search features in Cloud Firestore to search for specific strings within documents." It also says: "Text search requires a Firestore Enterprise edition database." and "The operation searches only in the fields indexed with a text index." So you must create a text index on the fields you want to search, and your database must be on that edition. The page describes a few search forms: a single term, an exact phrase in quotes, several terms (all must match), and excluding a term with a hyphen. Results are sorted by creation time by default, and you can sort by search score instead, which the page says needs more computation.</p>
+
+<p>That page does not mention word forms (stemming) or typo tolerance. So do not assume them. Test the searches in section 8 on your own data. If your Firestore database is not on the edition the page asks for, I could not confirm from that page which route Firebase recommends. Check the current Firebase docs for your edition, or use an outside search service (next section). Also remember that Firestore security rules decide who can read what, so search results need the same rules as any other read.</p>
+
+<h2>6. When a search service makes sense</h2>
+
+<p>Algolia, Meilisearch and Typesense are services (or open-source programs you host) built only for search. They keep a copy of your data in their own index, and your app queries them. Reasons to look at one: you need typo tolerance out of the box, you need search-as-you-type on a lot of data, or you are on a database without good search. Meilisearch's docs say, for example, that "Typo tolerance helps users find relevant results even when their search queries contain spelling mistakes or typos" and that it "is enabled by default." Algolia's docs describe typo tolerance as matching "words that are close in spelling."</p>
+
+<p>The cost is a second system. Your data now lives in two places. You must keep the copy in sync when rows change, protect it (so private rows do not leak into a public index), and pay or host it. For a small app with a few thousand rows, Postgres full-text search plus pg_trgm is often enough. I am not comparing prices or speed here. Check each vendor's own pricing page when you decide.</p>
+
+<h2>7. Search on the server, and keep your access rules</h2>
+
+<p>The safe design: the browser sends the words someone typed, the server (or database) runs the search, and only a short page of results comes back, for example 20 rows. Do not load every row to filter it in the page.</p>
+
+<ul>
+<li><strong>Speed.</strong> The database has indexes. The phone has not. Sending 20 rows is far less than sending all of them.</li>
+<li><strong>Privacy.</strong> Everything sent to the browser can be read by the visitor. If search needs the whole table in the page, the whole table is exposed.</li>
+<li><strong>Limit and page.</strong> Always add a limit, and cap the length of the search text.</li>
+</ul>
+
+<p>Searching through Supabase does not skip your Row Level Security rules. Supabase's <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">RLS guide</a> says: "Think of a policy as adding a WHERE clause to every query." So a search runs only over rows the user may read. That is good, but it means a missing or wrong policy shows up in search too. The same guide warns that "A table in an exposed schema without RLS is readable and writable by any role with a grant on it." If you add a search column or a search function, check the rules again. A database function that runs with extra rights can bypass them. See <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a>.</p>
+
+<h2>8. How to test your search</h2>
+
+<h3>Ten test searches</h3>
+
+<p>Pick a record you know exists, for example a product called "Red racing bike", and run these. Write down what you expect first.</p>
+
+<ol>
+<li><strong>Exact word:</strong> "bike". It should find the product.</li>
+<li><strong>Plural:</strong> "bikes". Should find the same product.</li>
+<li><strong>Singular of a plural:</strong> search "bike" when the record says "bikes". Same result expected.</li>
+<li><strong>Two words, any order:</strong> "bike red". Should still find it.</li>
+<li><strong>Different case:</strong> "RED BIKE". Same result.</li>
+<li><strong>A typo:</strong> "bikr". Decide what you want: nothing, or a "did you mean" style result.</li>
+<li><strong>A half-typed word:</strong> "rac". Decide if you need partial words.</li>
+<li><strong>A Dutch word form:</strong> "fietsen" against a record that says "fiets". Only works if the language setting is Dutch.</li>
+<li><strong>Empty search:</strong> just spaces, or nothing. It should show a normal list or a friendly message, not an error.</li>
+<li><strong>A very long search, and odd characters:</strong> paste 2,000 letters, then try quotes, a single quote and a percent sign. It must not crash, and must not slow the whole app.</li>
+</ol>
+
+<p>Also test as a logged-out visitor and as a second user: can search show rows that person should not see?</p>
+
+<h3>Timing a query with EXPLAIN ANALYZE</h3>
+
+<p>Open the SQL editor (in Supabase or Neon) and put <code>explain analyze</code> in front of your search query. The PostgreSQL docs on <a href="https://www.postgresql.org/docs/current/using-explain.html">using EXPLAIN</a> say that with this option "EXPLAIN actually executes the query, and then displays the true row counts and true run time." In plain words, look at three things:</p>
+
+<ul>
+<li><strong>The scan type.</strong> "Seq Scan" means the database read the whole table. After you add your index, you hope to see an index scan or a bitmap index scan instead. The docs list "sequential scans, index scans, and bitmap index scans" as scan node types. On a tiny table Postgres may still choose a sequential scan, because that can be cheaper. Test on a table with realistic size.</li>
+<li><strong>Execution time.</strong> The docs say it includes executor start-up and shut-down and any triggers, but not parsing, rewriting or planning. It is shown in milliseconds. Run it a few times, and compare before and after your change.</li>
+<li><strong>Planning time.</strong> The time to prepare the query, shown separately.</li>
+</ul>
+
+<p>Because <code>explain analyze</code> really runs the query, never use it on a statement that changes data without wrapping it in <code>begin; ... rollback;</code>. A search is read-only, so it is safe.</p>
+
+<p>For wider speed problems beyond search, see <a href="/blog/slow-ai-built-app-fixes">fixing a slow AI-built app</a>.</p>
+
+<h2>9. Prompts for your AI tool</h2>
+
+<p>Adapt table and column names. Ask the tool to show its plan and the SQL before it runs anything on live data.</p>
+
+<ul>
+<li>"Find every place this app does a search. For each, show me the query or code, and tell me if it uses ilike, like, or filters rows in the browser."</li>
+<li>"Replace the browser-side filtering with a server-side search that returns at most 20 rows, takes a page number, and limits the search text to 100 characters."</li>
+<li>"Write a SQL migration that adds a stored generated tsvector column on products (name and description, with coalesce, using the 'dutch' configuration) and a GIN index on it. Do not run it. Show me the SQL first."</li>
+<li>"Change the search to use websearch_to_tsquery with the same configuration as the column, sorted by ts_rank, with a limit. In supabase-js use textSearch with type 'websearch'."</li>
+<li>"Enable the pg_trgm extension and add a GIN trigram index on products.name. If the full-text search returns no rows, fall back to a similarity search with the % operator."</li>
+<li>"Check that Row Level Security is enabled on every table involved in search, and show me the select policies. Test the search as two different users."</li>
+<li>"Write 10 test searches for my products table: plural, typo, two words, a Dutch word, empty, very long. Show me the explain analyze output for the search query before and after the index."</li>
+</ul>
+
+<h2>10. Checklist</h2>
+
+<ul>
+<li>Search runs on the server or in the database, not by loading all rows into the browser.</li>
+<li>Results are limited and paged. The search text has a length limit.</li>
+<li>The search uses full-text search (or a trigram index) instead of a bare <code>ilike '%word%'</code> on a big table.</li>
+<li>The language configuration matches the content (dutch, german, english, or simple for mixed text), for both the stored column and the query.</li>
+<li>The search column is a stored generated column with a GIN index.</li>
+<li>Results are sorted by rank, not by random order.</li>
+<li>If typos matter, pg_trgm is enabled and has an index.</li>
+<li>Row Level Security is on for every searched table, and tested with two users.</li>
+<li>All ten test searches were run, and results written down.</li>
+<li>Before and after timings with <code>explain analyze</code> on realistic data.</li>
+<li>A backup was made, and the change was tried on a copy first.</li>
+<li>On Firestore: the edition and text index requirements were checked, and word forms and typos were tested, not assumed.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including slow search, missing results and typo handling on Supabase, Neon and Firebase. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>

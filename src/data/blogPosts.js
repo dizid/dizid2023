@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'search-ai-built-app-postgres-full-text',
+    title: "Slow or missing search in your AI-built app: how to fix it",
+    description: "Fix slow or missing search in your AI-built app with Postgres full-text search, typo matching and tests. Vendor facts checked in November 2026.",
+    datePublished: '2026-11-11',
+    dateModified: '2026-11-11'
+  },
+  {
     slug: 'form-validation-server-side-ai-built-app',
     title: "Form checks in your AI-built app: browser isn't enough",
     description: "Why browser-only form checks can be skipped, and how to add server and database checks to your AI-built app, with prompts. Checked in November 2026.",
