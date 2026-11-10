@@ -1,0 +1,92 @@
+<p>Many apps built with Lovable, Bolt, Cursor or Replit let users upload something: an avatar, a photo, a PDF. The upload works in the demo, so it looks finished. The hard questions come later. Who can open those files? What happens when someone uploads a 200 MB video? What does it cost when the app gets popular? I checked the facts below against the official docs in November 2026.</p>
+
+<p><strong>Short answer:</strong> keep anything private in a private bucket and hand out short-lived links. Set a size limit and an allowed file type on the storage side, not only in the upload form. Resize images before you serve them. Delete the file when you delete the record. Then test an upload from a real phone.</p>
+
+<h2>1. Who can see the files</h2>
+
+<p>In Supabase Storage, a bucket is either public or private. The <a href="https://supabase.com/docs/guides/storage/buckets/fundamentals">bucket docs</a> say a public bucket "effectively bypasses access controls for both retrieving and serving files within the bucket." The <a href="https://supabase.com/docs/guides/storage/serving/downloads">downloads page</a> says "all files uploaded in a public bucket are publicly accessible." Anyone with the URL can open the file, no login needed.</p>
+
+<p>That is fine for a logo or a public product photo. It is not fine for passports, invoices, contracts or medical documents. A common mistake in AI-built apps is one public bucket for everything, because that makes the demo work with the least effort. Paths like <code>uploads/invoice-1001.pdf</code> are also easy to guess. Treat a file's URL as public the moment it exists.</p>
+
+<p>For private files, Supabase's docs say that when a bucket is private, "all operations are subject to access control via RLS policies", and that buckets are private by default. To show a private file to its owner, create a signed URL. The <code>createSignedUrl</code> method makes a link "that can be accessed for a limited time." The downloads page says an individual signed URL can't be revoked directly. You have to delete, move or rename the object, so keep the expiry short.</p>
+
+<p>The policies live on a table. Supabase says: "You selectively allow certain operations by creating RLS policies on the <code>storage.objects</code> table." The <a href="https://supabase.com/docs/guides/storage/security/access-control">access control page</a> also says "By default Storage does not allow any uploads to buckets without RLS policies." A policy that only checks the bucket name lets every signed-in user read every file in it. A good one also checks that the first folder in the path is the user's ID. For RLS basics, see <a href="/blog/ai-built-app-database-security-checks">the database security checks</a>, because the same rules apply.</p>
+
+<p>Firebase works differently. Cloud Storage uses Security Rules. Firebase's <a href="https://firebase.google.com/docs/storage/security/start">rules overview</a> lists "Mixed access" as a basic use case: "Restrict write access by user, but allow public read access." The <a href="https://firebase.google.com/docs/storage/security/user-security">user security page</a> shows how to tie a path to a user, for example a rule that allows a write only when <code>request.auth.uid == userId</code>. Check your project's rules for a blanket <code>allow read, write: if true</code>.</p>
+
+<h2>2. Size and type limits</h2>
+
+<p>Do not trust the upload form. <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/accept">MDN</a> says about the file input's <code>accept</code> attribute that it "doesn't validate the types of the selected files; it provides hints for browsers." It adds that "you should make sure that expected requirement is validated server-side." The real check belongs in the storage rules or on the server.</p>
+
+<p>On Supabase, the limits sit in two places. The <a href="https://supabase.com/docs/guides/storage/uploads/file-limits">file limits page</a> describes a global limit that applies to all buckets. It says "For Free projects, the limit can't exceed 50 MB", and that on the Pro Plan and up you can raise it to a higher maximum. You can also set a smaller limit per bucket, and "it can't be higher than this global limit." The bucket docs add that "Upload restrictions like max file size and allowed content types are also defined at the bucket level." For an avatar bucket, set a small limit and allow only image types.</p>
+
+<p>On Firebase, you do it in the rules. The user security page says rules can check "file metadata properties such as <code>contentType</code> and <code>size</code>", and its own example allows an image upload only if <code>request.resource.size</code> is under a limit and <code>request.resource.contentType</code> matches <code>image/.*</code>.</p>
+
+<p>One more habit: do not use the original file name as the stored path. Generate your own name, and keep the original as text in your database. A check on <code>contentType</code> is a useful guard, but it is not a virus scan.</p>
+
+<h2>3. Images: resize before you serve them</h2>
+
+<p>A photo straight from a phone camera can be several megabytes. Shown as a small avatar, it is still a big download. That makes pages slow, as I wrote in <a href="/blog/slow-ai-built-app-fixes">why AI-built apps are slow</a>. The simplest fix is to resize on upload and store a smaller copy.</p>
+
+<p>Supabase can also resize on the fly. Its <a href="https://supabase.com/docs/guides/storage/serving/image-transformations">image transformations page</a> says "Image Resizing is currently enabled for Pro Plan and above." It lists limits: width and height "must be an integer value between 1-2500", the image "cannot exceed 25MB", and the resolution "cannot exceed 50MP". The <a href="https://supabase.com/docs/guides/storage/management/pricing">Storage pricing docs</a> note that image transformations incur additional charges, so read them before you turn this on.</p>
+
+<p>On formats, <a href="https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Formats/Image_types">MDN</a> says WebP "now has broad support in the latest versions of major web browsers", and recommends a JPEG or PNG fallback. I left out iPhone photo formats because I could not source them. Test an upload from an iPhone and an Android phone yourself.</p>
+
+<h2>4. What it costs</h2>
+
+<p>Storage has two cost lines: what you keep, and what you send out. Supabase's <a href="https://supabase.com/docs/guides/platform/manage-your-usage/egress">egress page</a> says "You are charged for the network data transmitted out of the system to a connected client", and that "Egress is charged by gigabyte." The Storage pricing docs above say "You are charged for the total size of all assets in your buckets", and that you only pay for usage above your plan's quota. See Supabase's <a href="https://supabase.com/pricing">pricing page</a> for the current amounts.</p>
+
+<p>On Firebase, Cloud Storage needs a paid plan. Firebase's <a href="https://firebase.google.com/docs/storage/faqs-storage-changes-announced-sept-2024">storage FAQ</a> says "Cloud Storage for Firebase (even default buckets) now requires projects to be on the pay-as-you-go Blaze pricing plan." The <a href="https://firebase.google.com/pricing">Firebase pricing page</a> says fees on newer default buckets are processed as Google Cloud Storage usage fees, and that no-cost limits are enforced daily. </p>
+
+<p>Surprises mostly come from files that are loaded often. A large image on a busy page, or a file someone links from another site, is downloaded again and again, and the egress adds up. Resizing helps most. For the rest of the monthly picture, see <a href="/blog/small-web-app-running-costs">what a small web app costs to run</a>.</p>
+
+<h2>5. Deleting files</h2>
+
+<p>When a user deletes their account, or a record with a photo, the file often stays behind. The row is gone, but the file is still in the bucket, still costing storage and still holding someone's data. See the <a href="/blog/gdpr-checklist-small-app">GDPR checklist for small apps</a>.</p>
+
+<p>On Supabase, there is a trap. The <a href="https://supabase.com/docs/guides/storage/management/delete-objects">delete page</a> says "Deleting objects should always be done via the Storage API and NOT via a SQL query", because deleting via SQL "will not remove the object from the bucket and will result in the object being orphaned." It also says deleted files are "permanently removed and not recoverable." Database backups do not cover this; see <a href="/blog/app-database-backups-supabase-neon-firebase">database backups</a>.</p>
+
+<p>On Firebase, you call <code>delete()</code> on a file reference. The <a href="https://firebase.google.com/docs/storage/web/delete-files">delete docs</a> add that "Deleted files are typically recoverable for 7 days with soft delete, which is enabled by default." Either way, make sure your "delete account" flow removes the files too, and now and then look for files that no record points to.</p>
+
+<h2>6. What breaks at launch</h2>
+
+<p><strong>Files that pass through a serverless function.</strong> If the browser sends the file to your function, which then saves it, you hit the function's size limit. Netlify's <a href="https://docs.netlify.com/build/functions/optional-configuration/">function defaults</a> list a buffered request payload of 6 MB and a synchronous execution limit of 60 seconds. Their footnote says image uploads and other binary payloads are Base64-encoded, which "adds approximately 30% overhead", effectively reducing the binary request limit to 4.5 MB. Vercel's <a href="https://vercel.com/docs/functions/limitations">limits page</a> says "The maximum payload size for the request body or the response body of a Vercel Function is <strong>4.5 MB</strong>", and that a larger request returns a 413 error. A phone photo can be bigger than that.</p>
+
+<p>The usual fix is to let the browser upload straight to storage, with your function only deciding who is allowed. Supabase also says its standard upload method is "ideal for small files that are not larger than 6MB" and recommends resumable uploads for larger files.</p>
+
+<p><strong>Direct downloads in the browser.</strong> Firebase's <a href="https://firebase.google.com/docs/storage/web/download-files">download docs</a> say "To download data directly in the browser, you must configure your Cloud Storage bucket for cross-origin access (CORS)." If images work in development but fail on your live domain, look at CORS.</p>
+
+<p><strong>Uploads that fail only on phones.</strong> Big photos on a weak connection are a common cause. Show a readable error, not a spinner that never ends. See also <a href="/blog/ai-built-app-broken-on-phones-fixes">apps that look broken on phones</a>.</p>
+
+<h2>Prompts for your AI tool</h2>
+
+<p>Name the bucket, the rule and what must not change.</p>
+
+<ul>
+<li><em>"List every storage bucket this app uses and whether it is public or private. For each, list which file types are stored in it. Don't change anything yet."</em></li>
+<li><em>"Make the 'documents' bucket private. Show files to their owner with signed URLs that expire after a few minutes. Add a storage policy so a user can only read and write files under their own user ID folder. Keep the UI exactly the same."</em></li>
+<li><em>"Set a maximum file size and allowed image types on the 'avatars' bucket, and also check them in the storage policy or rules, not only in the upload form. Show a clear error message when a file is rejected."</em></li>
+<li><em>"When a user deletes their account or a record with a file, also delete the file through the Storage API. List any place where we currently delete rows but not files."</em></li>
+</ul>
+
+<p>The tool may say a bucket is private when it is not. Test it: open a file URL in a private browser window where you are signed out.</p>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Every bucket is marked public or private on purpose. Private documents are not in a public bucket.</li>
+<li>Private files are shown with short-lived signed URLs.</li>
+<li>Storage policies or rules check who owns the file path, not only the bucket name.</li>
+<li>Size and file type limits are set on the storage side, not only in the form.</li>
+<li>Images are resized before they are served.</li>
+<li>You know where storage and download costs show up in your plan.</li>
+<li>Deleting a record or account also deletes its files, through the Storage API.</li>
+<li>Uploads work on a real phone, on a slow connection, and on your live domain.</li>
+<li>No function in the upload path has a smaller size limit than your biggest upload.</li>
+</ol>
+
+<p>Before a launch, also go through the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including locking down file uploads and storage rules. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>

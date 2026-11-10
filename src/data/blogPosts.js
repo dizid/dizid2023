@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'file-uploads-ai-built-app-checks',
+    title: "File uploads in an AI-built app: privacy, limits and costs",
+    description: "Who can open the files your users upload? Check public buckets, size limits, image costs and deleted files in an AI-built app. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'admin-page-roles-idor-ai-built-app',
     title: "Anyone can open your admin page: fix roles in AI-built apps",
     description: "Admin page hidden only in the browser? Check roles and \"my own data\" rules in your Lovable, Bolt or Cursor app as a normal user, and how to fix them.",
