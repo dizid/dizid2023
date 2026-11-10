@@ -211,6 +211,11 @@ const stats = [
         </div>
 
         <QuickOffers />
+
+        <p class="fix-app-line">
+          App built with Lovable, Bolt, Cursor or Replit and stuck before launch?
+          <router-link to="/hire/fix-ai-built-app">Fix or finish your <span class="nowrap">AI-built app</span></router-link>.
+        </p>
       </div>
     </section>
 
@@ -648,6 +653,20 @@ const stats = [
   font-size: var(--text-lg);
   color: var(--color-text-secondary);
   margin-top: var(--space-4);
+}
+
+.fix-app-line {
+  text-align: center;
+  margin-top: var(--space-8);
+  color: var(--color-text-secondary);
+}
+
+.fix-app-line a {
+  font-weight: 600;
+}
+
+.fix-app-line .nowrap {
+  white-space: nowrap;
 }
 
 .section-title.centered {

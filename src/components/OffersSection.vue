@@ -36,6 +36,9 @@ import QuickOffers from './QuickOffers.vue'
       <QuickOffers />
 
       <p class="offers-more">
+        App built with Lovable, Bolt or Cursor and stuck before launch?
+        <router-link to="/hire/fix-ai-built-app">I fix and finish those too</router-link>.
+        <br />
         Not sure which one fits?
         <router-link to="/hire#contact-hire">Describe your project</router-link>
         and I'll tell you.
