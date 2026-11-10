@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'small-web-app-running-costs',
+    title: "What does a small web app cost to run? My real monthly bills",
+    description: "What a small web app costs per month: hosting, database, email, AI and payments, with real bills from my own live apps and the hidden costs to watch.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'slow-ai-built-app-fixes',
     title: "Why is my AI-built app slow? 7 causes and what to fix first",
     description: "Your Lovable, Bolt or Cursor app feels slow? How to measure it in 10 minutes, the 7 usual causes (database, images, cold starts) and what to fix first.",
