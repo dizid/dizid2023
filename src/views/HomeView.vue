@@ -9,6 +9,8 @@ import ProofSection from '../components/ProofSection.vue'
 import WhoShouldUseSection from '../components/WhoShouldUseSection.vue'
 import FaqSection from '../components/FaqSection.vue'
 import ContactSection from '../components/ContactSection.vue'
+// Same hashed file as the @font-face rule (Vite dedupes by content)
+import interBoldUrl from '@fontsource/inter/files/inter-latin-700-normal.woff2?url'
 
 useHead({
   title: 'Dizid | Custom Software Built & Managed for Founders',
@@ -25,7 +27,13 @@ useHead({
     { property: 'og:url', content: 'https://dizid.com/' },
     { property: 'og:type', content: 'website' }
   ],
-  link: [{ rel: 'canonical', href: 'https://dizid.com/' }]
+  link: [
+    { rel: 'canonical', href: 'https://dizid.com/' },
+    // Bold Inter (the hero headline) starts loading with the page instead of after the CSS,
+    // so the hero doesn't re-wrap and jump when it arrives (throttled phone: layout shift
+    // 0.18 -> 0.002, first paint +0.1 s). Home only: other pages don't jump without it.
+    { rel: 'preload', href: interBoldUrl, as: 'font', type: 'font/woff2', crossorigin: '' }
+  ]
 })
 
 // Customer questions, answered only with claims the site already makes
