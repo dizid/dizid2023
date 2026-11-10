@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'ai-built-app-broken-on-phones-fixes',
+    title: "Your AI-built app looks broken on phones: the fixes that matter",
+    description: "Your app works on a laptop but breaks on phones? Fix sideways scrolling, cut-off screens, zooming forms and tiny buttons, with prompts for your AI tool.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'supabase-project-paused-free-plan',
     title: "Supabase paused your project: why, and how to keep your app up",
     description: "Supabase paused your free project and your app stopped working? Why it happens, how to restore it, what to back up, and how to stop it happening again.",

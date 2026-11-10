@@ -1,0 +1,117 @@
+<p>Your app looks fine on your laptop. On a customer's phone, the page slides sideways, text is cut off, the form zooms in and the main button hides behind the browser bar. Below are the fixes that matter, and how to ask Lovable, Bolt, Cursor or Replit for them. Browser facts come from MDN, W3C, Apple, Google and WebKit docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> test on a real iPhone and a real Android phone, not only in a narrow browser window. Most problems come from the nine causes below, and most fixes are a few lines of CSS. Never fix them by blocking zoom.</p>
+
+<h2>Before you fix: see what your customers see</h2>
+
+<p>Chrome's <a href="https://developer.chrome.com/docs/devtools/device-mode">device mode docs</a> call it "a first-order approximation" and say: "When in doubt, your best bet is to actually run your page on a mobile device." So test on an iPhone in Safari and an Android phone in Chrome. Chrome on iPhone is <a href="https://developer.chrome.com/blog/viewport-resize-behavior">powered by Apple's WebKit</a>, like Safari, so an iPhone tells you little about Android.</p>
+
+<ul>
+<li><strong>Android:</strong> Chrome's <a href="https://developer.chrome.com/docs/devtools/remote-debugging">remote debugging guide</a>: turn on USB debugging, connect a USB cable, open <code>chrome://inspect#devices</code> on your computer and click <strong>Inspect</strong>.</li>
+<li><strong>iPhone:</strong> you need a Mac. Apple's <a href="https://developer.apple.com/documentation/safari-developer-tools/inspecting-ios">Web Inspector guide</a>: turn on Web Inspector in the iPhone's Settings, Apps, Safari, Advanced, and <strong>Show features for web developers</strong> in Safari on the Mac. Connect a cable and use the <strong>Develop</strong> menu.</li>
+<li><strong>Narrowest screen:</strong> also try 320 pixels wide in device mode. The WCAG <a href="https://www.w3.org/WAI/WCAG22/Understanding/reflow.html">Reflow rule</a> asks that content works at that width without scrolling in two directions, except parts like data tables.</li>
+</ul>
+
+<h2>1. The viewport tag is missing or blocks zoom</h2>
+
+<p><strong>Symptom:</strong> the page looks like a tiny desktop page. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Guides/Viewport_meta_element">viewport guide</a> explains that some phones render pages in a virtual window wider than the screen, for example 980px, and then shrink it.</p>
+
+<p><strong>Fix:</strong> make sure the <code>&lt;head&gt;</code> has <code>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</code>. Never add <code>user-scalable=no</code> or <code>maximum-scale=1</code>. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/viewport">viewport reference</a> warns that blocking zoom stops people with low vision from reading the page, and says iOS 10 and later ignore these settings by default anyway.</p>
+
+<h2>2. The page scrolls sideways</h2>
+
+<p><strong>Symptom:</strong> you can drag the page left and right. One element is wider than the screen: a fixed width like <code>width: 600px</code>, a long URL, a wide table, an image, or flex items that won't shrink. To find it, add <code>* { outline: 1px solid red; }</code> for a minute and look for the box that crosses the right edge.</p>
+
+<p><strong>Fix,</strong> by cause:</p>
+
+<ul>
+<li><strong>Fixed widths:</strong> <code>width: 100%; max-width: 600px;</code></li>
+<li><strong>Images and video:</strong> <code>img, video { max-width: 100%; height: auto; }</code></li>
+<li><strong>Long words and URLs:</strong> <code>overflow-wrap: anywhere;</code> lets the browser break them (<a href="https://developer.mozilla.org/en-US/docs/Web/CSS/overflow-wrap">MDN</a>).</li>
+<li><strong>Flex items:</strong> by default they won't shrink below their content (MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/min-width">min-width page</a>). Add <code>min-width: 0;</code> (<code>min-w-0</code> in Tailwind) to the item with the long text.</li>
+<li><strong>Tables:</strong> wrap the table in a <code>div</code> with <code>overflow-x: auto;</code>, so only the table scrolls.</li>
+</ul>
+
+<p>Don't hide it with <code>overflow-x: hidden</code> on the body. That only cuts off the right side.</p>
+
+<h2>3. Full-height screens are cut off</h2>
+
+<p><strong>Symptom:</strong> a screen set to <code>100vh</code> (<code>min-h-screen</code> in Tailwind) has its bottom part, often the main button, under the browser toolbar. Phone toolbars show and hide as you scroll, and MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/length">length page</a> says <code>vh</code> currently equals the "large" size: the height with the toolbars hidden.</p>
+
+<p><strong>Fix:</strong> use the newer units. From MDN:</p>
+
+<ul>
+<li><strong><code>svh</code> (small):</strong> the height with the toolbars shown. Stable; MDN calls the small units "safer" to use in general. Use it when the bottom button must stay visible.</li>
+<li><strong><code>lvh</code> (large):</strong> the height with the toolbars hidden, like <code>vh</code> today.</li>
+<li><strong><code>dvh</code> (dynamic):</strong> follows the toolbars. MDN warns it "can cause the content to resize while a user is scrolling a page". Keep it for a screen that must fill the window exactly, like a map.</li>
+</ul>
+
+<p>Write <code>min-height: 100vh; min-height: 100svh;</code> (<code>min-h-svh</code> in Tailwind). web.dev's <a href="https://web.dev/blog/viewport-units">viewport units article</a> lists support from Safari 15.4, Firefox 101 and Chrome 108; an older browser ignores the <code>svh</code> line and keeps the first. Use <code>min-height</code>, not <code>height</code>, so content can grow.</p>
+
+<h2>4. The form zooms in when you tap a field</h2>
+
+<p><strong>Symptom:</strong> on an iPhone, tapping an input zooms the page in. It is widely reported that Safari on iPhone does this when the field's text is smaller than 16px. I found no Apple or WebKit page that documents the rule, so treat it as observed behaviour.</p>
+
+<p><strong>Fix:</strong> <code>input, select, textarea { font-size: 16px; }</code>. Don't block zoom instead (see fix 1).</p>
+
+<h2>5. Buttons and links are too small to tap</h2>
+
+<p><strong>Symptom:</strong> people tap the wrong thing or tap twice, often on icon buttons like a close X. What each source says today:</p>
+
+<ul>
+<li><strong>WCAG 2.2, <a href="https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum.html">2.5.8 Target Size (Minimum)</a>, level AA:</strong> at least 24 by 24 CSS pixels. Exceptions include small targets with enough space around them and links inside a sentence. The stricter 2.5.5 (level AAA) uses 44 by 44 CSS pixels.</li>
+<li><strong>Apple's <a href="https://developer.apple.com/design/human-interface-guidelines/accessibility">Human Interface Guidelines</a></strong> (for native apps): a default control size of 44x44 pt on iPhone and iPad, and 28x28 pt as the minimum.</li>
+<li><strong><a href="https://m3.material.io/foundations/designing/structure">Material Design</a>:</strong> "For most platforms, consider making touch targets at least 48 x 48dp", and, in most cases, 8dp or more between targets.</li>
+</ul>
+
+<p><strong>Fix:</strong> my rule for web apps is 44 by 44 CSS pixels for anything tapped often, 8 pixels between targets, and never below 24 by 24. For an icon button, keep the icon small and grow the tap area: <code>min-width: 44px; min-height: 44px;</code>. Selling to EU consumers? Also read <a href="/blog/european-accessibility-act-small-apps-webshops">the European Accessibility Act for small apps</a>.</p>
+
+<h2>6. Bars hidden behind the notch or home bar</h2>
+
+<p><strong>Symptom:</strong> a bottom bar sits under the iPhone's home indicator, or content goes under the notch in landscape. Check your viewport tag for <code>viewport-fit=cover</code>. MDN says <code>cover</code> scales the page "to fill the device display", and it's "highly recommended" to use the safe area variables with it.</p>
+
+<p><strong>Fix:</strong> pad the edges with <code>env(safe-area-inset-*)</code>. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/env">env() page</a> says these give the safe distance from each edge, and are 0 when nothing is in the way. For a bottom bar: <code>padding-bottom: calc(1em + env(safe-area-inset-bottom));</code>. WebKit's <a href="https://webkit.org/blog/7929/designing-websites-for-iphone-x/">iPhone X post</a> explains the background.</p>
+
+<h2>7. Menus and tooltips that need a mouse</h2>
+
+<p><strong>Symptom:</strong> on a phone, a hover dropdown doesn't open or won't close, and tooltips never show. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@media/hover">hover page</a> notes that many mobile devices only emulate hovering with "an inconvenient long tap".</p>
+
+<p><strong>Fix:</strong> open menus with a tap on a real <code>&lt;button&gt;</code>, which also works with a keyboard. Put hover-only effects inside <code>@media (hover: hover) { ... }</code>. Don't hide needed information in a tooltip: show it as text, or open it on tap.</p>
+
+<h2>8. Heavy images that make the page jump</h2>
+
+<p><strong>Symptom:</strong> text jumps down while images load, and pages are slow on mobile data. <strong>Fix:</strong> give every image <code>width</code> and <code>height</code> attributes. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img">img page</a> says this reserves the space before the image loads, "reducing or even preventing a layout shift". Add <code>srcset</code> and <code>sizes</code> so a phone picks a smaller file: <code>srcset="photo-400.jpg 400w, photo-800.jpg 800w" sizes="(max-width: 600px) 100vw, 600px"</code>. Resizing uploads and lazy loading are in <a href="/blog/slow-ai-built-app-fixes">why your AI-built app is slow</a>.</p>
+
+<h2>9. The keyboard covers the field</h2>
+
+<p>Chrome's <a href="https://developer.chrome.com/blog/viewport-resize-behavior">viewport article</a> says that from Chrome 108, Chrome on Android only resizes the visual viewport when the keyboard opens, and says to look out for <code>position: fixed</code> elements. MDN documents <code>interactive-widget=resizes-content</code> to make the layout adapt to the keyboard, but the article says only Chrome supported it at the time of writing, and I found nothing saying Safari does. So keep the submit button in the form's normal flow, not in a fixed bar.</p>
+
+<h2>How to ask your AI tool for these fixes</h2>
+
+<p>"Make it mobile friendly" invites the tool to rewrite half your layout. Name the page, the phone, the symptom, the fix and what must not change. Two examples:</p>
+
+<ul>
+<li><em>"On phones 320 to 430 pixels wide, the /pricing page scrolls sideways. Find every element wider than the screen and fix it with max-width: 100%, overflow-wrap: anywhere for long text, min-width: 0 on flex items, and an overflow-x: auto wrapper around the table. Don't use overflow-x: hidden on html or body. Don't change the desktop layout."</em></li>
+<li><em>"On iPhone Safari, the sign-up form zooms in when I tap a field, and the Continue button is hidden behind the browser bar. Set font-size: 16px on all inputs, selects and textareas. On this screen, replace min-h-screen with min-h-svh. Don't add maximum-scale or user-scalable to the viewport tag."</em></li>
+</ul>
+
+<p>Ask for one fix per prompt, and check it on a phone before the next. If each prompt breaks something else, start with <a href="/blog/testing-ai-built-app-first-tests">the first tests worth writing</a>.</p>
+
+<h2>Checklist on a real phone, after each change</h2>
+
+<ol>
+<li>Open the page on an iPhone in Safari and an Android phone in Chrome.</li>
+<li>Try to drag the page sideways. It must not move.</li>
+<li>Scroll down and back up. The main button stays visible and nothing jumps.</li>
+<li>Tap each form field: no zoom, and the field stays visible above the keyboard.</li>
+<li>Tap every button, icon and menu with your thumb. You hit what you aim for, and menus open and close.</li>
+<li>Turn the phone sideways. Nothing hides behind the notch or the home bar.</li>
+<li>Pinch to zoom. It must still work.</li>
+<li>Do the main thing your app is for, start to finish, on mobile data.</li>
+</ol>
+
+<p>Before a launch, also go through the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>. Not sure the app is worth fixing? Read <a href="/blog/fix-or-rebuild-ai-built-app">fix it or rebuild it</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including making them work properly on phones, tested on real iPhone and Android devices. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
