@@ -7,7 +7,7 @@
 <p>One odd sign-up means nothing. A pattern does. Look for these:</p>
 
 <ul>
-<li><strong>Bursts.</strong> Dozens of sign-ups within minutes, often at night, then nothing for hours.</li>
+<li><strong>Bursts.</strong> Dozens of sign-ups within minutes, then nothing for hours.</li>
 <li><strong>Gibberish.</strong> Names like "xkqjw" and emails with random strings.</li>
 <li><strong>Disposable domains.</strong> The same few unfamiliar email domains again and again.</li>
 <li><strong>Unconfirmed accounts piling up.</strong> Real users click the link. Bots using fake addresses cannot.</li>
@@ -65,7 +65,7 @@
 
 <h3>Check the token on the server</h3>
 
-<p>This is the step AI-built apps most often skip. A widget in the browser protects nothing by itself. Cloudflare's <a href="https://developers.cloudflare.com/turnstile/get-started/server-side-validation/">server-side validation docs</a> say you must call the Siteverify API, that the widget alone does not protect your forms, and that attackers can send any string to your endpoint. A token is valid for 300 seconds and can be validated once. hCaptcha's docs describe the same pattern with a <code>siteverify</code> endpoint, and say tokens are single-use.</p>
+<p>This step is easy to miss. A widget in the browser protects nothing by itself. Cloudflare's <a href="https://developers.cloudflare.com/turnstile/get-started/server-side-validation/">server-side validation docs</a> say you must call the Siteverify API, that the widget alone does not protect your forms, and that attackers can send any string to your endpoint. A token is valid for 300 seconds and can be validated once. hCaptcha's docs describe the same pattern with a <code>siteverify</code> endpoint, and say tokens are single-use.</p>
 
 <p>If you use Supabase or Firebase's own CAPTCHA settings, they do the check for you. If you wrote your own form handler or function, verify the token there, and reject the request when it fails. Keep the secret key in server settings, never in code the browser can read. See <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a> for how that goes wrong.</p>
 
@@ -81,7 +81,7 @@
 
 <h2>What I do on my own sites</h2>
 
-<p>The forms on my hire-me site run on Netlify Forms, and its spam filter catches most of the junk. On my job board I cap sign-in emails with a rate limit, so nobody can make the app send a flood of emails.</p>
+<p>The forms on my hire-me site run on Netlify Forms, and its spam filter catches most of the junk. On my job board, a new sign-in link for the same address goes out at most once every 2 minutes, so nobody can make the app flood an inbox, and the reply never says whether that address has an account.</p>
 
 <h2>A 20-minute checklist</h2>
 
