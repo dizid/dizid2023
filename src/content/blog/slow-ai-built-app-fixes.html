@@ -21,7 +21,7 @@
 
 <p>Postgres does not create indexes on foreign key columns for you. Without an index, "all orders for this user" reads the whole table. With 100 rows nobody notices; with 100,000 rows every page waits.</p>
 
-<p><strong>Fix:</strong> add an index on every column you filter or join on: <code>user_id</code>, <code>created_at</code> if you sort by it, foreign keys. Supabase's Performance Advisor lists unindexed foreign keys for you.</p>
+<p><strong>Fix:</strong> add an index on every column you filter or join on: <code>user_id</code>, <code>created_at</code> if you sort by it, foreign keys. Supabase's Performance Advisor lists unindexed foreign keys for you. A search box that uses <code>ILIKE '%word%'</code> can't use a normal index at all; see <a href="/blog/search-ai-built-app-postgres-full-text">slow or missing search in your AI-built app</a>.</p>
 
 <h2>3. Security rules that run once per row</h2>
 
