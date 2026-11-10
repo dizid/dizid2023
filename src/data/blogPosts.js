@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'users-logged-out-ai-built-app-sessions',
+    title: "Users keep getting logged out of your app? Causes and fixes",
+    description: "Users keep getting logged out of your AI-built app? Causes on Supabase and Firebase, Safari limits, domains and tabs, with fixes. Checked in Nov 2026.",
+    datePublished: '2026-11-13',
+    dateModified: '2026-11-13'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",
