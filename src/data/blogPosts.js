@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'users-logged-out-ai-built-app-sessions',
+    title: "Users keep getting logged out of your app? Causes and fixes",
+    description: "Users keep getting logged out of your AI-built app? Causes on Supabase and Firebase, Safari limits, domains and tabs, with fixes. Checked in Nov 2026.",
+    datePublished: '2026-11-13',
+    dateModified: '2026-11-13'
+  },
+  {
     slug: 'buttons-stop-working-after-deploy-stale-files',
     title: "Buttons stop working after you deploy? Old files in open tabs",
     description: "Why taps do nothing or pages go blank for people who had your app open during a deploy, and the fix: reload once, with a guard. Checked in November 2026.",

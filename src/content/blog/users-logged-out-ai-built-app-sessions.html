@@ -1,0 +1,92 @@
+<p>"I keep getting logged out." "It logged me out on my iPhone." "I have to sign in again every day." If you built your app with Lovable, Bolt, Cursor or Replit, or by hand with Vite, React or Vue, on Supabase Auth or Firebase Auth, you have probably heard one of these. Vendor facts below come from the official docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> I would check these in this order. First, whether you or a template set a session time limit. Second, whether the user is on Safari or an iPhone and the session sits in localStorage. Third, whether the user is on a different domain (www, a preview URL) than the one they signed in on. Fourth, whether the app creates more than one auth client or refreshes in several tabs. Fifth, whether your own code calls sign out when something fails. Then look at the logs.</p>
+
+<h2>1. How a login stays alive</h2>
+
+<p>A login is not one thing that lasts. It is two tokens. A short-lived access token proves who the user is. A refresh token gets a new access token when the old one runs out. The app does this in the background, so the user never sees it.</p>
+
+<p>Supabase describes it in its <a href="https://supabase.com/docs/guides/auth/sessions">sessions guide</a>: access tokens are "designed to be short lived" while refresh tokens "never expire but can only be used once." For the access token lifetime, the same page says "Most applications should use the default expiration time of 1 hour." The page lists what ends a session, "depending on configuration":</p>
+
+<ul>
+<li>"The user clicks sign out."</li>
+<li>"The user changes their password or performs a security sensitive action."</li>
+<li>"It times out due to inactivity."</li>
+<li>"It reaches its maximum lifetime."</li>
+<li>"A user signs in on another device."</li>
+</ul>
+
+<p>Firebase works in a similar way. Its <a href="https://firebase.google.com/docs/auth/admin/manage-sessions">session management page</a> says "Firebase ID tokens are short lived and last for an hour; the refresh token can be used to retrieve new ID tokens." It also says "Refresh tokens expire only when one of the following occurs": the user is deleted, the user is disabled, or "A major account change is detected for the user." That includes "password or email address updates." So if only a few users complain, ask whether they just changed their password or email.</p>
+
+<p>If you want the security side of sessions, such as how long people should stay logged in, that is in <a href="/blog/harden-login-ai-built-app-supabase-firebase">the login hardening post</a>. This post is about the opposite problem: logouts nobody wanted.</p>
+
+<h2>2. Cause: a session time limit you or a template set</h2>
+
+<p>Supabase can end sessions on purpose. The sessions guide lists "Time-boxed sessions, which terminate after a fixed amount of time" and an inactivity timeout, which "terminates sessions that haven't been refreshed within the timeout duration." Both are options in the project's Auth settings. The page notes "This feature is only available on Pro Plans and up", so check your plan before you count on these settings, and check what is set if you did not set them yourself. The page also says that "the actual duration of a session is the configured timeout plus the JWT expiration time", so a user may be logged out later than the number you typed.</p>
+
+<p>The Firebase page I read does not describe a setting like this, so I leave Firebase out here. If someone is logged out on Firebase, look at the other causes.</p>
+
+<h2>3. Cause: Safari and iPhone storage rules</h2>
+
+<p>This is the one behind "it only happens on iPhone". Most browser-based auth clients keep the session in localStorage. WebKit, the engine behind Safari, limits that. In its post <a href="https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/">Full Third-Party Cookie Blocking and More</a> (March 2020), WebKit says Intelligent Tracking Prevention is "deleting all of a website's script-writable storage after seven days of Safari use without user interaction on the site." The list of affected storage includes IndexedDB, LocalStorage, SessionStorage and "Service Worker registrations and cache."</p>
+
+<p>What that means for your app, as I read it: if the session lives in localStorage and a user does not touch your site in Safari for a stretch of Safari use, the session can be gone and they have to sign in again. This applies to Safari and WebKit as WebKit describes it. I would not assume it explains logouts in Chrome or Firefox.</p>
+
+<p>WebKit also has a note for apps added to the Home Screen: "Web applications added to the home screen are not part of Safari and thus have their own counter of days of use." And: "We do not expect the first-party in such a web application to have its website data deleted." So a user who opens your site in a Safari tab and a user who opens it from the Home Screen can have different experiences. If you are choosing between a web app and a store app, see <a href="/blog/ai-built-web-app-on-phones-pwa-or-app-store">installable web app or App Store</a>.</p>
+
+<p>If your app is rendered on a server, cookies are another option. Supabase's <a href="https://supabase.com/docs/guides/auth/server-side">server-side rendering guide</a> says to configure the client "to store the user session in cookies instead of local storage." Test any change on a real iPhone.</p>
+
+<h2>4. Cause: www, non-www and preview domains</h2>
+
+<p>Browser storage belongs to one origin. MDN says <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage">localStorage</a> gives access to "a Storage object for the Document's origin", and its <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy">same-origin policy page</a> says "Two URLs have the same origin if the protocol, port (if specified), and host are the same for both."</p>
+
+<p>So <code>example.com</code> and <code>www.example.com</code> are two different places. A user who signs in on one is logged out on the other. The same goes for a Netlify or Vercel preview URL, or the default <code>.lovable.app</code> address next to your own domain.</p>
+
+<p>The fix is one canonical domain, with a redirect from every other address to it. The setup is in <a href="/blog/own-domain-lovable-bolt-app-dns-ssl-www">connecting your own domain</a>. Also check that your sign-in redirect URLs point at that one domain. Social sign-in adds its own traps: <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with Google and Apple sign-in</a>.</p>
+
+<h2>5. Cause: two tabs or two auth clients</h2>
+
+<p>Supabase explains the exceptions in its sessions guide: "A refresh token can be used more than once within a defined reuse interval. By default this is 10 seconds and we do not recommend changing this value." It lists "bugs or issues with serializing access to the refresh token request" as one reason for the leeway. And then: "Should the reuse attempt not fall under these two exceptions, the whole session is regarded as terminated and all refresh tokens belonging to it are marked as revoked."</p>
+
+<p>The docs do not say outright that two clients or two tabs cause this. So treat it as something to check, not a fact. What I would check: does the code create the Supabase client in more than one place? Supabase says that for its server-side package, "<code>createBrowserClient</code> already uses a singleton pattern" (from the <a href="https://supabase.com/docs/guides/auth/server-side/creating-a-client">creating a client guide</a>), but AI-generated code often has a second client in some helper file. Then open the app in two tabs, leave both for over an hour, and see if one of them logs out.</p>
+
+<h2>6. Cause: your own code signs the user out</h2>
+
+<p>This one is common in generated code. Look for a sign out call inside an error handler: a failed API call, a 401 from your own backend, a network error while offline. One bad request then ends a good session. Also look for code that clears localStorage or the whole storage on startup or after a deploy, and for a redirect to the login page that runs before the session has been loaded.</p>
+
+<p>A stale build after a deploy can also look like a logout, because old files talk to a changed backend. If things break only after you publish, read <a href="/blog/ai-built-app-works-in-editor-breaks-live">why an app works in the editor and breaks live</a>.</p>
+
+<h2>7. How to diagnose it</h2>
+
+<ol>
+<li><strong>Ask the user four things:</strong> which device, which browser, how long since their last visit, and which address they type or tap.</li>
+<li><strong>Look at the Auth logs.</strong> In the Supabase dashboard, the <a href="https://supabase.com/docs/guides/telemetry/logs">logs guide</a> says you can pick Auth as the log type, and the User filter will "Match the user's ID in Auth actor IDs or API Gateway JWT subjects."</li>
+<li><strong>Reproduce it in two tabs,</strong> and again in Safari on a Mac or an iPhone.</li>
+<li><strong>Open DevTools, Application tab.</strong> Look under Local Storage and Cookies for your domain. Is the session stored there? Is it still there after you reload? Check you are on the same domain the user is.</li>
+<li><strong>Search your code</strong> for every sign out call and every place a client is created.</li>
+</ol>
+
+<h2>8. Prompts for your AI tool</h2>
+
+<ol>
+<li>"Find every place in this app that calls signOut, clears localStorage or sessionStorage, or redirects to the login page. For each one, tell me why it runs and what triggers it. Do not change anything yet."</li>
+<li>"Check that the app creates exactly one Supabase (or Firebase) auth client, in one shared file, and that every other file imports it. Remove any extra clients."</li>
+<li>"Pick <code>example.com</code> as the only canonical domain. Add a permanent redirect from www and from any other address to it, and make sure the sign-in redirect URLs use only that domain."</li>
+</ol>
+
+<h2>9. Checklist</h2>
+
+<ul>
+<li>Session time limits and inactivity timeout checked in the Auth settings, and your plan confirmed.</li>
+<li>Tested on a real iPhone, after a few days without opening the app.</li>
+<li>One canonical domain, with a redirect from www and previews.</li>
+<li>One auth client in the code.</li>
+<li>Tested with two tabs open for over an hour.</li>
+<li>No sign out call inside generic error handlers.</li>
+<li>No code that clears storage on start or deploy.</li>
+<li>Auth logs checked for a user who was logged out.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including login and session problems like these. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
