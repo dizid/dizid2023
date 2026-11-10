@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'stripe-payments-ai-built-app-launch',
+    title: "Taking payments in an AI-built app: 8 things that break at launch",
+    description: "Taking payments with Stripe in an AI-built app? The 8 things I check before launch: live keys, webhooks, double charges, failed renewals, VAT, disputes.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'gdpr-checklist-small-app',
     title: "GDPR for your app: 8 things to check before EU users sign up",
     description: "Building an app for EU users? The 8 GDPR checks I do on small apps: processing agreements, data location, privacy notice, cookies, deletion, AI, 72 hours.",

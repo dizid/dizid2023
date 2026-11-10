@@ -1,0 +1,80 @@
+<p>An AI-built app can look finished while its payment flow only works in demo mode. The test card goes through, but nobody has checked what happens when a renewal fails, a webhook arrives twice or a customer in Germany pays. These are the eight things I check on a Stripe integration before real money moves. This is technical help, not tax or legal advice.</p>
+
+<p><strong>Short answer:</strong> switch keys, prices and webhook secrets to live mode together; let your server learn about payments from verified webhooks, not from the browser; make repeated requests and events harmless; decide what the app does when a renewal fails; add the Customer Portal; set up tax before the first EU sale; know the dispute process; and run a 15-minute test with test cards.</p>
+
+<h2>1. Test keys, live keys and live products</h2>
+
+<p>Stripe keeps test mode (now called a sandbox) and live mode completely separate. On the <a href="https://docs.stripe.com/keys">API keys page</a>, Stripe says each mode has its own keys and that objects in one mode aren't accessible to the other. A sandbox product can't be part of a live payment.</p>
+
+<ul>
+<li><strong>Keys.</strong> Test keys start with <code>pk_test_</code> and <code>sk_test_</code>, live keys with <code>pk_live_</code> and <code>sk_live_</code>. The secret key lives in your host's environment settings, never in code or the browser.</li>
+<li><strong>Products and prices.</strong> Hard-coded price IDs are test IDs. Recreate the products in live mode and swap the IDs.</li>
+<li><strong>Webhook secret.</strong> It is separate from the API keys and differs per endpoint and mode. Copy the live one too.</li>
+</ul>
+
+<p>The classic launch bug is a half switch: live publishable key, test secret key, and a checkout that errors for every real customer. Stripe also publishes a <a href="https://docs.stripe.com/get-started/checklist/go-live">go-live checklist</a>.</p>
+
+<h2>2. Webhooks: the app must learn about payment from Stripe</h2>
+
+<p>After paying, the browser is redirected to your "thank you" page. That proves nothing: the customer may close the tab, or someone may open the URL by hand. The reliable signal is the event Stripe sends to your <a href="https://docs.stripe.com/webhooks">webhook endpoint</a>. Grant access only from that event.</p>
+
+<ul>
+<li><strong>Verify the signature</strong> in the <code>Stripe-Signature</code> header. Otherwise anyone who finds the URL can send a fake "paid" event. It needs the raw request body, so a framework that parses the body first breaks the check.</li>
+<li><strong>Answer fast.</strong> Return a 2xx before slow work; Stripe suggests a queue.</li>
+<li><strong>Expect retries.</strong> In live mode Stripe retries a failed delivery for up to three days with exponential backoff.</li>
+<li><strong>Expect duplicates and wrong order.</strong> Delivery order isn't guaranteed and an event can arrive twice. Store processed event IDs, and fetch the current object from the API when you need the latest state.</li>
+</ul>
+
+<h2>3. Double charges and idempotency</h2>
+
+<p>A customer double-clicks "Pay", or your server retries after a dropped connection. Each can create a second charge. Stripe's answer is the <a href="https://docs.stripe.com/api/idempotent_requests">idempotency key</a>: you send a unique <code>Idempotency-Key</code> header, and a retry with the same key returns the saved result instead of repeating the work. Keys can be removed once they are at least 24 hours old.</p>
+
+<p>Hosted flows like Checkout handle much of this. It matters when your own code creates charges or subscriptions. Also disable the pay button after the first click, and make order handling safe to run twice.</p>
+
+<h2>4. Failed renewals and what the app does about them</h2>
+
+<p>Cards expire and banks decline. For subscriptions that is normal. <a href="https://docs.stripe.com/billing/revenue-recovery/smart-retries">Smart Retries</a> picks retry times for you; for new accounts it is on by default with up to 8 retries in 2 weeks. Check the setting rather than assuming it.</p>
+
+<p>What is left to your app is the status. After the last retry, the subscription becomes <code>canceled</code>, <code>unpaid</code> or stays <code>past_due</code>, depending on your settings, and the <a href="https://docs.stripe.com/billing/subscriptions/overview">subscriptions guide</a> says to revoke access when it is <code>unpaid</code>. Decide in advance which statuses keep access, what the customer is told when <code>invoice.payment_failed</code> arrives, and where they fix their card. AI-built apps often check only "has a subscription", so a customer whose card failed months ago keeps full access.</p>
+
+<h2>5. Cancel and update card: the Customer Portal</h2>
+
+<p>If customers can't cancel or change their card themselves, they email you or dispute the charge. The <a href="https://docs.stripe.com/customer-management">Customer Portal</a> is a Stripe-hosted page where they can update payment methods, download invoices and cancel now or at period end. Turn it on in the dashboard and add a "Manage billing" button that creates a portal session when clicked; sessions are temporary, so don't store the link. For some subscriptions (multiple products, trials) customers can cancel but not change the plan.</p>
+
+<h2>6. EU VAT and sales tax</h2>
+
+<p>If you sell to EU customers you might need to collect VAT even when your business isn't based there, and rules and rates differ per country. <a href="https://docs.stripe.com/tax">Stripe Tax</a> calculates tax from product, customer location and business location, and monitors thresholds. You still register where required and file returns.</p>
+
+<ul>
+<li><strong>OSS.</strong> The <a href="https://docs.stripe.com/tax/supported-countries/european-union">One Stop Shop</a> lets you register in one country and file a single return for consumer sales across the EU.</li>
+<li><strong>Small EU sellers.</strong> Stripe describes an option for EU-based businesses with total EU sales under 10,000 EUR a year to individuals in other EU countries. Ask your accountant if it applies.</li>
+<li><strong>Inclusive or exclusive.</strong> Set <code>tax_behavior</code> on each price. Once set, <a href="https://docs.stripe.com/tax/products-prices-tax-codes-tax-behavior">it can't be changed</a>, so decide before creating live prices.</li>
+</ul>
+
+<h2>7. Refunds and disputes</h2>
+
+<p><a href="https://docs.stripe.com/refunds">Refunds</a> go to the original payment method, and Stripe's processing fees from the original payment aren't returned. Customers usually see them after 5 to 10 business days. Listen for <code>refund.created</code> to update the order.</p>
+
+<p>In a <a href="https://docs.stripe.com/disputes/how-disputes-work">dispute</a> the customer's bank pulls the money back and Stripe debits the amount plus a dispute fee. The fee depends on your country, so check Stripe's pricing page. Per the docs, customers can typically dispute within 120 days, you usually have 7 to 21 days to respond depending on the network (miss it and you lose), and the bank's decision can take up to 3 months. You get <a href="https://docs.stripe.com/disputes/responding">one submission</a> that can't be edited. Good evidence is what your app can produce on demand: the account, login and usage records, accepted terms and your messages with the customer.</p>
+
+<h2>8. Receipts and invoices</h2>
+
+<p>Stripe creates a <a href="https://docs.stripe.com/receipts">receipt</a> for each successful payment but doesn't email all of them. Turn on "Successful payments" under customer emails, and fill in the business details required on receipts. Automatic receipt emails only go out in live mode. Subscriptions get invoices automatically; for one-time Checkout payments you must enable invoice creation, which Stripe says is priced separately. Business customers will want a tax ID on the invoice, so check it.</p>
+
+<h2>The 15-minute pre-launch test</h2>
+
+<p>Run this in the sandbox, then repeat step 1 once in live mode with a small real payment you refund yourself. Card numbers are on Stripe's <a href="https://docs.stripe.com/testing">testing page</a>.</p>
+
+<ol>
+<li>Pay with <code>4242 4242 4242 4242</code>, any future expiry, any 3-digit CVC. Access must be granted by the webhook, not just the redirect.</li>
+<li>Pay with the 3D Secure card <code>4000 0025 0000 3155</code>, once completing and once abandoning the authentication.</li>
+<li>Pay with the declined card <code>4000 0000 0000 0002</code>. The customer sees a clear message and gets no access.</li>
+<li>Run <code>stripe listen --forward-to localhost:4242/webhook</code> (your own port and path) and watch the events arrive.</li>
+<li>Run <code>stripe trigger payment_intent.succeeded</code>, then resend the event. Nothing may happen twice.</li>
+<li>Send a request with a wrong signature. The app must reject it.</li>
+<li>Open the Customer Portal, change the card, cancel. The app's status must follow.</li>
+</ol>
+
+<h2>Want this checked on your app?</h2>
+
+<p>I check and fix the payment side of apps built with Lovable, Bolt, Cursor or v0: keys, webhooks, failed renewals, the customer portal, tax settings and the test run above. See also the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>, or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
