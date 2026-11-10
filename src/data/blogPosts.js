@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'pdf-invoices-reports-ai-built-app',
+    title: "Create PDF invoices and reports in your AI-built app",
+    description: "Three ways to make PDFs in your AI-built app, the hosting limits that break them, and how to store and send invoices safely. Checked in November 2026.",
+    datePublished: '2026-11-14',
+    dateModified: '2026-11-14'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",
