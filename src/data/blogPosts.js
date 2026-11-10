@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'gdpr-checklist-small-app',
+    title: "GDPR for your app: 8 things to check before EU users sign up",
+    description: "Building an app for EU users? The 8 GDPR checks I do on small apps: processing agreements, data location, privacy notice, cookies, deletion, AI, 72 hours.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'app-database-backups-supabase-neon-firebase',
     title: "Does your app have backups? What Supabase, Neon and Firebase keep",
     description: "What Supabase, Neon and Firebase really back up on each plan, what they never do (your uploaded files), and a 15-minute check that you can restore.",

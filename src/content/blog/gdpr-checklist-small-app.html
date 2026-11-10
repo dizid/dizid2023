@@ -1,0 +1,62 @@
+<p>An app built in a few weeks often handles personal data before anyone has thought about the GDPR: email addresses at sign-up, names on invoices, whatever users type into a form or a chat. The rules apply as soon as you serve people in the EU, whatever the size of your company. Most of what they ask for is ordinary good engineering. Below are the eight things I check on a small app before EU users sign up. It is technical help, not legal advice; for anything unusual, ask a privacy lawyer.</p>
+
+<p><strong>Short answer:</strong> know which services hold your users' data and have a processing agreement with each; keep data in the EU where you can; make your privacy notice describe what the app really does; ask consent only for cookies you don't need; let users get and delete their data; and know what you will do in the first 72 hours after a leak.</p>
+
+<h2>1. A processing agreement with every service that holds user data</h2>
+
+<p>Your database host, email service, payment provider, analytics and AI provider all process personal data on your behalf. <a href="https://gdpr-info.eu/art-28-gdpr/">Article 28</a> requires a contract with each of them, usually called a data processing agreement (DPA). For the big providers it is a standard document: some include it in their terms, others let you accept or download it from the dashboard. Make a list of every service, find its DPA, and keep the list. It is also the start of your record of what data goes where.</p>
+
+<h2>2. Where the data lives, and how it leaves the EU</h2>
+
+<ul>
+<li><strong>Pick EU regions when you create things.</strong> Supabase and Neon let you choose a region per project; a Firestore database's location is set when you create it and can't be changed later. EU regions make the rest of this list easier.</li>
+<li><strong>Transfers to the US need a legal basis.</strong> <a href="https://gdpr-info.eu/art-44-gdpr/">Chapter V</a> covers this. Many US providers rely on the EU-US Data Privacy Framework (you can check whether a company is certified on the <a href="https://www.dataprivacyframework.gov/list">official list</a>) or on standard contractual clauses in their DPA.</li>
+</ul>
+
+<h2>3. A privacy notice that matches what the app does</h2>
+
+<p><a href="https://gdpr-info.eu/art-13-gdpr/">Article 13</a> lists what people must be told when you collect their data: who you are, what you collect, why, on which legal basis, who receives it, how long you keep it and what rights they have. The common failure in AI-built apps is a generated privacy policy that names tools the app doesn't use and misses the ones it does. Read it next to your list from point 1. Every service on the list should be in the notice, and nothing else.</p>
+
+<h2>4. Consent only for cookies you don't need</h2>
+
+<p>The cookie rules (from the ePrivacy directive, implemented per country) cover anything stored on the device, including local storage. Storage that is strictly necessary for what the user asked for, such as a login session or a shopping cart, needs no consent. Advertising and tracking need it. Analytics depends on the country and the setup; in the Netherlands, analytics with little impact on privacy can be used without consent if it is configured accordingly. Cookie-less analytics avoids the question. If you do need consent: no pre-ticked boxes, and declining must be as easy as accepting.</p>
+
+<h2>5. People can get their data and delete it</h2>
+
+<p>Users have the right to a copy of their data (<a href="https://gdpr-info.eu/art-15-gdpr/">Article 15</a>), to take it with them in a usable format (<a href="https://gdpr-info.eu/art-20-gdpr/">Article 20</a>) and to have it erased (<a href="https://gdpr-info.eu/art-17-gdpr/">Article 17</a>). You have one month to respond. For a small app this can be manual at first, but test it once:</p>
+
+<ul>
+<li>Can you find everything about one user: database rows, uploaded files, emails in your sending service, records at the payment provider?</li>
+<li>Does "delete my account" really delete, or only hide the user? Rows in other tables and files in storage are often left behind.</li>
+<li>What must you keep anyway, such as invoices for the tax office? Keep that, and say so in the notice.</li>
+</ul>
+
+<h2>6. What goes to the AI provider</h2>
+
+<p>If your app sends user text to an AI model, that provider is a processor too: it needs a DPA and a line in your privacy notice. Check its terms on whether API data is used for training and how long it is kept. Don't send more than the feature needs; a feature that rewrites a product description doesn't need the user's name or order history.</p>
+
+<h2>7. Security basics, and a plan for the first 72 hours</h2>
+
+<p><a href="https://gdpr-info.eu/art-32-gdpr/">Article 32</a> asks for security appropriate to the risk. For a small app that means: the database is not readable by anyone with the public key (row level security or proper rules), secret keys are only on the server, access is on personal accounts that you can remove, and backups exist. If personal data does leak, <a href="https://gdpr-info.eu/art-33-gdpr/">Article 33</a> gives you 72 hours from the moment you become aware of it to report it to your data protection authority (in the Netherlands, the Autoriteit Persoonsgegevens), unless the breach is unlikely to put anyone at risk. Write down now who checks what happened, who decides and who reports, so you don't work that out under pressure.</p>
+
+<h2>8. Logs, test data and old copies</h2>
+
+<ul>
+<li><strong>Logs:</strong> error logs and analytics often capture email addresses, form contents or full URLs with tokens. Log less, and keep logs for weeks rather than forever.</li>
+<li><strong>Test data:</strong> don't copy the production database to a laptop or a test project with weaker security.</li>
+<li><strong>Old copies:</strong> database dumps and exports are personal data too. Store them privately and delete them on a schedule.</li>
+</ul>
+
+<h2>The 20-minute version</h2>
+
+<ol>
+<li>List every service that receives user data, with its region and its DPA.</li>
+<li>Compare that list with your privacy notice.</li>
+<li>Open the app in a private window and check what is stored in cookies and local storage before you click anything.</li>
+<li>Delete a test account and check what is left in the database and storage.</li>
+<li>Write the three names for the 72-hour plan: who checks, who decides, who reports.</li>
+</ol>
+
+<h2>Want this checked on your app?</h2>
+
+<p>I check and fix the technical side of this on apps built with Lovable, Bolt, Cursor or v0: data location, keys, deletion that really deletes, cookie storage, logs and backups. See also <a href="/blog/ai-built-app-database-security-checks">5 database checks for Supabase, Firebase and Neon</a>, or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
