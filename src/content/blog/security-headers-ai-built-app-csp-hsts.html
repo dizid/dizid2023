@@ -1,13 +1,13 @@
 <p>A security scan, a client's IT check or a pen-test report came back with "missing security headers": Content-Security-Policy, Strict-Transport-Security and a few more. Your app works fine, so is this real? Yes, but it is a small, fixable job, and one header needs care. Facts below come from MDN, hstspreload.org and the Netlify, Vercel, Cloudflare and Stripe docs, checked in November 2026.</p>
 
-<p><strong>Short answer:</strong> add four low-risk headers first: Strict-Transport-Security (without preload), X-Content-Type-Options, Referrer-Policy and Permissions-Policy. Block framing with X-Frame-Options or CSP <code>frame-ancestors</code>. Then roll out Content-Security-Policy slowly, in report-only mode first, because it is the one that can break your app.</p>
+<p><strong>Short answer:</strong> add four low-risk headers first: Strict-Transport-Security (if your host doesn't send it already, and without preload), X-Content-Type-Options, Referrer-Policy and Permissions-Policy. Block framing with X-Frame-Options or CSP <code>frame-ancestors</code>. Then roll out Content-Security-Policy slowly, in report-only mode first, because it is the one that can break your app.</p>
 
 <h2>What each header does</h2>
 
 <p>A header is a line your host sends with every page. The browser reads it and applies rules. Here is each one, in plain English, with a safe starting value.</p>
 
 <ul>
-<li><strong>Strict-Transport-Security (HSTS).</strong> MDN says it "informs browsers that the host should only be accessed using HTTPS". So later visits over plain HTTP get upgraded. Start with <code>max-age=300</code> and raise it later.</li>
+<li><strong>Strict-Transport-Security (HSTS).</strong> MDN says it "informs browsers that the host should only be accessed using HTTPS". So later visits over plain HTTP get upgraded. Your host may send it already: <a href="https://vercel.com/docs/security/encryption">Vercel's encryption docs</a> show <code>max-age=63072000</code> as "The default Strict-Transport-Security header for custom domains". Run <code>curl -I</code> first (see below). If it is there, leave it. If not, start with <code>max-age=300</code> and raise it later.</li>
 <li><strong>X-Content-Type-Options.</strong> With <code>nosniff</code>, MDN says "the browser uses the supplied Content-Type as-is instead of examining the content to infer the type". It stops a file from being run as something it is not. Value: <code>nosniff</code>.</li>
 <li><strong>X-Frame-Options.</strong> MDN says sites use it "to avoid clickjacking attacks", where another site hides your page in a frame and tricks people into clicking. Value: <code>DENY</code>, unless you need your page framed.</li>
 <li><strong>Referrer-Policy.</strong> MDN says it "controls how much referrer information" goes out with requests. It limits how much of your URLs other sites see. MDN says <code>strict-origin-when-cross-origin</code> "is the default policy if no policy is specified", so setting it just makes it explicit.</li>
@@ -25,7 +25,7 @@
 
 <p>Be careful with the last two. If one subdomain cannot do HTTPS, <code>includeSubDomains</code> will break it. For preload, <a href="https://hstspreload.org/">hstspreload.org</a> is blunt: "Be aware that inclusion in the preload list cannot easily be undone." It also says removal "tends to be slow and painful" and tells you to "do not include the preload directive by default".</p>
 
-<p>My advice: start with a short <code>max-age</code>, confirm the site works on HTTPS everywhere, then raise it. Skip <code>preload</code> unless you have a real reason.</p>
+<p>My advice: if you add HSTS yourself, start with a short <code>max-age</code>, confirm the site works on HTTPS everywhere, then raise it. Don't replace a longer value your host already sends with a shorter one. Skip <code>preload</code> unless you have a real reason.</p>
 
 <h2>CSP without breaking the app</h2>
 
@@ -114,7 +114,7 @@ frame-ancestors 'none'
 <h2>Prompts for Lovable, Bolt and Cursor</h2>
 
 <ul>
-<li><em>"My app is hosted on Netlify. Add Strict-Transport-Security with a max-age of 300 seconds and no preload, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, X-Frame-Options DENY and a Permissions-Policy that turns off camera, microphone and geolocation. Put them in the right file for my host and tell me where it is."</em></li>
+<li><em>"My app is hosted on Netlify. If my host doesn't already send Strict-Transport-Security, add it with a max-age of 300 seconds and no preload. Add X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, X-Frame-Options DENY and a Permissions-Policy that turns off camera, microphone and geolocation. Put them in the right file for my host and tell me where it is."</em></li>
 <li><em>"Build a Content-Security-Policy-Report-Only header from the hosts my app actually loads: list every script, style, font, image and API address in the code. Do not enforce it yet, and do not use 'unsafe-inline'."</em></li>
 <li><em>"Move every inline script and inline event handler into its own file, so a CSP does not need 'unsafe-inline'. Don't change how the app looks or works."</em></li>
 </ul>
@@ -126,7 +126,7 @@ frame-ancestors 'none'
 <ol>
 <li>Scan your site with the MDN HTTP Observatory and note what is missing.</li>
 <li>Add X-Content-Type-Options, Referrer-Policy, Permissions-Policy and a framing rule.</li>
-<li>Add HSTS with a short max-age. No preload.</li>
+<li>Check whether your host already sends HSTS. If not, add it with a short max-age. No preload.</li>
 <li>Add CSP as Report-Only. Use the app fully and read the console.</li>
 <li>Add the missing hosts, such as Stripe and your API, then enforce.</li>
 <li>Re-run the scan and <code>curl -I</code>. Test login, payments and uploads.</li>
