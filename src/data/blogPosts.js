@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'undo-deleted-data-soft-delete-audit-log',
+    title: "Someone deleted data in your app by mistake: undo it",
+    description: "How to undo a deleted record in your AI-built app: soft delete, a change history, and what host restores can't do. Checked in November 2026.",
+    datePublished: '2026-11-13',
+    dateModified: '2026-11-13'
+  },
+  {
     slug: 'users-logged-out-ai-built-app-sessions',
     title: "Users keep getting logged out of your app? Causes and fixes",
     description: "Users keep getting logged out of your AI-built app? Causes on Supabase and Firebase, Safari limits, domains and tabs, with fixes. Checked in Nov 2026.",
