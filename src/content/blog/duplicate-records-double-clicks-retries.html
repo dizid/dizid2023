@@ -1,0 +1,175 @@
+<p>A customer books a slot, and your app shows two bookings. An order appears twice. A sign-up creates two rows. Someone gets two confirmation emails, or two invoices. Apps built with Lovable, Bolt, Cursor and Replit, usually on Supabase or Postgres, often have this problem. The code works when you test it once, slowly. It breaks when real people click fast, networks are slow and other services send the same message twice. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Duplicates come from the same action arriving more than once. Fix it in three layers. First, lock the button while the request runs. Second, let the database refuse a second copy with a unique constraint. Third, for anything that creates something or charges money, send an idempotency key so a repeat is recognised and ignored. The screen fix is nice to have. The database fix is the real guarantee. Clean up old duplicates before you add the constraint, and take a backup first.</p>
+
+<h2>1. Why the same thing gets saved twice</h2>
+
+<p>Most duplicates have one of these causes. Often it is more than one.</p>
+
+<h3>Double clicks and double taps</h3>
+
+<p>A user clicks "Pay" or "Book now" twice. Phones make this worse, because a tap with no visible reaction invites a second tap. If the button stays active while the first request is running, both requests are sent. Both succeed. You now have two rows.</p>
+
+<h3>Slow network and a user who retries</h3>
+
+<p>The request is slow, so the page looks frozen. The user reloads, or goes back and submits again. The first request may have worked. The user only never saw the answer. Now there are two.</p>
+
+<h3>The browser or your code retries</h3>
+
+<p>Some code retries a failed request on its own. A generated data layer, a network library or a mobile app may send the call again after a timeout. If the first call actually reached the server, the retry creates a second record. The key point: a timeout does not mean "it failed". It means "no answer arrived".</p>
+
+<h3>React effects running twice in development</h3>
+
+<p>If your app does a write inside a React effect, you may see two rows while building. The React docs for <a href="https://react.dev/reference/react/StrictMode">StrictMode</a> say it "enables the following development-only behaviors", and one of them is that components will "re-run Effects an extra time". The same page states: "All of these checks are development-only and do not impact the production build." So this is a development effect, not the cause of duplicates on your live site. But it is a warning. A write inside an effect is fragile, and it is better to move it to a button click or to make it safe to repeat.</p>
+
+<h3>Webhooks delivered more than once</h3>
+
+<p>Services like Stripe call your app when something happens. Stripe's <a href="https://docs.stripe.com/webhooks">webhook docs</a> say: "Webhook endpoints might occasionally receive the same event more than once." Your code must expect repeats. If each event creates an order or sends an email, a repeat creates a second order or a second email.</p>
+
+<h3>Scheduled jobs that overlap</h3>
+
+<p>A job runs every minute. One run takes longer than a minute. The next run starts while the first is still working, and both process the same items. Or a job is retried after a failure, and part of its work was already done. This is how people get two reminder emails.</p>
+
+<h2>2. Fix layer 1: the screen</h2>
+
+<p>Make the button stop accepting clicks as soon as it is pressed. Set a "saving" state, turn the button off, and show progress, for example "Saving..." with a spinner. Turn it back on when the request ends, also when it fails, so the user can try again.</p>
+
+<p>MDN's page on the <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/disabled"><code>disabled</code> attribute</a> says that for a button it "prevents the user from interacting with the button." That is what you want during a save.</p>
+
+<p>Also do this:</p>
+
+<ul>
+<li>Keep the user on the page until the answer comes. Do not navigate away while a write is running.</li>
+<li>After success, show a clear "Done" message or move to a confirmation page. A silent success invites a second click.</li>
+<li>Ignore a second submit in the code too, not only by greying the button. Pressing Enter in a form can submit again.</li>
+</ul>
+
+<p>This layer is not a guarantee. It only protects one browser tab. It does nothing for a retry from a second device, a webhook or a job. That is why you need layer 2.</p>
+
+<h2>3. Fix layer 2: the database says no</h2>
+
+<p>The database is the only place that sees every request. Ask it to refuse a second copy.</p>
+
+<h3>Unique constraints</h3>
+
+<p>The PostgreSQL docs on <a href="https://www.postgresql.org/docs/current/ddl-constraints.html">constraints</a> say: "Unique constraints ensure that the data contained in a column, or a group of columns, is unique among all the rows in the table." When a second row would break that rule, the database refuses it with an error, and no duplicate is stored. This holds no matter which screen, device or job sent the request.</p>
+
+<p>The docs also note that "By default, two null values are not considered equal in this comparison." So if a column in your rule can be empty, two rows with an empty value will both be allowed. Make the important columns required.</p>
+
+<h3>Choosing the natural key</h3>
+
+<p>A unique constraint needs a rule for "what counts as the same thing". This is the natural key. Pick the columns that identify the real-world item, not the automatic row id (every row gets its own id, so the id never repeats). Examples:</p>
+
+<ul>
+<li>A booking slot: user id plus date plus time slot. Or room id plus start time, if a room can only be booked once.</li>
+<li>A sign-up: the email address, in lower case.</li>
+<li>A webhook event: the event id that the other service sends.</li>
+<li>An order from a checkout: the checkout session id from your payment provider.</li>
+<li>A daily report for a user: user id plus date.</li>
+</ul>
+
+<p>Ask yourself: "If two rows had these same values, would it be a mistake?" If yes, those columns belong in the constraint. Be careful not to choose too strictly. A user may legitimately place two orders, so "user id" alone would be wrong for orders.</p>
+
+<p>A constraint in SQL looks like this (here for a booking slot): <code>alter table bookings add constraint bookings_user_slot_unique unique (user_id, slot_start);</code></p>
+
+<h3>INSERT ... ON CONFLICT</h3>
+
+<p>With a constraint in place, your code should handle the "already exists" case calmly instead of crashing. Postgres has a command for it. The <a href="https://www.postgresql.org/docs/current/sql-insert.html">INSERT docs</a> say: "<code>ON CONFLICT DO UPDATE</code> guarantees an atomic <code>INSERT</code> or <code>UPDATE</code> outcome; provided there is no independent error, one of those two outcomes is guaranteed, even under high concurrency." The shape is: <code>insert into bookings (user_id, slot_start) values ($1, $2) on conflict (user_id, slot_start) do nothing;</code></p>
+
+<p>"Do nothing" quietly skips the repeat. "Do update" changes the existing row instead. For a booking or an order, "do nothing" is usually the right choice.</p>
+
+<h3>Upsert in Supabase</h3>
+
+<p>If your app uses the Supabase JavaScript library, the same idea is called upsert. The <a href="https://supabase.com/docs/reference/javascript/upsert">upsert reference</a> says it will "Perform an UPSERT on the table or view." Depending on the columns passed to <code>onConflict</code>, it lets you insert a row if none exists, or "perform an alternative action depending on <code>ignoreDuplicates</code>." In practice you pass the same columns as your unique constraint: <code>supabase.from('bookings').upsert(row, { onConflict: 'user_id,slot_start', ignoreDuplicates: true })</code></p>
+
+<p>The docs page checked for this post does not describe the two options in detail. Test what your project returns on a repeat before you rely on it. The constraint must exist in the database for <code>onConflict</code> to work, so add it first.</p>
+
+<h2>4. Fix layer 3: idempotency keys</h2>
+
+<p>Some actions have no good natural key. A payment is the clear example. The same customer may buy the same product twice on purpose. Here you use an idempotency key: a unique code that the client makes once per action and sends with every attempt of that action. The server remembers the code and does the work only once.</p>
+
+<p>Stripe's <a href="https://docs.stripe.com/api/idempotent_requests">idempotent requests page</a> explains it: "The API supports idempotency for safely retrying requests without accidentally performing the same operation twice." If a connection error happens, "you can safely repeat the request without risk of creating a second object or performing the update twice." Stripe suggests V4 UUIDs for keys, notes they are up to 255 characters long, and says not to use sensitive data such as email addresses as keys. For API v1, keys can be removed automatically once they are at least 24 hours old. So a key protects against quick retries, not against a repeat a week later. The key is sent in an <code>Idempotency-Key</code> header.</p>
+
+<p>The same idea works for your own functions, for anything that creates something, sends an email or charges money:</p>
+
+<ol>
+<li>The page creates a random key when the form opens, or when the user starts the action. It reuses the same key for every retry of that action.</li>
+<li>The function receives the key and saves it in a column with a unique constraint.</li>
+<li>If the insert works, the function does the job. If the database says the key already exists, the function returns the earlier result and does nothing else.</li>
+</ol>
+
+<p>Send the email or charge the card only after the insert has succeeded. That order is the whole trick. If you send first and save second, a retry sends twice.</p>
+
+<p>For the Stripe launch checks themselves, see <a href="/blog/stripe-payments-ai-built-app-launch">Stripe payments in an AI-built app: launch checks</a>. This post only covers the repeat problem.</p>
+
+<h2>5. Webhooks and scheduled jobs</h2>
+
+<h3>Webhooks: remember the event ids</h3>
+
+<p>Stripe's docs give the advice directly: "You can guard against duplicated event receipts by logging the event IDs you've processed, and then not processing already-logged events." Make a small table, for example <code>processed_events</code>, with the event id as a unique column. When an event arrives, try to insert its id first. If the insert fails because the id exists, stop and return a success status. If it works, do the job.</p>
+
+<p>Two more points from the same page. Stripe says that "In some cases, two separate Event objects are generated and sent", and suggests using the ID of the object in <code>data.object</code> together with the event type to spot these. And it says not to use the <code>created</code> time to decide whether you have already processed an event. Use ids.</p>
+
+<p>Also return a success status quickly. Stripe's docs say your endpoint "must quickly return a successful status code (2xx) before any complex logic that could cause a timeout." A slow handler leads to a retry, which leads to a duplicate if you did not guard against it.</p>
+
+<h3>Jobs: safe to run twice</h3>
+
+<p>Design every scheduled job so that running it twice gives the same result as running it once. Ways to do that:</p>
+
+<ul>
+<li>Mark each item as done in the database, and select only items that are not done.</li>
+<li>Record "reminder sent" with a unique constraint on user plus reminder type plus date, and insert that row before sending the email.</li>
+<li>Use a lock or a "running" flag so a second run exits when the first is still going.</li>
+</ul>
+
+<p>See <a href="/blog/scheduled-jobs-cron-netlify-vercel-supabase">scheduled jobs on Netlify, Vercel and Supabase</a> for how jobs are triggered and why overlaps and retries happen.</p>
+
+<h2>6. Cleaning up duplicates you already have</h2>
+
+<p>Expect the constraint to fail while duplicates exist: the PostgreSQL docs say that if data would violate a constraint, "an error is raised". So remove the extra rows first, in this order.</p>
+
+<ol>
+<li><strong>Back up first.</strong> Deleting rows cannot be undone. See <a href="/blog/app-database-backups-supabase-neon-firebase">database backups for Supabase, Neon and Firebase</a>.</li>
+<li><strong>Find the duplicates.</strong> Use the same columns as your future constraint: <code>select user_id, slot_start, count(*) from bookings group by user_id, slot_start having count(*) &gt; 1;</code></li>
+<li><strong>Decide which row to keep.</strong> Look at the rows in each group. Often you keep the oldest, because other data may already point to it. But check. One copy may be paid and the other not. Another table may link to one of them (invoices, messages).</li>
+<li><strong>Move or merge links first.</strong> If other tables point to the rows you will delete, point them to the row you keep, then delete the extras.</li>
+<li><strong>Delete the extras, then add the constraint.</strong> Try it on a copy or a preview database first. See <a href="/blog/change-app-database-without-losing-data">changing your database without losing data</a>.</li>
+<li><strong>Check the count query again.</strong> It should return no rows.</li>
+</ol>
+
+<p>Duplicates that already caused real effects, such as a double charge, need a manual fix too. Refund or correct them in your payment dashboard, and tell the customer.</p>
+
+<h2>7. Prompts for your AI tool</h2>
+
+<p>Adapt these to your tables. Ask the tool to show the plan before it changes anything.</p>
+
+<ul>
+<li>"Find every place where this app inserts rows or sends emails. For each, tell me what would happen if the same request arrived twice."</li>
+<li>"Disable the submit button and show a saving state while the request runs. Re-enable it on error. Also ignore a second submit in the handler."</li>
+<li>"Write a SQL migration that adds a unique constraint on (user_id, slot_start) in the bookings table. First give me a query that lists existing duplicates. Do not delete anything yet."</li>
+<li>"Change the booking insert to use upsert with onConflict on those columns, and show a friendly message when the slot is already taken."</li>
+<li>"Create a processed_events table with a unique event_id. In the webhook function, insert the event id first and return 200 without doing the work if it already exists."</li>
+<li>"Make the order function accept an idempotency key from the page, store it with a unique constraint, and send the confirmation email only after the insert succeeds."</li>
+<li>"Move the database write out of the useEffect and into the click handler."</li>
+</ul>
+
+<h2>8. Checklist</h2>
+
+<ul>
+<li>Every submit button is disabled while saving and shows progress.</li>
+<li>Success is shown clearly, so nobody clicks again.</li>
+<li>Each table that must not have repeats has a unique constraint on its natural key.</li>
+<li>Columns inside those constraints are required, not empty.</li>
+<li>Inserts use ON CONFLICT or upsert, and the code handles the "already exists" answer.</li>
+<li>Actions that create or charge use an idempotency key.</li>
+<li>Emails and charges happen after the database insert, not before.</li>
+<li>Webhook handlers store processed event ids and skip repeats, and return 2xx quickly.</li>
+<li>Scheduled jobs are safe to run twice and cannot overlap.</li>
+<li>No database write sits inside a React effect.</li>
+<li>Old duplicates were found, backed up, merged and removed before the constraint was added.</li>
+<li>You tested by double clicking, by sending the same webhook twice and by running the job twice.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including duplicate orders, bookings and emails caused by double clicks and retries. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>

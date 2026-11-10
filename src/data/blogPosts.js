@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'duplicate-records-double-clicks-retries',
+    title: "Duplicate records in your AI-built app: double clicks and retries",
+    description: "Why your AI-built app saves orders or emails twice, and how to stop it: button locks, unique constraints, idempotency keys. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'lock-down-accounts-that-run-your-app',
     title: "Lock down the accounts that run your app: 2FA, access, recovery",
     description: "Secure the accounts behind your AI-built app: 2FA, recovery codes, team access and domain lock, in a 30-minute checklist. Checked in November 2026.",
