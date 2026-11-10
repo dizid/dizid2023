@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'harden-login-ai-built-app-supabase-firebase',
+    title: "Secure the login of your AI-built app: 7 settings to check",
+    description: "Seven login settings to check in Supabase and Firebase: rate limits, leaked passwords, MFA, CAPTCHA and sessions. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'change-app-database-without-losing-data',
     title: "Change your AI-built app's database without losing data",
     description: "Add a field, rename a column or add a table on a live Lovable, Bolt, Cursor or Replit app without losing data. Checked in November 2026.",

@@ -1,0 +1,104 @@
+<p>Your login works. People can sign up, sign in and reset a password. But "works" is not the same as "safe". Attackers try thousands of passwords, reuse passwords leaked from other sites, and use bots to create accounts. Much of the protection is a handful of settings in Supabase or Firebase, and they live in the dashboard, not in your app's code. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Check seven things, in this order: email confirmation, password rules and leaked password protection, auth rate limits, CAPTCHA, multi-factor authentication (MFA) for admins, Firebase email enumeration protection, and session settings. Most take a few minutes in the dashboard. Each has a trade-off for real users, so change one at a time and test sign-in after each change.</p>
+
+<h2>1. Confirm email on sign-up</h2>
+
+<p><strong>What it protects against:</strong> fake sign-ups, and people signing up with an email address that is not theirs. If anyone can create an account with any address and log in at once, you cannot trust the address. That breaks password reset, receipts and invites.</p>
+
+<p><strong>Where it is:</strong> Supabase's <a href="https://supabase.com/docs/guides/auth/passwords">password auth guide</a> says "You can configure whether users need to verify their email to sign in." On hosted projects "this is true by default". On self-hosted projects and in local development it is false by default. You change it on the Auth Providers page of the dashboard. If your app runs on a self-hosted or local setup, check it yourself.</p>
+
+<p><strong>Trade-off:</strong> every new user must open an email before the first login. That costs a few sign-ups. It also depends on email delivery. The Supabase <a href="https://supabase.com/docs/guides/auth/rate-limits">rate limits page</a> says the built-in email provider is limited to "2 emails per hour". That is fine for testing. It is too low for a real launch, so use your own SMTP provider (your own email sending service). Turning confirmation off "for convenience" because emails do not arrive hides the real problem and opens the door to fake accounts.</p>
+
+<h2>2. Password rules and leaked password protection</h2>
+
+<p><strong>What it protects against:</strong> weak passwords and passwords that are already public from other sites' breaches. Attackers try those first. OWASP's <a href="https://cheatsheetseries.owasp.org/cheatsheets/Credential_Stuffing_Prevention_Cheat_Sheet.html">Credential Stuffing Prevention cheat sheet</a> covers this attack, where leaked logins from one site are tried on another.</p>
+
+<p><strong>Where it is:</strong> Supabase's <a href="https://supabase.com/docs/guides/auth/password-security">password security guide</a> says to "Set a large minimum password length." It adds that "Anything less than 8 characters is not recommended." You can also require digits, lowercase and uppercase letters and symbols. Leaked password protection checks passwords against "the open-source HaveIBeenPwned.org Pwned Passwords API" and rejects any that appear in known breaches. The docs say it "is available on the Pro Plan and above." These options are in the Auth settings of your project.</p>
+
+<p><strong>Trade-off:</strong> a stricter rule means some users must pick another password. Length helps more than forced symbols, and forced rules annoy people. A long minimum plus the leaked password check is a good pair. On the free plan you cannot use the leaked password check, so a decent minimum length is your main control.</p>
+
+<h2>3. Auth rate limits</h2>
+
+<p><strong>What it protects against:</strong> password guessing, floods of sign-up requests, and email or SMS abuse that costs you money. A rate limit stops one source from trying again and again.</p>
+
+<p><strong>Where it is:</strong> the <a href="https://supabase.com/docs/guides/auth/rate-limits">Supabase rate limits page</a> lists what is limited. It includes sign-up and sign-in endpoints per IP, the token endpoint (password, refresh token, ID token and PKCE grants) per IP, OTP and magic link sends per user, and password reset requests per user. Most are customizable. In the dashboard go to Authentication, then Rate Limits. Exceeded limits return a "429 Too Many Requests" error. The page says MFA challenge and verify limits are not customizable. The page does not mention plan-specific limits.</p>
+
+<p>One more point from that page: limits per IP need the real user IP. It describes an "IP Address Forwarding" section and an <code>Sb-Forwarded-For</code> header. If your app calls Supabase from your own server, ask whoever built it whether the user's IP is passed on. If not, all users may look like one IP.</p>
+
+<p><strong>Trade-off:</strong> a limit that is too tight blocks real people. Think of an office or a school where many users share one IP. Do not lower the limits just to "be safe". Look at your real traffic first, then change one limit. If a user sees a 429 error, your app should show a clear message, not a blank screen.</p>
+
+<h2>4. CAPTCHA on sign-up and sign-in</h2>
+
+<p><strong>What it protects against:</strong> bots. Supabase's <a href="https://supabase.com/docs/guides/auth/auth-captcha">CAPTCHA guide</a> says it supports two providers, hCaptcha and Cloudflare Turnstile. You enable it under Settings, Authentication, Bot and Abuse Protection, then choose a provider, add its secret key and save. Your front end also has to show the widget and send the token, or sign-in will fail. Test this on the live site.</p>
+
+<p><strong>Trade-off:</strong> a small extra step for users, and one more service to keep working. For the full guide, see <a href="/blog/stop-fake-bot-signups-app">stop fake bot sign-ups in your app</a>.</p>
+
+<h2>5. Multi-factor authentication (MFA)</h2>
+
+<p><strong>What it protects against:</strong> a stolen or guessed password. With a second factor, the password alone is not enough. This matters most for admin accounts.</p>
+
+<h3>Supabase MFA</h3>
+
+<p>The <a href="https://supabase.com/docs/guides/auth/auth-mfa">Supabase MFA guide</a> describes two factors: an app authenticator (TOTP, a time-based one-time password) and phone messaging. The page does not mention a plan requirement. You control access to the enrollment, challenge and verify APIs in the dashboard.</p>
+
+<p>Important: the guide says "Adding MFA to your app's UI does not in-and-of-itself offer a higher level of security to your users." You must enforce it. It describes three options: enforce for all users, for new users only, or only for users who opt in. It also warns that database policies must use <code>as restrictive</code>, or the second factor is not really required. An MFA screen with no rule behind it protects nothing, so check that the rule exists.</p>
+
+<h3>Firebase MFA</h3>
+
+<p>Firebase's <a href="https://firebase.google.com/docs/auth/web/multi-factor">multi-factor guide</a> says you can add SMS MFA "If you've upgraded to Firebase Authentication with Identity Platform." So it is not part of the basic Firebase Authentication setup. The upgrade is a separate step, and you should check the pricing before you turn it on.</p>
+
+<p><strong>Trade-off:</strong> users must set up an app and keep a backup. Support requests go up when someone loses a phone. Start with admins and staff. Make it optional for regular users first.</p>
+
+<h2>6. Firebase: email enumeration protection and App Check</h2>
+
+<p><strong>What enumeration is:</strong> Google's <a href="https://docs.cloud.google.com/identity-platform/docs/admin/email-enumeration-protection">email enumeration protection guide</a> describes it as an attack where "a malicious actor attempts to guess or confirm users in a system." The attacker learns which emails have accounts, then targets them with phishing or password guessing. With protection on, invalid sign-in cases return one generic <code>INVALID_LOGIN_CREDENTIALS</code> error, so the response does not tell the attacker which part was wrong.</p>
+
+<p><strong>Is it on?</strong> The docs say: "If you created your project on or after September 15, 2023, email enumeration protection is enabled by default." Older projects do not have it turned on automatically. To check, open the Firebase console, Authentication, Settings, User account management, User actions. The box is called "Email enumeration protection (recommended)."</p>
+
+<p><strong>Trade-off:</strong> error messages get less specific. Your login form can no longer say "no account with this email". That is the point. Also, if your code uses a lookup of sign-in methods by email, the docs say those lookups stop returning results. Test your sign-in and reset flows after you turn it on.</p>
+
+<p><strong>App Check:</strong> Firebase's <a href="https://firebase.google.com/docs/app-check">App Check docs</a> describe it as a service that "helps protect your app backends from abuse by preventing unauthorized clients from accessing your backend resources." The same page lists the services it covers, including Firestore, Realtime Database, Cloud Storage and callable Cloud Functions. It lists Firebase Authentication as "Preview". Think of App Check as a way to make sure requests come from your real app, not a script. It is not a replacement for security rules.</p>
+
+<p>If you use Google or Apple sign-in, see <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with social sign-in</a> before you change anything.</p>
+
+<h2>7. Sessions: how long people stay logged in</h2>
+
+<p><strong>What it protects against:</strong> a stolen laptop, a shared computer, or a stolen session. The longer a session lives, the longer it can be abused.</p>
+
+<p><strong>Where it is:</strong> Supabase's <a href="https://supabase.com/docs/guides/auth/sessions">sessions guide</a> describes three controls: a time-box (a fixed maximum session lifetime), an inactivity timeout, and single session per user. They are in the Auth settings under Sessions, and the docs say they are "only available on Pro Plans and up."</p>
+
+<p>Two details from the docs. Changes do not end existing sessions right away. They are checked the next time a session refreshes. And the effective session length is the timeout plus the access token (JWT) expiry. The docs say to avoid JWT expiry values below 5 minutes.</p>
+
+<p><strong>Trade-off:</strong> shorter sessions mean more logins. For a tool that people open every day, that is annoying. For an admin panel or a finance app, it is a fair price. This section covers Supabase only, because the Firebase docs checked for this post did not describe an equivalent setting.</p>
+
+<h2>8. Login is not access control</h2>
+
+<p>All of the above answers one question: "Is this person who they say they are?" It does not answer: "What may they see and change?" A strong login on top of missing permission rules still leaks data. A logged-in user may be able to read other users' records or reach an admin page. Read <a href="/blog/admin-page-roles-idor-ai-built-app">admin pages, roles and IDOR in AI-built apps</a> and the <a href="/blog/ai-built-app-database-security-checks">database security checks</a>. Do those too.</p>
+
+<h2>9. A 15-minute check, in priority order</h2>
+
+<ol>
+<li>Confirm email is on (Supabase: Auth Providers page). Send a test sign-up with a fresh address.</li>
+<li>Set a minimum password length of at least 8, and longer if you can. Turn on leaked password protection if you are on Pro or above.</li>
+<li>Open Authentication, Rate Limits. Read what is set. Make sure custom SMTP is in place before launch.</li>
+<li>Turn on CAPTCHA if you see fake sign-ups, and test it on the live site.</li>
+<li>Firebase: open User account management and check that email enumeration protection is on, especially for projects created before September 15, 2023.</li>
+<li>Add MFA for admin and staff accounts. Confirm that it is enforced, not only shown in the interface.</li>
+<li>Pick session limits for sensitive apps (Supabase Pro and above).</li>
+<li>Test as a normal user at the end: sign up, confirm, sign in, reset the password, sign out.</li>
+</ol>
+
+<p>Example prompts for your AI tool:</p>
+
+<ul>
+<li>"List every Supabase Auth setting this app relies on: confirm email, password length, CAPTCHA, MFA, and rate limits. Tell me which ones I must check in the dashboard, because you cannot see them in the code."</li>
+<li>"Add a clear message for a 429 Too Many Requests error on the sign-in and sign-up forms. Do not show a blank page."</li>
+<li>"Add the Turnstile or hCaptcha widget to sign-up and sign-in, and pass the token to Supabase. Do not change anything else."</li>
+<li>"We show an MFA screen. Check that the database policies use <code>as restrictive</code> and require the second factor for admin actions."</li>
+<li>"Make the login and password reset forms show the same message whether or not the email has an account."</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including making sign-in safer without locking out real users. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
