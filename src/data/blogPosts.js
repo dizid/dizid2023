@@ -8,13 +8,6 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
-    slug: 'ai-chatbot-small-business-website',
-    title: "AI chatbot for your business website: what it can and can't do",
-    description: "What an AI chat assistant on a small business website handles well, what it must not do, how to stop made-up answers, and what it really costs to run.",
-    datePublished: '2026-11-10',
-    dateModified: '2026-11-10'
-  },
-  {
     slug: 'hiring-developer-app-access-handover',
     title: "Hiring a developer for your app? What to share, and how",
     description: "Hiring a developer to fix your app? What to put in the brief, how to give access on GitHub, Supabase, Firebase and Stripe without passwords, and clean-up.",
