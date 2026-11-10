@@ -1,0 +1,107 @@
+<p>Your app was built with Lovable or Bolt on Supabase's free plan, and suddenly nobody can log in. Then you find an email from Supabase: your project was paused. Here is why, how to get your app back today, and how to stop it happening again. Vendor facts come from Supabase's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Supabase pauses free projects after about a week with too little database activity. Your data stays. Open the Supabase dashboard, select the project and click <strong>Resume project</strong>. Then make your own copy of the data. For an app that people rely on, the only fix Supabase's docs promise is a paid plan.</p>
+
+<h2>1. Why Supabase paused your project</h2>
+
+<p>Supabase's <a href="https://supabase.com/docs/guides/platform/free-project-pausing">project pausing guide</a> says it "pauses Free Plan projects that show low activity over a 7-day period". The <a href="https://supabase.com/pricing">pricing page</a> says free projects are paused after 1 week of inactivity, with a limit of 2 active projects.</p>
+
+<ul>
+<li><strong>What counts as activity.</strong> The guide talks about "user database activity", with no exact number. A few user requests to the database each day is typically enough. It also warns that a project you do use can still be paused if that use is too small.</li>
+<li><strong>The warning.</strong> Supabase emails the project owner twice: a warning roughly one week before the pause, and a confirmation once it is paused. After the warning, you can stop the pause by visiting the project in the dashboard, or by sending requests to it from your app.</li>
+<li><strong>Who gets the emails.</strong> The project owner. If someone else created the Supabase account for you, the warning went to them.</li>
+</ul>
+
+<p>Not every pause is about inactivity. Supabase's <a href="https://supabase.com/kb/troubleshooting/http-status-codes">status code page</a> says free projects can also be paused on the owner's request, or in rare cases for abuse. The <a href="https://supabase.com/docs/guides/platform/billing-faq">billing FAQ</a> adds overdue invoices and going over the plan's limits again and again. Read the email to see which one it is.</p>
+
+<h2>2. What your users see</h2>
+
+<p>Your pages may still load, because they are often hosted elsewhere. But everything that needs Supabase stops: sign-in, loading and saving data, file uploads and Edge Functions. Supabase's docs describe two signs in the network requests:</p>
+
+<ul>
+<li><strong>Status code <code>540</code>.</strong> The status code page says the project "cannot process requests until it is un-paused by the owner".</li>
+<li><strong>A DNS error, <code>NXDOMAIN</code>.</strong> Supabase's <a href="https://supabase.com/kb/troubleshooting/nxdomain-error-connecting-to-a-supabase-project">DNS error page</a> says a paused project stops serving its hostname, even though the project still exists.</li>
+</ul>
+
+<p>Your users don't see codes. They see an error message, an empty page or a login button that does nothing.</p>
+
+<h2>3. How to restore it</h2>
+
+<p>The pausing guide gives these steps:</p>
+
+<ol>
+<li>Open the Supabase dashboard.</li>
+<li>Select the organization, then the paused project.</li>
+<li>Click <strong>Resume project</strong> and confirm.</li>
+</ol>
+
+<p>The guide says the project returns to its previous state, including data and configurations. It does not say how long this takes. When the project no longer shows as paused, sign in on your phone in a private window and do the main thing your app is for.</p>
+
+<ul>
+<li><strong>The 2-project limit.</strong> The pricing page says the free plan gives you 2 active projects and as many paused ones as you want. If two other free projects are active, you may need to pause one first.</li>
+<li><strong>The time limit.</strong> The pausing guide and the <a href="https://supabase.com/docs/guides/platform/upgrading">upgrading page</a> say you can restore a paused project for up to 1 year. An <a href="https://github.com/orgs/supabase/discussions/27497">announcement from 2024</a> said 90 days, and a screenshot on the upgrading page still shows "90 Days Remaining". So restore it now.</li>
+</ul>
+
+<p><strong>After the time limit,</strong> the upgrading page says you can download the backup file and your Storage files from the project dashboard, and restore them into a new Supabase project. Upgrading to a paid plan while paused brings the one-click restore back, but the old backup may fail to restore. Then contact Supabase support. On a new project, Supabase's <a href="https://supabase.com/docs/guides/platform/migrating-within-supabase/dashboard-restore">restore guide</a> says you must set up Edge Functions, auth settings and API keys, Realtime settings, and database extensions and settings again, and your app must point to the new address and keys.</p>
+
+<h2>4. Your data: what stays, and the copy to make now</h2>
+
+<p>The pause does not delete your data. But don't count on a Supabase backup:</p>
+
+<ul>
+<li>Supabase's <a href="https://supabase.com/docs/guides/platform/backups">backup docs</a> say daily backups are for Pro, Team and Enterprise projects. For free projects, they recommend regular exports with the Supabase CLI and backups kept somewhere else.</li>
+<li>The <a href="https://supabase.com/docs/guides/deployment/going-into-prod">production checklist</a> says database backups are not available for download on the free plan.</li>
+<li>Database backups do not include the files your users uploaded to Storage.</li>
+</ul>
+
+<p>A paused project can't process requests, so you can't export it while paused. Resume it, then make your own copy the same day. Supabase's <a href="https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore">CLI backup guide</a> shows the <code>supabase db dump</code> commands for roles, schema and data. Copy your Storage files separately. For a setup that keeps running, see <a href="/blog/app-database-backups-supabase-neon-firebase">what Supabase, Neon and Firebase back up</a>.</p>
+
+<p>And don't delete a paused project to make room. The backup docs say deleting a project permanently removes all its data and backups.</p>
+
+<h2>5. How to stop it happening again</h2>
+
+<h3>a. A paid plan</h3>
+
+<p>This is the fix Supabase documents. The pausing guide says projects on a paid plan cannot be paused and are not subject to pausing for inactivity. The production checklist says to upgrade to Pro "to guarantee that we won't pause your project for inactivity". You upgrade from <strong>Billing Settings</strong> in the dashboard, and Pro adds daily backups. For what a small app costs each month, see <a href="/blog/small-web-app-running-costs">small web app running costs</a>. Keep your card up to date: the billing FAQ says an overdue invoice pauses your projects and moves you back to the free plan.</p>
+
+<h3>b. Real use</h3>
+
+<p>If people use your app every day, their sign-ins and data requests usually make enough database activity. An app used once a week or once a month is most at risk.</p>
+
+<h3>c. Scheduled "keep-alive" requests</h3>
+
+<p>A common workaround is a scheduled job that sends a small database request now and then. Supabase's pausing guide does not mention this, and I found nothing about it, for or against, in their terms or acceptable use policy. So it is not an official feature, and it can stop working:</p>
+
+<ul>
+<li>Supabase decides what counts as enough activity. The exact rule is not published and can change.</li>
+<li>A keep-alive can't undo a pause. Once paused, only the owner can resume the project.</li>
+<li>The scheduler can stop quietly. GitHub, for example, <a href="https://docs.github.com/en/actions/how-tos/manage-workflow-runs/disable-and-enable-workflows">disables scheduled workflows</a> in a public repository after 60 days without repository activity.</li>
+</ul>
+
+<p>For a demo or a side project, that risk may be fine. For an app customers pay for, it means a business resting on a free plan that pauses by design. The honest fix there is the paid plan. If you do run a keep-alive, add a heartbeat check like any other scheduled job, as in <a href="/blog/scheduled-jobs-cron-netlify-vercel-supabase">scheduled jobs for a small app</a>.</p>
+
+<h3>d. Move the database</h3>
+
+<p>You can also move the database to another host. That is a project, not a quick fix: user accounts, files, keys and login redirects all have to move. See <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving a Lovable or Bolt app to your own GitHub and hosting</a>.</p>
+
+<h3>In every case: watch it</h3>
+
+<p>Make sure the Supabase account owner is an email address you read. And add an uptime check on a page that reads from the database, not just your home page, which can stay green while every Supabase request fails. See <a href="/blog/app-uptime-monitoring-error-alerts">uptime checks and error alerts</a>.</p>
+
+<h2>Checklist for a paused Supabase project</h2>
+
+<ol>
+<li>Read the email: inactivity, an unpaid invoice, or usage over the limits?</li>
+<li>In the dashboard, open the project, click <strong>Resume project</strong> and confirm.</li>
+<li>Sign in and do the main thing on your phone, in a private window.</li>
+<li>Make your own copy with <code>supabase db dump</code>, and copy your Storage files.</li>
+<li>Don't delete a paused project to free a slot.</li>
+<li>Decide: a paid plan for an app people rely on, or accept that it can pause again.</li>
+<li>Make sure the warning emails reach you, and add a check that touches the database.</li>
+</ol>
+
+<p>Before a launch, also go through the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including restoring a paused Supabase project, setting up backups that are tested, and a setup that doesn't fall asleep when it matters. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>

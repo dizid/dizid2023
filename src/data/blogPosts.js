@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'supabase-project-paused-free-plan',
+    title: "Supabase paused your project: why, and how to keep your app up",
+    description: "Supabase paused your free project and your app stopped working? Why it happens, how to restore it, what to back up, and how to stop it happening again.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'roll-back-broken-deploy-netlify-vercel-lovable-bolt',
     title: "Roll back a broken deploy on Netlify, Vercel, Lovable and Bolt",
     description: "A deploy broke your app? How to roll back on Netlify, Vercel, Lovable, Bolt or GitHub, what a rollback does not undo, and how to prevent the next one.",
