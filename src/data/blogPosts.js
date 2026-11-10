@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'avoid-surprise-bill-vercel-netlify-supabase-firebase',
+    title: "Avoid a surprise bill on Vercel, Netlify, Supabase or Firebase",
+    description: "Which of Vercel, Netlify, Supabase and Firebase can really stop spending, and which only send alerts? A 15 minute setup guide. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'ai-built-app-works-in-editor-breaks-live',
     title: "Your AI-built app works in the editor but breaks live: 8 causes",
     description: "Lovable, Bolt, Cursor or Replit app fine in the editor but broken live? 8 causes, how to check each fast, and a fix order. Checked in November 2026.",

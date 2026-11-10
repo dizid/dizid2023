@@ -1,0 +1,114 @@
+<p>You shipped an app with Lovable, Bolt, Cursor or Replit. It runs on Vercel or Netlify, with Supabase or Firebase behind it. Then you read a story about someone who got a bill many times larger than expected. Now you wonder if it can happen to you. This post explains what makes these bills grow, which services can stop spending and which only send a warning, and how to set up protection in about 15 minutes. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Bills grow when traffic, data or compute grows, and a bug or a bot can make any of them grow fast. Some tools can really stop usage: Vercel (if you switch on pausing), Supabase (on the Pro plan, for some items), Netlify (a hard limit on the Free plan) and Firebase (the no-cost Spark plan). Google Cloud budget alerts, which cover Firebase on the Blaze plan, only warn. Set the limits that exist, add alerts where they do not, send the alerts to an inbox you read, and look at the usage page once a month. For a rough idea of normal costs, see <a href="/blog/small-web-app-running-costs">what a small app typically costs</a>.</p>
+
+<h2>1. What makes a bill grow</h2>
+
+<p>The names differ per vendor. The pattern is the same: you pay for what is used, and "used" can be driven by visitors, by bots or by your own code. I describe only what each vendor's docs say. I give no prices, because prices change. Check the vendor's pricing page for current numbers.</p>
+
+<h3>Vercel</h3>
+
+<p>Vercel's page on <a href="https://vercel.com/docs/pricing/how-does-vercel-calculate-usage-of-resources">how usage is calculated</a> walks through a visit to a site. Each step uses priced resources. CDN requests are "charged per network request to the CDN". Fast Data Transfer is "charged based on data moved to the user from the CDN". A Vercel Function adds charges "for activating a function" and for the CPU time it uses. So more page views, more data sent and more function calls all raise the bill. The same page says the details depend on your framework and code.</p>
+
+<h3>Netlify</h3>
+
+<p>Netlify's <a href="https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/credit-based-pricing-plans/">credit-based plans</a> use monthly credits. The page lists what uses credits: function compute (measured in GB-hours), web requests (which "includes edge functions"), web bandwidth, database compute and bandwidth, and production deploys. The docs do not make clear how build minutes are billed, so I leave that out.</p>
+
+<h3>Supabase</h3>
+
+<p>Supabase's <a href="https://supabase.com/docs/guides/platform/manage-your-usage/egress">egress page</a> says: "You are charged for the network data transmitted out of the system to a connected client." That covers Database, Auth, Storage, Edge Functions and Realtime. So a large query result or a big file sent to every visitor counts. The <a href="https://supabase.com/docs/guides/platform/cost-control">cost control page</a> also lists other usage items such as disk size, storage size, edge function invocations and monthly active users.</p>
+
+<h3>Firebase</h3>
+
+<p>Firestore's <a href="https://firebase.google.com/docs/firestore/pricing">pricing page</a> says you pay for "the number of documents you read, write, and delete", the index entries read for a query, storage, and network bandwidth. Some details matter for AI-built apps. A query is charged for the documents it reads. With a real-time listener, "you are charged for a read each time a document in the result set is added or updated". With an offset, "you are charged a read for each skipped document". So the shape of your queries decides your bill, not only the number of users.</p>
+
+<h2>2. What can stop spending and what only warns</h2>
+
+<p>This is the part most people get wrong. An alert tells you. A cap stops usage. Not every service has a cap, and some caps have gaps.</p>
+
+<h3>Vercel Spend Management: can stop, if you switch it on</h3>
+
+<p>Vercel's <a href="https://vercel.com/docs/spend-management">Spend Management</a> is available on Pro and on Enterprise teams on the Flexible Commitment plan. The key warning in the docs: "Setting a spend amount does not stop usage on its own." To stop costs you must turn on <strong>Pause Production Deployments</strong>. Then Vercel pauses the production deployment for all projects when the amount is reached. While paused, "your websites, APIs, and functions are unavailable to visitors until you resume each project". Visitors see a 503 error.</p>
+
+<p>Things to know from the same page:</p>
+
+<ul>
+<li>Alerts by web and email come at 50%, 75% and 100% of your amount. SMS is available at 100%.</li>
+<li>Checks run every few minutes, so pausing "can trigger several minutes after you cross your spend amount". The docs suggest setting the amount below the maximum you would accept.</li>
+<li>Projects do not unpause by themselves. You resume each one by hand.</li>
+<li>Stored resources are not deleted, so storage charges continue.</li>
+<li>Seats and add-ons are not part of the spend amount.</li>
+</ul>
+
+<h3>Netlify: a hard limit on Free, credits on paid plans</h3>
+
+<p>On Netlify's credit-based plans, the page lists the Free plan as "300 credits/month with credit hard limit" and says there is no recharge option. The <a href="https://docs.netlify.com/manage/accounts-and-billing/billing/billing-for-credit-based-plans/how-credits-work/">how credits work</a> page explains the result: "Once your credit balance is completely used up, all of your web projects (sites/apps) are paused and visitors to your web projects will find a <code>Site not available</code> page". On paid plans you can buy more credits or turn on auto recharge, which the same page says keeps your web projects active. So on a paid plan, the choice is between a paused site and a larger bill. Decide which you prefer, and set it on purpose. This describes credit-based plans only. If your account is on an older plan, read your own billing page.</p>
+
+<h3>Supabase Spend Cap: stops some items, not all</h3>
+
+<p>The <a href="https://supabase.com/docs/guides/platform/cost-control">Spend Cap</a> "is available only with the Pro Plan". It "determines whether your organization can exceed your subscription plan's quota for any usage item". When it is on and a covered item hits its quota, "further usage of that item is disallowed until the next billing cycle". But "only certain usage items are covered". Covered items include egress, disk size, edge function invocations, monthly active users, realtime messages and storage size. Items that are "predictable and explicitly opted into by the user" are excluded, with compute as an example. The docs also mention that services may be restricted under their Fair Use Policy. You set it in the Cost Control section of the organization billing page.</p>
+
+<p>Note the trade-off: a cap protects your wallet, but a covered service can stop working for your users until the next cycle.</p>
+
+<h3>Firebase: Spark stops, Blaze only warns</h3>
+
+<p>Firebase's <a href="https://firebase.google.com/docs/projects/billing/firebase-pricing-plans">pricing plans page</a> says that on the no-cost Spark plan, when you pass a limit, "your project's usage of that specific product will be shut off for the remainder of that month". On the pay-as-you-go Blaze plan there is no general cap. Google's <a href="https://docs.cloud.google.com/billing/docs/how-to/budgets">budget documentation</a> is clear: "Setting an alerts-only budget doesn't automatically cap Google Cloud or Google Maps Platform usage or spending." Budget alerts "do not cap your usage or charges", as the Firebase page puts it too.</p>
+
+<p>Details from the budget page: default thresholds are 50%, 90% and 100% of the budget. Email goes to billing admins and users on the account by default. There is also "a delay between your use of Google Cloud resources, and the usage costs reporting to Cloud Billing". So set the budget lower than what you can afford.</p>
+
+<p>For some Firebase products (Cloud Functions for Firebase and App Hosting, for example) the Firebase page recommends spend caps, which "will pause any new usage of the applicable service if your project reaches the budget set for that service". The page also mentions that budget notifications can be used to switch off billing on a project by code. That is extra work, so ask a developer to set it up and test it.</p>
+
+<h2>3. Common causes in AI-built apps</h2>
+
+<p>AI tools write code that works on a test with one user. A bill spike often comes from a pattern that looks fine until real traffic arrives. These are general patterns, not numbers.</p>
+
+<ul>
+<li><strong>A loop on every render.</strong> A component calls the API or database each time it draws. One page view turns into dozens of calls. On Firestore, that means many reads. On Supabase, more data out.</li>
+<li><strong>Polling every second.</strong> A page asks "anything new?" again and again, even in a background tab, even with no new data. On Firestore, each change in a result set costs reads, so keep the queries small.</li>
+<li><strong>No pagination.</strong> The app loads the whole table or collection and shows a few rows. You pay for all of it, every time.</li>
+<li><strong>Crawlers and bots on function routes.</strong> Bots hit your function URLs and forms. Each hit is a function call. See <a href="/blog/stop-fake-bot-signups-app">how to stop fake bot signups</a>.</li>
+<li><strong>Large images served straight from storage.</strong> A large photo shown as a small thumbnail still sends the whole large file. Resize and compress files, and use a CDN or cache where your platform offers it.</li>
+</ul>
+
+<p>These problems also make an app slow, so fixing them helps users too. See <a href="/blog/slow-ai-built-app-fixes">why AI-built apps are slow and how to fix them</a>.</p>
+
+<h2>4. The 15-minute setup</h2>
+
+<ol>
+<li><strong>Write down your stack.</strong> Which host (Vercel or Netlify) and which database (Supabase or Firebase)? Find out which plan each account is on. Plan decides which controls exist. (2 minutes)</li>
+<li><strong>Use an inbox you read.</strong> Make sure the billing contact on every account is an email you check daily, not an old address or a builder's default. (2 minutes)</li>
+<li><strong>Vercel:</strong> open Settings, then Billing, and turn on Spend Management. Set the On-Demand Budget. Decide on Pause Production Deployments. Check that your own notifications are on in My Notifications. (3 minutes)</li>
+<li><strong>Netlify:</strong> open your billing and credit pages. Know your plan's limit. Decide on auto recharge: off means a paused site is the worst case, on means a bigger bill is. (2 minutes)</li>
+<li><strong>Supabase:</strong> if you are on Pro, open the organization billing page, find Cost Control and check that the Spend Cap is the way you want it. Remember compute is not covered. (2 minutes)</li>
+<li><strong>Firebase or Google Cloud:</strong> if you are on Blaze, create a budget in Cloud Billing with alerts. Set the amount below what you can afford, because alerts arrive with a delay. Remember it will not stop anything. (3 minutes)</li>
+<li><strong>Put a monthly reminder in your calendar.</strong> Open the usage page of each service and look at the graphs. Supabase's usage page shows egress by service per day. (1 minute to set up)</li>
+</ol>
+
+<h2>5. If a bill already spiked</h2>
+
+<ol>
+<li><strong>Look at the usage breakdown first.</strong> Which item jumped: bandwidth, function calls, database reads, storage? And on which day? The day often matches a deploy or a post that went viral.</li>
+<li><strong>Find the route or function.</strong> Check logs for the URL or function with the most calls. Look at who calls it: real users, one IP range or bots.</li>
+<li><strong>Stop the leak.</strong> Roll back to the last good deploy, pause the project or disable the function. Turn on the cap or limit if it was off. A short outage is cheaper than a long spike.</li>
+<li><strong>Fix the cause.</strong> Add pagination, remove the polling, cache the response, resize the images, block the bots. Then watch the usage for a few days.</li>
+<li><strong>Contact support.</strong> Send the dates, the usage graph and what you changed. Be polite and factual. Support decides what they do. Do not count on a refund.</li>
+</ol>
+
+<h2>6. Checklist</h2>
+
+<ul>
+<li>I know my host, my database and the plan of each.</li>
+<li>Billing emails go to an inbox I read.</li>
+<li>Vercel: Spend Management is on, and I chose whether to pause production.</li>
+<li>Netlify: I know what happens at the credit limit and chose my auto recharge setting.</li>
+<li>Supabase: the Spend Cap is set as I want, and I know compute is outside it.</li>
+<li>Firebase: Spark, or a Blaze budget with alerts below my real limit.</li>
+<li>I know which tools only warn and which really stop usage.</li>
+<li>I check the usage pages once a month.</li>
+<li>No loop or polling calls the API or database more than needed.</li>
+<li>Lists are paginated and images are resized.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including finding what drives a hosting or database bill and capping it. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
