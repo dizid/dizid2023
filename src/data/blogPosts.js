@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'change-app-database-without-losing-data',
+    title: "Change your AI-built app's database without losing data",
+    description: "Add a field, rename a column or add a table on a live Lovable, Bolt, Cursor or Replit app without losing data. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'avoid-surprise-bill-vercel-netlify-supabase-firebase',
     title: "Avoid a surprise bill on Vercel, Netlify, Supabase or Firebase",
     description: "Which of Vercel, Netlify, Supabase and Firebase can really stop spending, and which only send alerts? A 15 minute setup guide. Checked in November 2026.",

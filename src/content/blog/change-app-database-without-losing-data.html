@@ -1,0 +1,164 @@
+<p>Your app is live. Real users have real data in it. Now you need a new field, a renamed column or a new table. You ask the AI tool to do it, and then you worry. Will it drop a table? Will it break the live app? People do report "the AI deleted my table". Most database changes are safe if you follow a few steps. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Make a backup first and check that you can restore it. Write every change as a migration file, not as a quick edit on the live database. Prefer changes that only add things. Test on a copy. Read the SQL before it runs and look for DROP, TRUNCATE, DELETE and ALTER ... TYPE. If something goes wrong, stop writes, then restore or roll back.</p>
+
+<h2>1. Backup first, and check that you can restore it</h2>
+
+<p>A backup you never tried to restore is a hope, not a backup. Before any structure change, take a fresh backup. Then check that you know how to bring it back. The details for Supabase, Neon and Firebase are in <a href="/blog/app-database-backups-supabase-neon-firebase">the database backups guide</a>.</p>
+
+<p>If your app uses Lovable with Supabase, this matters even more. Lovable's <a href="https://docs.lovable.dev/integrations/supabase">Supabase page</a> says: "You manage backups, compute, and billing in Supabase." So the backup is your job.</p>
+
+<p>On Supabase, the <a href="https://supabase.com/docs/guides/platform/backups">backups page</a> says Pro Plan projects can access the last 7 days of daily backups. For the Free plan, it recommends that you regularly export your data with the CLI's <code>db dump</code> command and keep copies off-site. Also know that a restore is not free of cost: "The project is inaccessible during this process, so plan for downtime beforehand."</p>
+
+<h2>2. What a migration is</h2>
+
+<p>A migration is a change to the database structure, written as a file. The file lives in your code, next to the app. The files run in order. So you can see what changed, when, and you can repeat the same steps on another database.</p>
+
+<p>Supabase's <a href="https://supabase.com/docs/guides/deployment/database-migrations">migrations guide</a> describes migrations as "SQL statements that create, update, or delete your existing database schemas." It shows these commands with the Supabase CLI:</p>
+
+<ul>
+<li><code>supabase migration new create_employees_table</code> creates a new migration file in the <code>supabase/migrations</code> folder.</li>
+<li><code>supabase migration up</code> applies a new migration on your local copy.</li>
+<li><code>supabase db reset</code> reapplies all migrations and seeds data, so you can test your changes locally.</li>
+<li><code>supabase db push --remote</code> pushes your migrations to the remote database.</li>
+</ul>
+
+<p>The same page has a warning that matters for AI-built apps. If you change the remote database directly, in the SQL editor or the Table Editor, this "bypasses the migration history and will cause <code>db push</code> to fail with sync errors." Quick edits on the live database leave no trail. Migration files do.</p>
+
+<h3>How Lovable handles it</h3>
+
+<p>Lovable's Supabase page says: "Lovable writes the SQL, shows it to you, and asks for your approval in the project chat before running it." After you approve, Lovable runs the migration on your Supabase project. It also saves the migration file in your project code. Inserting or modifying data needs your approval as well. That approval step is your chance to read the SQL. Do not click through it. Section 7 shows what to look for.</p>
+
+<h2>3. Safe changes and risky changes</h2>
+
+<p>Not all changes carry the same risk. Here is a simple split.</p>
+
+<p><strong>Low risk:</strong></p>
+
+<ul>
+<li>Adding a new table.</li>
+<li>Adding a new column that is allowed to be empty (nullable).</li>
+</ul>
+
+<p>PostgreSQL's <a href="https://www.postgresql.org/docs/current/sql-altertable.html">ALTER TABLE docs</a> say that if you add a column without constraints, "NULL is used as the DEFAULT" and a rewrite of the table is not required. Old rows stay as they are. The app keeps working because it does not know about the new column yet.</p>
+
+<p><strong>Risky:</strong></p>
+
+<ul>
+<li><strong>Dropping a column or a table.</strong> The data is gone from your point of view. The Postgres docs also say that "Indexes and table constraints involving the column will be automatically dropped as well."</li>
+<li><strong>Renaming a column.</strong> Postgres says a rename has "no effect on the stored data". But your app code still asks for the old name. The live app breaks until the code is updated and deployed. The database and the app never change at exactly the same moment.</li>
+<li><strong>Changing a type.</strong> The docs say that changing the type of an existing column "will normally cause the entire table and its indexes to be rewritten." Values can also fail to convert.</li>
+<li><strong>Adding NOT NULL to a table that has data.</strong> The docs say it "may only be applied to a column provided none of the records in the table contain a NULL value for the column." Old rows with empty values will make it fail. And Postgres checks it by scanning the entire table.</li>
+</ul>
+
+<h3>Expand, then contract</h3>
+
+<p>This is plain advice, not a rule from one vendor. When you must rename or reshape something, do it in small steps over several deploys:</p>
+
+<ol>
+<li><strong>Expand.</strong> Add the new column or table. Keep the old one. Nothing breaks.</li>
+<li><strong>Copy.</strong> Copy the existing data from the old column into the new one. Check the counts.</li>
+<li><strong>Switch.</strong> Change the app to read and write the new column. Deploy. Watch it for a few days.</li>
+<li><strong>Contract.</strong> Only when nothing uses the old column anymore, remove it in a separate migration, after a fresh backup.</li>
+</ol>
+
+<p>It is slower than one big rename. But at every step you can go back, and your users never see an error.</p>
+
+<h2>4. Supabase specifics: Row Level Security</h2>
+
+<p>When you add a table, you also add a security question. Supabase's <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">Row Level Security docs</a> say: "Enable RLS on every table in an exposed schema." They add a warning: "A table in an exposed schema without RLS is readable and writable by any role with a grant on it."</p>
+
+<p>The same page says: "Once RLS is enabled, no data is accessible through the API when using a publishable key, until you create policies." So the new table needs two things: RLS turned on, and policies that let the right users in.</p>
+
+<p>A new column on an existing table can also need attention. If your policies list or check specific columns, or if your app reads the column through a view or function, check that the new column behaves as you expect. A new "owner" or "user_id" column that is empty on old rows can lock people out of their own data, or the other way around.</p>
+
+<p>For the full list of checks, read <a href="/blog/ai-built-app-database-security-checks">the database security checks for AI-built apps</a>.</p>
+
+<h2>5. Test on a copy before the live database</h2>
+
+<p>Never try a structure change on live data first. Use a copy. The idea is explained in <a href="/blog/staging-copy-ai-built-app-preview-test-database">the staging copy guide</a>. Your options:</p>
+
+<ul>
+<li><strong>A separate Supabase project.</strong> Create a second project, apply your migrations there, and test the app against it. Live users are not affected.</li>
+<li><strong>Supabase branching.</strong> The <a href="https://supabase.com/docs/guides/deployment/branching">branching docs</a> say preview branches are "ephemeral and best suited for focused testing". Be careful with one thing: "By default, new branches do not start with any data or storage objects from your base project." So a branch tests your migration file, but not how it behaves on your real rows, unless you load data into it with a seed file or the "Include data" option in the dashboard.</li>
+<li><strong>Neon branches.</strong> Neon's <a href="https://neon.com/docs/introduction/branching">branching docs</a> describe a branch as "a copy-on-write clone of your data." That is a real copy of your rows. Its testing workflow covers "testing schema changes". Run your migration on a branch, check the result, then delete the branch.</li>
+</ul>
+
+<p>Treat a copy of real user data with care. It contains the same personal data as the live database. Do not share it around.</p>
+
+<h2>6. Firestore: no schema, so the "migration" is in your code</h2>
+
+<p>Firebase works differently. The <a href="https://firebase.google.com/docs/firestore/data-model">Firestore data model page</a> says "Cloud Firestore is schemaless" and that "Documents within the same collection can all contain different fields or store different types of data in those fields."</p>
+
+<p>That means there is no database step that adds a column. You just start writing a new field in new documents. The catch: old documents keep the old shape. They do not get the new field by themselves. If you rename <code>name</code> to <code>fullName</code> in the code, every old document still has <code>name</code> and nothing in <code>fullName</code>.</p>
+
+<p>This is plain advice for that case:</p>
+
+<ul>
+<li>Make the code handle both shapes. For example, read <code>fullName</code> and, if it is missing, fall back to <code>name</code>.</li>
+<li>Write only the new shape from now on.</li>
+<li>Run a one-time script to update old documents, on a copy first. Check the counts after.</li>
+<li>Remove the fallback only when no old documents are left.</li>
+</ul>
+
+<p>It is the same expand-then-contract idea as in section 3, just done in code. Also check your Firestore security rules after you add new fields or collections.</p>
+
+<h2>7. What to tell the AI tool, and what to check in the SQL</h2>
+
+<p>Be specific. AI tools do what you ask in the shortest way, and the shortest way to a rename can be a drop and a re-create. Example prompts:</p>
+
+<ul>
+<li>"Write this as a new migration file. Do not drop or rename existing columns. Show me the SQL before running it."</li>
+<li>"Add a nullable column called phone to the profiles table. Do not change any existing data."</li>
+<li>"Create a new table for invoices. Enable Row Level Security and add policies so users can only see their own rows. Show me the SQL first."</li>
+<li>"I want to rename the column status to state. Use the expand-then-contract approach: add the new column, copy the data, update the app, and keep the old column for now."</li>
+<li>"List every place in the code that uses this column before you change anything."</li>
+</ul>
+
+<p>Then read the SQL yourself. You do not need to be a developer to spot these words:</p>
+
+<ul>
+<li><code>DROP TABLE</code> or <code>DROP COLUMN</code>: removes things. Stop and ask why.</li>
+<li><code>TRUNCATE</code>: empties a whole table.</li>
+<li><code>DELETE</code> without a <code>WHERE</code>: deletes every row.</li>
+<li><code>ALTER COLUMN ... TYPE</code> or <code>SET DATA TYPE</code>: changes a type, can fail or rewrite the table.</li>
+<li><code>SET NOT NULL</code>: fails or blocks if old rows are empty.</li>
+<li><code>CASCADE</code>: also removes things that depend on the object.</li>
+<li><code>RENAME</code>: the app code must change too.</li>
+<li><code>DISABLE ROW LEVEL SECURITY</code>: opens the data to everyone.</li>
+</ul>
+
+<p>If you see one of these and you did not ask for it, say no and ask the tool to explain. If you are not sure, a second pair of eyes is cheap compared to lost data.</p>
+
+<h2>8. If it already went wrong</h2>
+
+<p>Stay calm and go in this order.</p>
+
+<ol>
+<li><strong>Stop the writes.</strong> Do not let new data come in on top of a broken state. Pause the app, switch on a maintenance page, or turn off the forms. Do not run more AI fixes on the live database.</li>
+<li><strong>Write down what happened.</strong> The time of the change, the SQL that ran, and the error. You need this for the restore point.</li>
+<li><strong>Restore.</strong> On Supabase, the <a href="https://supabase.com/docs/guides/platform/backups">backups page</a> says "You can restore your project to any of the backups." It also says that "Pro, Team and Enterprise Plan projects can enable PITR as an add-on." PITR is point-in-time recovery. It lets you pick a moment, such as just before the bad change. The page notes that a PITR restore "replaces the current database state", and that to keep current data you can restore to a new project first. Restoring to a new project lets you copy back the rows you need without overwriting good data.</li>
+<li><strong>On Neon,</strong> the <a href="https://neon.com/docs/introduction/branch-restore">branch restore docs</a> say you can restore a root branch to an earlier state in its own history, within your history window. Neon keeps the branch's final state before the restore in an automatically created backup branch, so you can undo a restore too. Check the history window for your plan in the Neon docs.</li>
+<li><strong>Roll back the app.</strong> If the code was deployed together with the change, also go back to the last working version. See <a href="/blog/roll-back-broken-deploy-netlify-vercel-lovable-bolt">how to roll back a broken deploy</a>. The database and the code must match each other.</li>
+</ol>
+
+<p>Rolling back the app does not roll back the database. These are two separate things. Fix both.</p>
+
+<h2>9. Checklist</h2>
+
+<ul>
+<li>A fresh backup exists, and I know how to restore it.</li>
+<li>The change is written as a new migration file, kept with the code.</li>
+<li>The change only adds things where possible: a new table or a nullable column.</li>
+<li>Renames and type changes are split into expand, copy, switch and contract.</li>
+<li>I read the SQL before it ran. No DROP, TRUNCATE, DELETE without WHERE, or ALTER ... TYPE that I did not ask for.</li>
+<li>New tables have Row Level Security on, with policies.</li>
+<li>I tested on a copy: a second project, a branch, or a Neon branch.</li>
+<li>Firestore: the code handles both old and new document shapes.</li>
+<li>I know how to roll back the app if the deploy goes wrong.</li>
+<li>The old column or table is removed only later, in its own migration, after a new backup.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including database changes on a live app without losing data. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
