@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'app-uptime-monitoring-error-alerts',
+    title: "Is your app down? Uptime checks and error alerts for small apps",
+    description: "Customers should not be your alarm. How to set up uptime checks, cron heartbeats, error tracking and money-path alerts on free tiers in 30 minutes.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'app-emails-spam-spf-dkim-dmarc',
     title: "Your app's emails land in spam: SPF, DKIM and DMARC explained",
     description: "Sign-up and password-reset emails landing in spam? How to tell, why default senders fail, what SPF, DKIM and DMARC do, and a safe setup in 15 minutes.",

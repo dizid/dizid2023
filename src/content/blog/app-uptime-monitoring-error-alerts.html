@@ -1,0 +1,104 @@
+<p>Most founders I talk to find out their app is broken from a customer. An email arrives: "I can't log in", "my payment went through but nothing happened". By then the problem may have been there for days. You can set up basic alerts in about 30 minutes, mostly with free tiers. Here is what to watch and how.</p>
+
+<h2>How owners find out too late</h2>
+
+<p>The failures that cost money are rarely a full outage. Those are noticed fast. The quiet ones are worse:</p>
+
+<ul>
+<li><strong>Sign-ups fail</strong> for one browser or one country, and nobody sees it because nobody who failed tells you.</li>
+<li><strong>A payment succeeds</strong> at the payment provider, but your app never records it, because the webhook failed.</li>
+<li><strong>A scheduled job stops</strong>: the nightly email, the invoice run, the data sync. A job that does not run makes no error. It simply is not there.</li>
+<li><strong>The domain or SSL certificate expires.</strong> Visitors get a browser warning page.</li>
+<li><strong>A third-party API key runs out of credit</strong> or hits a limit, and one feature quietly returns errors.</li>
+</ul>
+
+<p>Each needs a different check: is the site up, did the job run, and what errors do real users hit.</p>
+
+<h2>Uptime monitors: is the site answering?</h2>
+
+<p>An uptime monitor is a service that requests your page every few minutes from outside and alerts you when it fails. The useful checks:</p>
+
+<ul>
+<li><strong>HTTP status.</strong> The page must answer 200, not 500 or a timeout.</li>
+<li><strong>Keyword on the page.</strong> A page can answer 200 and still show a blank screen or an error message. Check that a word that should be there, like your product name or a button label, is there.</li>
+<li><strong>SSL and domain expiry.</strong> An alert a few weeks before, not on the day.</li>
+</ul>
+
+<p>Three tools I would look at, with what their own pages say today:</p>
+
+<ul>
+<li><a href="https://uptimerobot.com/pricing/">UptimeRobot</a> lists 50 monitors on the free plan with a 5-minute check interval, keyword monitoring and one status page. Alerts by email are included. SMS and voice calls need purchased credits, and the free plan has 5 integrations. Its <a href="https://uptimerobot.com/terms/">terms of service</a> say it is "available for any use, including commercial and business use". The pricing page is unclear about whether SSL monitoring and heartbeat checks are included on free, so check that before you rely on them.</li>
+<li><a href="https://betterstack.com/pricing">Better Stack</a> lists 10 monitors and heartbeats combined and one status page on its free tier, with alerts by email and Slack. I could not find a free-tier check interval on the page, so check it yourself.</li>
+<li><a href="https://healthchecks.io/pricing/">Healthchecks.io</a> does only heartbeats. Its free Hobbyist plan lists 20 checks.</li>
+</ul>
+
+<p>Free tiers change, so read the page first. Alert after two failed checks in a row, not one. One failed check is often a network blip, and you will start ignoring the alerts.</p>
+
+<h2>Cron and background jobs: the heartbeat check</h2>
+
+<p>You cannot ask a job that never ran to report that it failed. So flip it around. Each time the job finishes, it requests a unique URL. If the URL is not requested on time, you get an alert. <a href="https://healthchecks.io/docs/">Healthchecks.io explains</a> it this way: each check has a ping URL, you set a period (or a cron schedule) and a grace time, and an alert goes out when the check changes to "Down". It also supports <code>/start</code> and <code>/fail</code> on the URL, so a job can report that it started or failed.</p>
+
+<p>In practice that is one line at the end of your job: an HTTP request to the ping URL.</p>
+
+<h2>Error tracking: what real users hit</h2>
+
+<p>A monitor tells you the front door works. It does not tell you the checkout button throws an error for people on Safari. For that you add error tracking to the code, in the browser and in your server functions. <a href="https://sentry.io/pricing/">Sentry's free Developer plan</a> lists 1 user, 5k errors per month, 30-day lookback and 1 uptime monitor. It is single-user, so a team will need a paid plan.</p>
+
+<p>Three settings matter:</p>
+
+<ul>
+<li><strong>Source maps.</strong> Production code is minified, so stack traces are unreadable. Uploading <a href="https://docs.sentry.io/platforms/javascript/sourcemaps/">source maps</a> turns them back into your real file names and lines. Sentry has a wizard for it.</li>
+<li><strong>Sampling.</strong> By default <a href="https://docs.sentry.io/platforms/javascript/configuration/sampling/">every error is sent</a>. With a small free quota, one bug that fires in a loop can use the whole month. Lower <code>sampleRate</code> if that happens. Performance tracing is off until you set <code>tracesSampleRate</code>.</li>
+<li><strong>Who it happened to.</strong> Attach your <a href="https://docs.sentry.io/platforms/javascript/enriching-events/identify-user/">internal user ID</a>, not an email or name. Then you can look the user up in your own database.</li>
+</ul>
+
+<h2>Logs you may already have</h2>
+
+<p>Check what your host keeps before you buy anything, and how long.</p>
+
+<ul>
+<li>Netlify shows <a href="https://docs.netlify.com/manage/monitoring/logs/">function logs</a> for up to 7 days, depending on your plan.</li>
+<li>Vercel's <a href="https://vercel.com/docs/logs/runtime">runtime logs</a> are kept for 1 hour on Hobby and 1 day on Pro. Longer needs a paid add-on. That is short: an error from last night may already be gone.</li>
+<li>Supabase and Neon also keep logs, but I did not verify their retention for this post. Look at your plan's page.</li>
+</ul>
+
+<p>If your host keeps logs for a day or less, an error tracker is how you keep a history.</p>
+
+<h2>Watch the money path</h2>
+
+<p>The checks that matter most are on the path where money or sign-ups happen:</p>
+
+<ul>
+<li><strong>Webhooks.</strong> Stripe <a href="https://docs.stripe.com/webhooks">retries failed deliveries for up to three days</a> in live mode, and shows each one as Delivered, Pending or Failed under the endpoint's Event deliveries tab. Look there after launch and once a week. If your app returns an error to Stripe, you will see it there first. I cover more of this in <a href="/blog/stripe-payments-ai-built-app-launch">taking payments in an AI-built app</a>.</li>
+<li><strong>A scheduled test.</strong> Run a small script every hour or day that loads the sign-up page, the pricing page and the checkout page and checks that each returns 200 and contains an expected word. A keyword monitor does the same with no code.</li>
+<li><strong>"Zero today" checks.</strong> If you normally get sign-ups or orders every day, a daily job that counts them and alerts when the count is 0 catches problems no error tracker sees, because nothing threw an error.</li>
+</ul>
+
+<h2>Where alerts go</h2>
+
+<p>Too many alerts and you stop reading them. Keep it simple:</p>
+
+<ul>
+<li><strong>One main channel.</strong> Pick what you actually look at: phone push, or email.</li>
+<li><strong>Two failures before an alert</strong> for uptime checks.</li>
+<li><strong>Separate urgent from nice to know.</strong> "Site down" should reach your phone. A weekly list of minor errors can wait in a dashboard or email.</li>
+</ul>
+
+<p>My own setup is small. On my own apps I get alerts as phone push messages through <a href="https://docs.ntfy.sh/publish/">ntfy</a>. For example, the daily job of Remote Job Radar reports to an ntfy topic when it runs. Publishing is one line with curl, and there is no sign-up. The catch is that anyone who knows the topic name can read and post to it, so the docs say to pick one that is hard to guess. I also run a small script that checks my money pages.</p>
+
+<h2>Set it up in 30 minutes</h2>
+
+<ol>
+<li>(5 min) Create uptime monitors for your home page, sign-in or checkout page, and API, with a keyword check. Alert after 2 failures.</li>
+<li>(5 min) List every scheduled job. Add a heartbeat check for each, and a ping line at the end of the job.</li>
+<li>(5 min) Add SSL and domain expiry alerts, in your monitor or at your registrar.</li>
+<li>(5 min) Add Sentry to the browser code and the server functions. Attach the user ID. Upload source maps.</li>
+<li>(3 min) Open Stripe's Event deliveries tab and check nothing is Failed.</li>
+<li>(2 min) Send all alerts to one channel and trigger a test alert to see that it reaches your phone.</li>
+</ol>
+
+<p>Then, once a week, spend 5 minutes on the error list and the failed webhooks. For other parts of a safe launch, see the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>, and for what happens when the data is lost, <a href="/blog/app-database-backups-supabase-neon-firebase">backups on Supabase, Neon and Firebase</a>.</p>
+
+<h2>Want this set up for you?</h2>
+
+<p>I add uptime checks, heartbeats and error tracking to apps built with Lovable, Bolt, Cursor or Replit, and test that an alert really reaches you. If your app is also slow, read <a href="/blog/slow-ai-built-app-fixes">why AI-built apps get slow</a>. Or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
