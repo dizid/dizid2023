@@ -4,8 +4,8 @@ import { useHead } from '@unhead/vue'
 import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
 import { blogPosts, blogPostUrl, SITE_URL } from '../data/blogPosts.js'
 
-const pageTitle = 'Blog: AI apps, AI Act and AI search | Dizid'
-const pageDescription = 'Practical notes from Marc de Ruijter, a Dutch full-stack developer: AI chatbots and the EU AI Act, database safety in AI-built apps, and getting found by AI.'
+const pageTitle = 'Blog: launching and running AI-built apps | Dizid'
+const pageDescription = 'Practical notes from a Dutch full-stack developer on launching and running AI-built apps: payments, security, backups, costs, email, sign-in and the EU AI Act.'
 
 // "2026-11-09" -> "9 November 2026" (fixed locale, so prerender and browser match)
 const formatDate = (isoDate) =>
@@ -58,8 +58,9 @@ useBreadcrumbSchema([
       <div class="container">
         <h1 class="blog-title">Blog</h1>
         <p class="blog-intro">
-          Practical notes for business owners and founders: AI chatbots and the EU AI Act,
-          keeping AI-built apps safe, and getting found by AI assistants. Written by Marc de Ruijter,
+          Practical notes for business owners and founders with an AI-built or small web app:
+          launching it, taking payments, security and backups, running costs, emails and sign-in,
+          AI chatbots and the EU AI Act, and getting found by AI assistants. Written by Marc de Ruijter,
           a Dutch full-stack developer who builds and runs his own AI apps.
         </p>
       </div>
