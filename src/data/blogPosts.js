@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'small-app-maintenance-monthly-routine',
+    title: "App maintenance for a small app: a monthly routine",
+    description: "What to check each month, quarter and year to keep a small web app healthy: alerts, bills, backups, Node.js versions. Checked in November 2026.",
+    datePublished: '2026-11-12',
+    dateModified: '2026-11-12'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",

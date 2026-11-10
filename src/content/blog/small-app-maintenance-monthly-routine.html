@@ -1,0 +1,106 @@
+<p>You launched your app with Lovable, Bolt, Cursor or Replit. It works. Now you wonder what "maintenance" means when you are not changing anything. This post gives you a routine: about an hour a month, a bit more each quarter, and a few jobs once a year. The vendor facts come from Node.js, Netlify, Vercel and Supabase docs, checked in November 2026.</p>
+
+<h2>What breaks when nobody looks</h2>
+
+<p>An app can rot without a single code change. The Node.js version it runs on reaches end of life. A package gets a security alert. A free plan pauses an idle project. The card on file expires. A domain lapses. Sign-up emails start landing in spam. Someone who helped you last year still has access to everything.</p>
+
+<p><strong>Short answer:</strong> every month, spend an hour on alerts, errors, bills, emails and a run through your main flow. Every quarter, restore a backup, review who has access and check your runtime versions. Every year, check domain renewal, the card on file and your privacy page. Write down what you checked, and test every update on a copy first.</p>
+
+<h2>Monthly, about an hour</h2>
+
+<ol>
+<li><strong>Dependency and security alerts.</strong> Open the Security tab of your GitHub repository. Handle the alerts that affect production first. The details are in <a href="/blog/github-security-alerts-ai-built-app">the post on GitHub security alerts</a>.</li>
+<li><strong>Uptime and errors.</strong> Look at what went wrong this month: downtime, error alerts, failed payments. If you have no alerts set up, start with <a href="/blog/app-uptime-monitoring-error-alerts">uptime monitoring and error alerts</a>.</li>
+<li><strong>Costs.</strong> Open each bill and each usage page: host, database, email, domain. Compare with last month. <a href="/blog/avoid-surprise-bill-vercel-netlify-supabase-firebase">How to avoid a surprise bill</a> and <a href="/blog/small-web-app-running-costs">what a small web app costs to run</a> explain what to look for.</li>
+<li><strong>Sign-up and password emails.</strong> Sign up with a fresh address, then ask for a password reset. Do both mails arrive, and not in spam? If not, read <a href="/blog/app-emails-spam-spf-dkim-dmarc">the SPF, DKIM and DMARC post</a>.</li>
+<li><strong>Run the main flow yourself.</strong> Sign up, do the core action, and pay with a test card. Do this on a staging copy, not on live data: <a href="/blog/staging-copy-ai-built-app-preview-test-database">how to set up a staging copy</a>.</li>
+</ol>
+
+<h2>Quarterly</h2>
+
+<h3>Restore a backup once</h3>
+
+<p>"Backups are on" is not the same as "I can get my data back." Once a quarter, restore a backup into a separate test project and open the app against it. If it fails, you want to learn that now. <a href="/blog/app-database-backups-supabase-neon-firebase">The backups post</a> shows how on Supabase, Neon and Firebase.</p>
+
+<h3>Review who has access</h3>
+
+<p>List who can log in to your host, database, domain, GitHub and email service. Remove former helpers and check that two-factor login is on. See <a href="/blog/lock-down-accounts-that-run-your-app">how to lock down the accounts that run your app</a>. If you are handing the app to a new developer, <a href="/blog/hiring-developer-app-access-handover">this access handover post</a> helps.</p>
+
+<h3>Check your runtime versions</h3>
+
+<p>This is the job people skip, and it is the one that bites. Node.js is the runtime behind most of these apps, in builds and in server functions. Each major version has a life cycle. The <a href="https://nodejs.org/en/about/eol">Node.js end-of-life page</a> says: "Major versions of Node.js are released, patched, and designated End-Of-Life on a predictable schedule." And: "When a version reaches End-Of-Life, it means that it will no longer receive updates, including security patches."</p>
+
+<p>Where do your versions stand? The <a href="https://nodejs.org/en/about/previous-releases">Node.js releases page</a> marks Node.js 18 and 20 as EOL, and Node.js 22 as LTS. The same page says: "Production applications should only use Active LTS or Maintenance LTS releases." I did not find an end-of-life date for each version on those pages, so look at the table yourself when you read this. It changes over time.</p>
+
+<p><strong>Netlify.</strong> The <a href="https://docs.netlify.com/build/configure-builds/manage-dependencies/">Netlify dependency docs</a> say a build's Node.js version "is initially determined by the default version preinstalled on the site's selected build image", and that Netlify pins the site to that version "so your builds won't change even if the build image's defaults change." So a site you launched long ago may still build on an old Node.js. To change it, use <strong>Project configuration, Developer settings, Continuous deployment, Dependency management</strong>, set a <code>NODE_VERSION</code> environment variable, or add a <code>.node-version</code> or <code>.nvmrc</code> file. The docs note that those last three override the setting in the UI. For functions they say: "Typically, the functions runtime Node.js version automatically matches the version used for the build." I found nothing on that page about what happens to a version that is deprecated.</p>
+
+<p><strong>Vercel.</strong> The <a href="https://vercel.com/docs/functions/runtimes/node-js/node-js-versions">Vercel Node.js versions page</a> says: "By default, a new project uses the latest Node.js LTS version available on Vercel." It lists the available versions as 26.x, 24.x and 22.x, and says only major versions are available. You choose the version in <strong>Settings, Build and Deployment, Node.js Version</strong>, or in <code>package.json</code> under <code>engines</code>. To check, run <code>node -v</code> in the Build Command, or log <code>process.version</code> inside a function. What happens to old versions? Vercel's <a href="https://vercel.com/changelog/node-js-20-is-being-deprecated">announcement about Node.js 20</a> says it is being deprecated "for Builds and Functions on October 1, 2026". After that date, Node.js 20 is disabled in Project Settings, and projects using it for Functions "will display an error when a new deployment is created." Existing deployments are not affected: "Invocations to already-deployed functions will continue to work normally." So an old app keeps running, then fails the day you try to ship a fix. That is a bad moment to find out.</p>
+
+<p><strong>Database side.</strong> Supabase's <a href="https://supabase.com/docs/guides/platform/upgrading">upgrade docs</a> say: "Your project is taken offline and the Dashboard shows the upgrade status." They also say to plan for the database "to be unavailable" during the upgrade, and to make sure "a recent backup is in the Backups page" first. They do not give end-of-life dates for Postgres versions, so I won't either. If you upgrade, treat it like any change: backup first, off-peak, and test the app afterwards.</p>
+
+<p>When you change a runtime version, do it on a branch and a preview deploy, not on live. Build, click the main flow, then merge.</p>
+
+<h2>Yearly</h2>
+
+<ul>
+<li><strong>Domain:</strong> check the renewal date and that auto-renew is on at your registrar.</li>
+<li><strong>Card on file:</strong> check the card at the registrar and at each host. An expired card can take an app or a domain down without a single code change.</li>
+<li><strong>TLS certificates:</strong> on Netlify and Vercel these renew by themselves, but still check once a year that they did. Netlify's <a href="https://docs.netlify.com/manage/domains/secure-domains-with-https/https-ssl/">HTTPS docs</a> say: "Certificates are generated and renewed automatically as needed." The exception: if you uploaded a custom certificate, "Netlify cannot do this automatically." Vercel's <a href="https://vercel.com/docs/domains/working-with-ssl">SSL docs</a> say it "automatically attempts to renew the SSL certificates it issues for your custom domains 14 to 30 days before they expire", and that "certificate renewal is separate from renewing the domain's registration." So the certificate renewing does not renew your domain name.</li>
+<li><strong>Privacy page and cookies:</strong> does the text still match what the app does? Did you add an analytics tool or a new form since? See <a href="/blog/gdpr-checklist-small-app">the GDPR checklist for a small app</a> and <a href="/blog/analytics-small-app-what-to-measure-cookies">analytics and cookies</a>.</li>
+</ul>
+
+<h2>Free plans that pause</h2>
+
+<p>Free plans can stop an app nobody opened for a while. Supabase pauses inactive free projects: <a href="/blog/supabase-project-paused-free-plan">what to do when your project is paused</a>. If your app has real users, a pause is an outage. Check the plan of every service the app depends on, and note which ones are free.</p>
+
+<h2>Keep a maintenance log</h2>
+
+<p>One document or file is enough. One line per check: the date, what you checked, what you changed. It takes a minute and pays back twice. You stop asking yourself "did I do the backup test?" And when you hire someone later, they see the history at once, which makes <a href="/blog/hiring-developer-app-access-handover">a handover</a> much easier.</p>
+
+<h2>What to hand to your AI tool, and what you check</h2>
+
+<p>AI tools are good at the reading and the typing. Example prompts:</p>
+
+<ul>
+<li>"List every dependency with a known vulnerability and the smallest safe update. Show me the diff before you apply it."</li>
+<li>"Which Node.js version does this project build and run on? Where is it set: <code>package.json</code>, <code>.nvmrc</code>, or the host settings?"</li>
+<li>"Read the build log of the last deploy and list every warning about deprecated packages or versions."</li>
+<li>"Write a one-page maintenance checklist for this project from its files: host, database, email service, domain."</li>
+</ul>
+
+<p>Always test an update on a staging copy or a preview before it goes live. Check yourself that the diff is small, the build passes, the main flow works, and the AI did not remove a feature to make a warning disappear. Bills, access and backup restores are for you to check. A tool cannot see your registrar or your card.</p>
+
+<h2>Checklist</h2>
+
+<h3>Monthly</h3>
+
+<ul>
+<li>Security alerts: production ones first.</li>
+<li>Downtime and errors from the past month.</li>
+<li>Every bill and usage page, compared with last month.</li>
+<li>Sign-up and password reset emails arrive, not in spam.</li>
+<li>Main flow run on staging.</li>
+<li>One line in the maintenance log.</li>
+</ul>
+
+<h3>Quarterly</h3>
+
+<ul>
+<li>Backup restored into a test project.</li>
+<li>Access list reviewed, former helpers removed, 2FA on.</li>
+<li>Node.js version checked on host and locally, against the Node.js releases page.</li>
+<li>Free plans noted.</li>
+</ul>
+
+<h3>Yearly</h3>
+
+<ul>
+<li>Domain renewal date and auto-renew.</li>
+<li>Card on file at registrar and hosts.</li>
+<li>TLS certificate renewed.</li>
+<li>Privacy page and cookie setup match the app.</li>
+</ul>
+
+<h2>Want someone to keep your app healthy?</h2>
+
+<p>I finish, fix and manage apps built with Lovable, Bolt, Cursor or Replit. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
