@@ -435,6 +435,7 @@ const stats = [
                   <option value="" disabled>Select a service</option>
                   <option value="ai-chat-assistant">AI chat assistant for your website (&euro;490 fixed)</option>
                   <option value="ai-notice">AI notice for your chatbot (&euro;390 fixed)</option>
+                  <option value="fix-finish">Fix or finish an app built with Lovable, Bolt or Cursor</option>
                   <option value="ai-integration">AI Integration Sprint (1-2 weeks)</option>
                   <option value="mvp">MVP Web App (2-4 weeks)</option>
                   <option value="saas">Full SaaS Build (4-8 weeks)</option>
