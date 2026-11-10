@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'live-updates-realtime-or-polling-ai-built-app',
+    title: "Live updates in your AI-built app: realtime or polling?",
+    description: "Realtime, polling or refresh? What each costs in Supabase and Firestore, and how to keep it secure and stable on phones. Checked in November 2026.",
+    datePublished: '2026-11-12',
+    dateModified: '2026-11-12'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",
