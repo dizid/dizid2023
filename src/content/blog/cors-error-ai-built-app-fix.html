@@ -1,0 +1,133 @@
+<p>Your app works in the editor. Then you open the live site, and nothing loads. The browser console shows a red error: "Access to fetch at 'https://…' from origin 'https://…' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource". It often happens only on the live domain, only after you moved off the builder's hosting, or only for one API. Lovable, Bolt, Cursor and Replit all produce apps that hit this. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> CORS is a browser rule. Your page is on one address. It asks a server on another address for data. The browser only lets the page read the answer if that server says "this page is allowed". The fix is almost never in the browser. Either call the other service from a server function, or make your own server send the right headers, including on the preflight request and on error responses. Do not disable CORS, and do not use a public proxy.</p>
+
+<h2>1. What CORS means in plain words</h2>
+
+<p>MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS">CORS guide</a> describes it as an HTTP-header based mechanism that lets a server say which other origins a browser should permit to load resources. Without it, the same-origin policy applies: a web app "can only request resources from the same origin the application was loaded from unless the response from other origins includes the right CORS headers."</p>
+
+<p>An origin is the scheme, the host and the port. Two addresses with any difference are different origins. All of these differ from each other:</p>
+
+<ul>
+<li><code>https://example.com</code> and <code>https://www.example.com</code> (www or not)</li>
+<li><code>http://example.com</code> and <code>https://example.com</code> (http or https)</li>
+<li><code>http://localhost:5173</code> and your live domain (your laptop versus production)</li>
+<li>A preview address and your live address. See <a href="/blog/staging-copy-ai-built-app-preview-test-database">staging copies and preview URLs</a>.</li>
+</ul>
+
+<p>This is why the app can work in the builder and break live. Your server may only know about the old address.</p>
+
+<p>The check happens in the browser. A tool like curl or Postman does not run this check, so the same request can work there and fail on your page. The server often did answer. The browser refused to hand the answer to your page. MDN also notes that for security, the details of a CORS failure "are not available to JavaScript". The code only learns that an error happened. That is why the console message is vague and the real hint is in the Network tab (see section 6).</p>
+
+<h2>2. Preflight: the OPTIONS request before the real one</h2>
+
+<p>For some requests the browser first sends a test request. MDN says that for "preflighted" requests the browser first sends an HTTP request using the <code>OPTIONS</code> method to the other origin, "in order to determine if the actual request is safe to send."</p>
+
+<p>When does this happen? MDN defines a "simple request" as one that meets all of its conditions: the method is GET, HEAD or POST, only a short list of safe headers is set, and the Content-Type is only <code>application/x-www-form-urlencoded</code>, <code>multipart/form-data</code> or <code>text/plain</code>. Most modern app calls break these rules. Sending JSON (<code>application/json</code>) or adding an <code>Authorization</code> header means a preflight. That is nearly every call in an AI-built app.</p>
+
+<p>The preflight asks things like "may I use POST?" and "may I send these headers?". The server must answer with headers such as <code>Access-Control-Allow-Methods</code> and <code>Access-Control-Allow-Headers</code>. If the answer is missing or wrong, the browser never sends the real request.</p>
+
+<p>A common cause in generated code: the function only handles POST. The OPTIONS request gets a 404 or 405 error, or an answer without the CORS headers. The browser then reports a CORS error, even though your POST code is fine.</p>
+
+<h2>3. The usual causes in AI-built apps</h2>
+
+<h3>The app calls a third-party API straight from the browser</h3>
+
+<p>AI tools like to write <code>fetch("https://api.some-service.com/...")</code> in the front end. Many services were never meant to be called from a browser, so they send no CORS headers. MDN's page on the <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS/Errors/CORSMissingAllowOrigin">missing Allow-Origin header</a> says it plainly: if the remote server is not under your control and does not include the header, "you cannot fix this error on the server side." One option it lists is to route the request through a proxy server you control.</p>
+
+<p>That is the real fix: make the call from a server function that you own. The browser calls your function. Your function calls the service. This also keeps the API key out of the browser. If the call carries a key today, read <a href="/blog/api-key-exposed-ai-built-app-check">the API key check</a> first, because that key is already visible to anyone.</p>
+
+<h3>Your own backend function is missing headers or OPTIONS handling</h3>
+
+<p>Supabase Edge Functions, Netlify Functions and Vercel Functions do not add CORS headers for you. You write them in the function. Section 4 shows each platform.</p>
+
+<h3>The allowed origin list misses your new domain</h3>
+
+<p>You moved from the builder's address to your own domain, or from <code>example.com</code> to <code>www.example.com</code>. The function still allows the old origin only. Add every real address of your site, with the exact scheme. See <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving a Lovable or Bolt app to your own hosting</a>, which changes the origin.</p>
+
+<h3>Credentials with a wildcard origin</h3>
+
+<p>By default browsers do not send cookies on cross-origin calls. If your code asks for credentials, MDN says the server "must not" use the <code>*</code> wildcard for <code>Access-Control-Allow-Origin</code>, and must name an explicit origin instead. If a request has credentials and the response has <code>Access-Control-Allow-Origin: *</code>, "the browser will block access to the response, and report a CORS error." The MDN missing-header page adds that when the origin is chosen dynamically, the server must also set <code>Vary: Origin</code>.</p>
+
+<h3>A redirect or an error hiding the real problem</h3>
+
+<p>Two traps. First, a redirect after a preflight. MDN says not all browsers support following redirects after a preflighted request, and some report an error such as "The request was redirected to … which is disallowed for cross-origin requests that require preflight." Typical case: the code calls <code>http://</code> or a URL without the trailing slash, and the server redirects. Use the final URL directly.</p>
+
+<p>Second, an error response without headers. The Supabase example attaches the CORS headers to the error response as well as the success response. If your function crashes or returns a 400 or 500 without them, the browser shows a CORS message instead of your real error. Check the Network tab for the status code. If it is 500, fix the 500 first.</p>
+
+<h2>4. The fix per platform</h2>
+
+<h3>Supabase Edge Functions</h3>
+
+<p>Supabase's <a href="https://supabase.com/docs/guides/functions/cors">CORS page</a> says: "To invoke edge functions from the browser, you need to handle CORS Preflight requests." Its example imports the headers from the SDK (version 2.95.0 or newer):</p>
+
+<p><code>import { corsHeaders } from 'npm:@supabase/supabase-js@^2/cors'</code></p>
+
+<p>The function then answers the preflight first:</p>
+
+<p><code>if (req.method === 'OPTIONS') { return Response.json({ ok: true }, { headers: corsHeaders }) }</code></p>
+
+<p>And it passes <code>{ headers: corsHeaders }</code> on every other response too, errors included. The page notes that before v2.95.0 you hardcode the CORS headers yourself. Check which version your project uses. Note that the docs' shared headers use <code>Access-Control-Allow-Origin: '*'</code>. For a function that serves logged-in users, ask your AI tool to limit that to your own domains (see section 5).</p>
+
+<h3>Netlify Functions</h3>
+
+<p>Netlify's <a href="https://docs.netlify.com/build/functions/overview/">functions page</a> says a function "returns a Response that is delivered back to the client." So the headers go on the Response your function returns. Handle the OPTIONS method in the function as well.</p>
+
+<p>One trap: the <a href="https://docs.netlify.com/manage/routing/headers/">custom headers page</a> says custom headers (<code>_headers</code> or <code>[[headers]]</code> in <code>netlify.toml</code>) "apply only to files Netlify serves from our own backing store." For a URL handled by a function, "custom headers won't be applied to that content." The function should return any required headers itself. So adding CORS rules to <code>netlify.toml</code> will not fix a function. AI tools often try exactly that.</p>
+
+<h3>Vercel Functions</h3>
+
+<p>Vercel's guide <a href="https://vercel.com/kb/guide/how-to-enable-cors">How to enable CORS on Vercel</a> says: "Vercel Functions don't add CORS headers for you." It shows three places to set them: a <code>headers</code> block in <code>vercel.json</code> for fixed values, an exported <code>OPTIONS</code> function in a route handler, and Routing Middleware, which "runs on Vercel's network before the request reaches your function, so it can answer a preflight OPTIONS before your function starts." For several allowed origins with credentials, the guide says to check the incoming Origin against a list and send back the matching one.</p>
+
+<p>Another Vercel trap from the same guide: with Deployment Protection on, an unauthenticated preflight gets a 401 from Vercel before your function runs. The browser never sees your headers. The guide's fix is the OPTIONS Allowlist.</p>
+
+<h3>Storage buckets</h3>
+
+<p>If the error appears when loading or uploading files, the bucket itself may have its own CORS settings. See <a href="/blog/file-uploads-ai-built-app-checks">file upload checks</a>.</p>
+
+<h2>5. What NOT to do</h2>
+
+<ul>
+<li><strong>Do not use a browser extension that disables CORS.</strong> It only changes your own browser. Your visitors still see the error. Worse, it hides real problems and turns off a protection while you browse other sites.</li>
+<li><strong>Do not put <code>Access-Control-Allow-Origin: *</code> on endpoints that use cookies or logins.</strong> MDN says the wildcard should be used only for public APIs: "Private APIs should never use <code>*</code>, and should instead have a specific domain or domains set." And with credentials the browser rejects it anyway.</li>
+<li><strong>Do not send your calls through a public CORS proxy.</strong> Every request, including any key or token in it, passes through a stranger's server. MDN's advice is a proxy "you control". Make that your own function.</li>
+</ul>
+
+<h2>6. Prompts and how to check the fix</h2>
+
+<p>Example prompts for your AI tool, adapted to your stack:</p>
+
+<ul>
+<li>"Add an OPTIONS handler and CORS headers for https://www.example.com and https://example.com to this function. Return the same headers on error responses. Do not use a wildcard."</li>
+<li>"The browser calls https://api.thirdparty.com directly and gets a CORS error. Move that call into a server function. Read the API key from an environment variable. The front end should call my function instead."</li>
+<li>"List every origin this app can run on (live, www, preview, localhost) and show where each backend function checks the origin."</li>
+</ul>
+
+<p>Then check it in the browser:</p>
+
+<ol>
+<li>Open the live site. Open developer tools, then the Network tab, and reload.</li>
+<li>Find the failing request. If there is an OPTIONS request before it, click it. It should return a 200 or 204 status, not 404, 405 or 500.</li>
+<li>Look at the response headers. You want <code>Access-Control-Allow-Origin</code> with your exact origin, and <code>Access-Control-Allow-Headers</code> listing the headers your app sends, such as <code>authorization</code> and <code>content-type</code>.</li>
+<li>Click the real request. Check that it has the same CORS header and a normal status code.</li>
+<li>Test on both <code>example.com</code> and <code>www.example.com</code>, and once while logged in.</li>
+</ol>
+
+<h2>7. Checklist</h2>
+
+<ul>
+<li>The error text and the failing URL are copied from the console.</li>
+<li>No third-party API is called directly from the browser if it was not made for that.</li>
+<li>The function answers OPTIONS with a success status and the right headers.</li>
+<li>CORS headers are on error responses too.</li>
+<li>Every real origin is allowed: www, non-www, https, and previews if needed.</li>
+<li>No wildcard origin on endpoints that use cookies or logins.</li>
+<li>Netlify: headers are set in the function, not only in <code>netlify.toml</code>.</li>
+<li>Vercel: Deployment Protection is not blocking OPTIONS.</li>
+<li>No redirect between the call and the final URL.</li>
+<li>Checked in the Network tab on the live domain.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including CORS errors that only show up on the live site. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
