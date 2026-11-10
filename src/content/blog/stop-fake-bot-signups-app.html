@@ -1,0 +1,102 @@
+<p>You open your user list and see hundreds of new accounts with gibberish names that nobody confirmed. Or your form inbox fills with spam, or your email provider warns about bounces. Bots found your sign-up form. Here is how I would spot them and stop them, in order of effort. Each vendor fact comes from the vendor's own docs. Limits and plans change, so open the linked page before you rely on a number.</p>
+
+<p><strong>Short answer:</strong> require email confirmation, turn on rate limits, add a CAPTCHA that your server checks, and use a honeypot on plain forms. Then clean out the junk accounts and stop emailing them.</p>
+
+<h2>1. How to tell it is bots</h2>
+
+<p>One odd sign-up means nothing. A pattern does. Look for these:</p>
+
+<ul>
+<li><strong>Bursts.</strong> Dozens of sign-ups within minutes, often at night, then nothing for hours.</li>
+<li><strong>Gibberish.</strong> Names like "xkqjw" and emails with random strings.</li>
+<li><strong>Disposable domains.</strong> The same few unfamiliar email domains again and again.</li>
+<li><strong>Unconfirmed accounts piling up.</strong> Real users click the link. Bots using fake addresses cannot.</li>
+<li><strong>Bounces rising.</strong> Your email provider's dashboard shows more bounced mail than usual.</li>
+</ul>
+
+<p>Sort your users table by creation time. Bots show up fast.</p>
+
+<h2>2. Why it matters</h2>
+
+<p><strong>Email reputation.</strong> Each confirmation email to a fake address that does not exist bounces. Many bounces can hurt how mailbox providers treat your domain, and then real users may stop receiving your emails. See <a href="/blog/app-emails-spam-spf-dkim-dmarc">SPF, DKIM and DMARC for app emails</a> for the base setup.</p>
+
+<p><strong>Costs and limits.</strong> Some auth plans limit monthly active users. Junk accounts that log in can use up that allowance. Check your plan page. Free credits, trials and free-tier features also attract abuse, because a bot can create a new account for each one.</p>
+
+<h2>3. Defenses, from cheap to more work</h2>
+
+<h3>Step 1: Require email confirmation</h3>
+
+<p>The simplest filter: no confirmed email, no access. Supabase's <a href="https://supabase.com/docs/guides/auth/passwords">password auth docs</a> say hosted projects require email verification by default, while self-hosted and local setups do not. Check that it is on in production.</p>
+
+<p>Confirmation does not stop every bot, because some use real or disposable inboxes. But fake addresses cannot get in.</p>
+
+<h3>Step 2: Rate limits on sign-up</h3>
+
+<p><strong>Supabase.</strong> The <a href="https://supabase.com/docs/guides/auth/rate-limits">rate limits page</a> says you set auth limits in the dashboard under Authentication, then Rate Limits, or through the Management API. The documented defaults:</p>
+
+<ul>
+<li>Sign-ups and sign-ins: 30 requests per 5 minutes, per IP address.</li>
+<li>Emails sent: 2 per hour with the built-in email provider. With custom SMTP you configure this limit yourself.</li>
+<li>The same user must wait 60 seconds between confirmation or reset emails.</li>
+</ul>
+
+<p>Limits per IP address slow a single bot, but not one that rotates addresses.</p>
+
+<p><strong>Firebase.</strong> Firebase's <a href="https://firebase.google.com/docs/auth/limits">Auth limits page</a> says new accounts are limited to 100 per hour for each IP address, and that you can schedule a temporary increase in the console. It lists address verification emails at 1,000 per day on the Spark plan and 100,000 per day on Blaze. It also warns that abuse protections may be enabled without warning on accounts with suspicious traffic. Those limits are high, so add your own checks.</p>
+
+<h3>Step 3: A honeypot for plain forms</h3>
+
+<p>A honeypot is an extra form field hidden from people with CSS. Humans leave it empty. Many bots fill every field. If the field has a value, you drop the submission. It costs nothing and your users never see it.</p>
+
+<p>Netlify Forms has this built in. Netlify's <a href="https://docs.netlify.com/manage/forms/spam-filters/">spam filter docs</a> say you add a <code>netlify-honeypot</code> attribute to the form with the name of your hidden field, and keep that field in the form but hidden. Netlify then quietly rejects a submission where that field is filled. The same page says every submission is also filtered with Akismet, and that flagged ones go to a Spam list you can review.</p>
+
+<h3>Step 4: A CAPTCHA</h3>
+
+<p>A CAPTCHA asks the browser to prove it is a real visitor. Two common choices:</p>
+
+<ul>
+<li><strong>Cloudflare Turnstile.</strong> Cloudflare's <a href="https://developers.cloudflare.com/turnstile/plans/">plans page</a> lists it on the Free plan, with up to 20 widgets and no stated cap on verifications. Its <a href="https://developers.cloudflare.com/turnstile/">docs</a> list three widget modes: Managed, which decides whether to show a checkbox based on visitor risk; Non-interactive, where the visitor never needs to interact; and Invisible, where the widget is hidden.</li>
+<li><strong>hCaptcha.</strong> Its <a href="https://docs.hcaptcha.com/">developer docs</a> describe an invisible mode in code, but say passive modes are an Enterprise feature. Check its plans for what is free.</li>
+</ul>
+
+<p>Supabase supports both. Its <a href="https://supabase.com/docs/guides/auth/auth-captcha">CAPTCHA guide</a> says you enable it in the dashboard under Bot and Abuse Protection, choose hCaptcha or Turnstile, and enter the provider's secret key. Your front end shows the widget and passes its token as <code>captchaToken</code> in the options of the auth call, such as <code>signUp</code>. It says CAPTCHA can guard sign-in, sign-up and password reset forms.</p>
+
+<p><strong>Firebase.</strong> The route is App Check. Firebase's <a href="https://firebase.google.com/docs/app-check">App Check overview</a> says it rejects requests without valid attestation once enforcement is on, and lists Firebase Authentication as protected, marked Preview. For web, the built-in provider is reCAPTCHA Enterprise. The <a href="https://firebase.google.com/docs/app-check/web/recaptcha-enterprise-provider">setup page</a> says each token refresh creates a reCAPTCHA assessment, and that assessments above the no-cost quota are charged, so read it before you turn it on. It also warns that apps not yet registered lose access once enforcement is on.</p>
+
+<h3>Check the token on the server</h3>
+
+<p>This is the step AI-built apps most often skip. A widget in the browser protects nothing by itself. Cloudflare's <a href="https://developers.cloudflare.com/turnstile/get-started/server-side-validation/">server-side validation docs</a> say you must call the Siteverify API, that the widget alone does not protect your forms, and that attackers can send any string to your endpoint. A token is valid for 300 seconds and can be validated once. hCaptcha's docs describe the same pattern with a <code>siteverify</code> endpoint, and say tokens are single-use.</p>
+
+<p>If you use Supabase or Firebase's own CAPTCHA settings, they do the check for you. If you wrote your own form handler or function, verify the token there, and reject the request when it fails. Keep the secret key in server settings, never in code the browser can read. See <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a> for how that goes wrong.</p>
+
+<h3>Step 5: Block disposable email domains (optional)</h3>
+
+<p>You can refuse sign-ups from known throwaway domains. The trade-off: lists go out of date, bots move to new domains, and you may block a real user, such as someone who hides their address on purpose. I would use it only if the other steps are not enough. I did not find vendor documentation to cite for this, so check the current docs of your auth tool.</p>
+
+<h2>4. Cleanup</h2>
+
+<p><strong>Delete old unconfirmed accounts.</strong> A simple practice: once a week, delete accounts that never confirmed and are older than, say, 7 days. Supabase's docs do not describe an automatic cleanup that I could find. To delete in code, <a href="https://supabase.com/docs/reference/javascript/auth-admin-deleteuser">auth.admin.deleteUser</a> needs the service role key and must only run on a server. Back up first. For Firebase, check the current Admin SDK docs.</p>
+
+<p><strong>Stop emailing junk addresses.</strong> Do not send newsletters to unconfirmed users. If an address bounced, suppress it. Check whether your email provider keeps a suppression list for you.</p>
+
+<h2>What I do on my own sites</h2>
+
+<p>The forms on my hire-me site run on Netlify Forms, and its spam filter catches most of the junk. On my job board I cap sign-in emails with a rate limit, so nobody can make the app send a flood of emails.</p>
+
+<h2>A 20-minute checklist</h2>
+
+<ol>
+<li><strong>Look at the pattern (3 min).</strong> Sort users by creation time.</li>
+<li><strong>Check confirmation is on (2 min).</strong> Production, not only your local setup.</li>
+<li><strong>Check rate limits (3 min).</strong> Open the auth rate limit settings and lower sign-up and email limits if they are generous.</li>
+<li><strong>Add a CAPTCHA (7 min).</strong> Turnstile in Supabase takes the site key, the secret key and one extra field in your sign-up call. Test a real sign-up after.</li>
+<li><strong>Check your own endpoints (2 min).</strong> Any custom form or function must verify the token on the server.</li>
+<li><strong>Add a honeypot (1 min)</strong> to plain forms.</li>
+<li><strong>Clean up (2 min).</strong> Back up, then delete old unconfirmed accounts and suppress bounced addresses.</li>
+</ol>
+
+<p>Then watch your sign-ups and bounce rate for a week. Add <a href="/blog/app-uptime-monitoring-error-alerts">alerts for odd spikes</a> if you want to hear sooner.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including sign-up protection, rate limits, CAPTCHA checks on the server and cleanup of junk accounts. Or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>

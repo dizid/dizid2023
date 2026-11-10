@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'stop-fake-bot-signups-app',
+    title: "Bots are signing up to your app: how to stop fake sign-ups",
+    description: "Hundreds of junk accounts or spam in your forms? How to spot bots and stop them with rate limits, CAPTCHA, honeypots and cleanup, plus a 20-minute list.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'move-lovable-bolt-app-own-github-hosting',
     title: "Move your Lovable or Bolt app to your own GitHub and hosting",
     description: "Moving a Lovable or Bolt app to your own GitHub and host? What moves with the code, what does not, and a step-by-step checklist to test before DNS.",
