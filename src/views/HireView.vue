@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useHead } from '@unhead/vue'
 import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
 import WhoShouldUseSection from '../components/WhoShouldUseSection.vue'
@@ -28,15 +28,10 @@ useBreadcrumbSchema([
   { name: 'Hire', url: 'https://dizid.com/hire' }
 ])
 
-const isVisible = ref(false)
 const formData = ref({ name: '', email: '', project: '', budget: '', message: '' })
 const isSubmitting = ref(false)
 const isSubmitted = ref(false)
 const submitError = ref(null)
-
-onMounted(() => {
-  setTimeout(() => { isVisible.value = true }, 100)
-})
 
 const handleSubmit = async () => {
   isSubmitting.value = true
@@ -137,7 +132,7 @@ const stats = [
         <div class="hero-grid"></div>
       </div>
 
-      <div class="container hero-content" :class="{ 'visible': isVisible }">
+      <div class="container hero-content">
         <div class="hero-text">
           <span class="hero-badge">
             <i class="fa-solid fa-circle-check"></i>
@@ -547,14 +542,20 @@ const stats = [
   text-align: center;
   max-width: 800px;
   margin: 0 auto;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: all 0.8s ease;
+  /* Same fade-up as before, but in CSS: it starts at first paint instead of after the
+     JavaScript has loaded (the hero used to stay invisible until then on slow phones). */
+  animation: hero-in 0.8s ease both;
 }
 
-.hero-content.visible {
-  opacity: 1;
-  transform: translateY(0);
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-badge {
@@ -1038,6 +1039,9 @@ select.form-input {
   background-repeat: no-repeat;
   background-position: right var(--space-4) center;
   padding-right: var(--space-10);
+  /* Fixed line height: Chrome sizes a select that's already in the prerendered HTML with
+     the fallback font and doesn't grow it when Inter loads (43px instead of 46px). */
+  line-height: 1.25;
 }
 
 .form-error {

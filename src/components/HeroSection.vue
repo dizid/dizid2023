@@ -1,14 +1,4 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-
-const isVisible = ref(false)
-
-onMounted(() => {
-  setTimeout(() => {
-    isVisible.value = true
-  }, 100)
-})
-
 // Everything a non-technical customer gets, in the order they care about it.
 // Each point is already promised on /hire (fixed scope + price, 24h quote,
 // weekly demos, solo builder).
@@ -39,7 +29,7 @@ const scrollToProof = () => {
       <div class="hero-grid"></div>
     </div>
 
-    <div class="container hero-content" :class="{ 'visible': isVisible }">
+    <div class="container hero-content">
       <div class="hero-text">
         <p class="hero-eyebrow">Marc de Ruijter &middot; Developer &amp; project lead</p>
         <h1 class="hero-title">
@@ -134,14 +124,20 @@ const scrollToProof = () => {
   grid-template-columns: 1.3fr 1fr;
   gap: var(--space-16);
   align-items: center;
-  opacity: 0;
-  transform: translateY(30px);
-  transition: all 0.8s ease;
+  /* Same fade-up as before, but in CSS: it starts at first paint instead of after the
+     JavaScript has loaded (the hero used to stay invisible until then on slow phones). */
+  animation: hero-in 0.8s ease both;
 }
 
-.hero-content.visible {
-  opacity: 1;
-  transform: translateY(0);
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .hero-eyebrow {
