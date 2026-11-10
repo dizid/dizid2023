@@ -106,7 +106,7 @@
 
 <h3>Webhooks: remember the event ids</h3>
 
-<p>Stripe's docs give the advice directly: "You can guard against duplicated event receipts by logging the event IDs you've processed, and then not processing already-logged events." Make a small table, for example <code>processed_events</code>, with the event id as a unique column. When an event arrives, try to insert its id first. If the insert fails because the id exists, stop and return a success status. If it works, do the job.</p>
+<p>Stripe's docs give the advice directly: "You can guard against duplicated event receipts by logging the event IDs you've processed, and then not processing already-logged events." Make a small table, for example <code>processed_events</code>, with the event id as a unique column. When an event arrives, try to insert its id first. If the insert fails because the id exists, stop and return a success status. If it works, do the job. If the job itself then fails, remove that id row again (or mark it as failed) and return an error, so the next retry can still do the work instead of being skipped.</p>
 
 <p>Two more points from the same page. Stripe says that "In some cases, two separate Event objects are generated and sent", and suggests using the ID of the object in <code>data.object</code> together with the event type to spot these. And it says not to use the <code>created</code> time to decide whether you have already processed an event. Use ids.</p>
 
