@@ -1,0 +1,110 @@
+<p>A user writes: "I deleted it by accident, can you get it back?" You open your host's backup page and find that a restore puts back the whole database, and wipes everything everyone else did since. Apps built with Lovable, Bolt, Cursor and Replit rarely have anything built for this request. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Build three layers. First, soft delete: mark a row as deleted instead of removing it, so there is a trash and an undo. Second, a change history: a table that records who changed what, with the old and new values. Third, know what your host's backups can and cannot do, so you can use them as the last resort, not the first. Soft delete handles most "oops" cases in seconds. All of this keeps personal data, so purge it when a user leaves.</p>
+
+<h2>1. Why a backup restore is the wrong tool for one record</h2>
+
+<p>Backups are made for disasters, and work on the whole database. This is how each host's docs describe it.</p>
+
+<h3>Supabase</h3>
+
+<p>The <a href="https://supabase.com/docs/guides/platform/backups">Supabase backups page</a> describes restoring "a project to any of the backups", and says "Restoring to an earlier point in time replaces the current database state." It also warns: "The project is inaccessible during this process, so plan for downtime beforehand." On plans: "We automatically back up all Pro, Team, and Enterprise Plan projects on a daily basis", and "Pro, Team and Enterprise Plan projects can enable PITR as an add-on." Pro projects get "the last 7 days of daily backups". The page does not describe restoring a single table or record.</p>
+
+<h3>Neon</h3>
+
+<p>Neon's <a href="https://neon.com/docs/introduction/branch-restore">instant restore</a> page says "you can restore a root branch to an earlier state in its own or another root branch's history", and that it is "a complete overwrite of the database timeline, not a merge or refresh." A restore overwrites. But Neon's <a href="https://neon.com/docs/manage/branches">branches page</a> also lists a "Past data" option that "Creates a copy using data from a specific past date and time of the parent branch." It adds: "You can only specify a date and time that falls within your history window." The <a href="https://neon.com/docs/reference/glossary">Neon glossary</a> calls the history window the setting that "controls how long Neon retains change history for your branches". So the safe way is a copy: create a branch from the time before the delete, find the lost rows there, and copy only those rows into your live branch. Neon's docs describe the branch. The copying step is my suggestion, and I did not find a Neon page that describes it.</p>
+
+<h3>Firebase and Firestore</h3>
+
+<p>Firestore's <a href="https://firebase.google.com/docs/firestore/pitr">point-in-time recovery</a> page says it "protects against accidental deletion or writes" and that "PITR data is retained for 7 days in the PITR window." For one lost document it describes a different route than a full restore: read the old version with a past timestamp, then "write the results back into the live database." That is the single-record fix, but PITR must be on before the mistake. <a href="https://firebase.google.com/docs/firestore/backups">Scheduled backups</a> work on the whole database: "A restore operation writes the data from a backup to a new Cloud Firestore database", so you still copy the lost documents across yourself. Retention can be set "up to 14 weeks (<code>14w</code>)".</p>
+
+<p>The pattern: a branch, a clone or a separate restored copy lets you take back only what was lost, if your host offers it. A restore in place does not. For general backup setup, read <a href="/blog/app-database-backups-supabase-neon-firebase">backups for Supabase, Neon and Firebase</a>.</p>
+
+<h2>2. Layer one: soft delete</h2>
+
+<p>Instead of <code>DELETE</code>, add a <code>deleted_at</code> column. A row with a value there is "deleted". A row with null is live. Then:</p>
+
+<ul>
+<li>Every normal query gets <code>where deleted_at is null</code>. Lists, counts, search and exports too. One missed query shows deleted rows again.</li>
+<li>A Trash page shows rows where <code>deleted_at</code> is not null, with a Restore button that sets it back to null.</li>
+<li>A scheduled job removes rows that have been in the trash for, say, 30 days. See <a href="/blog/scheduled-jobs-cron-netlify-vercel-supabase">scheduled jobs on Netlify, Vercel and Supabase</a>.</li>
+</ul>
+
+<p>On Supabase, hide deleted rows in your Row Level Security policies too, not only in the app code. The <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">Supabase RLS guide</a> says "Each policy is attached to a table, and the policy is executed every time a table is accessed" and "You can specify select policies with the <code>using</code> clause." Put <code>deleted_at is null</code> in that clause. I did not find a built-in Supabase soft delete feature, so this is something you build.</p>
+
+<p>The trap is unique values. If emails or slugs must be unique, a soft-deleted row still holds its value, and the user cannot sign up again with it. Use a partial index. The <a href="https://www.postgresql.org/docs/current/indexes-partial.html">PostgreSQL docs</a> say it can "enforce uniqueness among the rows that satisfy the index predicate, without constraining those that do not."</p>
+
+<pre><code>alter table notes add column deleted_at timestamptz;
+create unique index notes_user_slug_live
+  on notes (user_id, slug) where deleted_at is null;
+-- delete:  update notes set deleted_at = now() where id = 42;
+-- restore: update notes set deleted_at = null where id = 42;</code></pre>
+
+<p>On Firestore, the same idea is a <code>deletedAt</code> field. Filter on it in every query, and in your security rules if you want to block reads of trashed documents. Note what Firebase says in its <a href="https://firebase.google.com/docs/firestore/security/rules-query">rules and queries guide</a>: "security rules are not filters". The query itself must be written so the rules can allow it.</p>
+
+<h2>3. Layer two: a change history</h2>
+
+<p>Soft delete covers deletes. It does not tell you that someone changed a price from 40 to 4, or who did it. For that, keep a history table filled by a database trigger. The <a href="https://www.postgresql.org/docs/current/plpgsql-trigger.html">PostgreSQL docs</a> say "PL/pgSQL can be used to define trigger functions on data changes or database events", with <code>OLD</code> as the "old database row for UPDATE/DELETE operations" and <code>NEW</code> as the "new database row for INSERT/UPDATE operations".</p>
+
+<pre><code>create table notes_history (
+  id bigint generated always as identity primary key,
+  changed_at timestamptz not null default now(),
+  changed_by text default current_user,
+  action text not null,
+  old_row jsonb, new_row jsonb
+);
+create function log_notes_change() returns trigger
+language plpgsql as $$
+begin
+  insert into notes_history (action, old_row, new_row)
+  values (tg_op, to_jsonb(old), to_jsonb(new));
+  return coalesce(new, old);
+end $$;
+create trigger notes_audit after insert or update or delete
+on notes for each row execute function log_notes_change();</code></pre>
+
+<p>Store who, when, which action, the old row and the new row as JSON. Note that <code>current_user</code> is the database role, not your app's user. To record the real person you must pass the user id into the trigger. I did not verify a method for this post, so check your platform's docs. To undo a bad edit, find the old row in <code>old_row</code> and write it back.</p>
+
+<p>Supabase also has pgAudit. Its <a href="https://supabase.com/docs/guides/database/extensions/pgaudit">docs</a> say it "can be used to selectively track activities within your database", but "By default, PGAudit records queries, but not the returned rows." So it logs who ran what, not the old values. For undo, a trigger table fits better.</p>
+
+<p>On Firestore, use a Cloud Function. In the <a href="https://firebase.google.com/docs/functions/firestore-events">Firestore triggers docs</a>, <code>onDocumentWritten</code> is "Triggered when <code>onDocumentCreated</code>, <code>onDocumentUpdated</code> or <code>onDocumentDeleted</code> is triggered", and you get "<code>event.data.before</code>" and "<code>event.data.after</code>" snapshots. Save both into a history collection.</p>
+
+<h2>4. Privacy: trash and history keep personal data</h2>
+
+<p>A soft-deleted row is not deleted. A history table holds old copies of every row. When a user deletes their account or asks you to erase their data, both must be cleared too. The GDPR text on <a href="https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32016R0679">EUR-Lex</a>, Article 17(1), says "The data subject shall have the right to obtain from the controller the erasure of personal data concerning him or her", for example when "the personal data are no longer necessary in relation to the purposes for which they were collected or otherwise processed". Purge trash after a fixed number of days, give history a retention limit, and delete both for a user who leaves. See <a href="/blog/let-users-delete-account-what-to-remove">what to remove when a user deletes their account</a> and the <a href="/blog/gdpr-checklist-small-app">GDPR checklist for a small app</a>.</p>
+
+<h2>5. What to do today if data is already gone</h2>
+
+<ol>
+<li>Stop writes to the affected table if you can. New changes can overwrite what you want to recover, and time is running against the retention window.</li>
+<li>Check your host's restore options and their time window now. Supabase daily backups, Neon's history window and Firestore's 7 day PITR window all expire.</li>
+<li>If your host offers a branch, clone or copy from a past time, restore into that, not into the live database.</li>
+<li>Find the missing rows in the copy and copy back only those rows.</li>
+<li>If there is no such option, contact the host's support before you do a full restore.</li>
+</ol>
+
+<h2>Prompts for Lovable, Bolt and Cursor</h2>
+
+<ul>
+<li><em>"On the table projects, replace DELETE with soft delete: add a deleted_at timestamptz column, set it instead of deleting, and add a Trash page with a Restore button. Update every query, view and Row Level Security policy so rows with deleted_at set are hidden everywhere else. Show me the list of places you changed."</em></li>
+<li><em>"Add a projects_history table and a Postgres trigger that stores the action, the time, the old row and the new row as jsonb on every insert, update and delete. Do not let the app's normal users read or edit this table."</em></li>
+<li><em>"Add a scheduled job that permanently deletes rows with deleted_at older than 30 days, and history rows older than 180 days. Run it daily and log how many rows it removed."</em></li>
+</ul>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Deletes set <code>deleted_at</code> instead of removing rows.</li>
+<li>Every list, count, search and policy hides deleted rows.</li>
+<li>A Trash page with Restore exists, and you tried it.</li>
+<li>Unique values use a partial index, so a user can sign up again.</li>
+<li>A history table and trigger record who, when, old and new values.</li>
+<li>Trash and history are purged on a schedule and when a user leaves.</li>
+<li>You know your host's restore options and their time window.</li>
+</ol>
+
+<p>Before you change a live table, read <a href="/blog/change-app-database-without-losing-data">how to change your database without losing data</a>. Also check who can touch data at all: <a href="/blog/admin-page-roles-idor-ai-built-app">admin pages, roles and IDOR</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including adding a trash, a change history and a safe restore plan. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
