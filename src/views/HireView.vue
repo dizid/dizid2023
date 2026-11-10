@@ -91,22 +91,23 @@ const services = [
 
 const caseStudies = [
   {
-    title: 'LaunchPilot.marketing',
-    subtitle: 'AI Marketing Automation Platform',
-    description: 'Built a full SaaS platform with 32 automated marketing tasks, AI-powered copy generation, 4-phase journey structure, and tiered pricing. Solo build from concept to production.',
-    tech: ['Vue 3', 'Supabase', 'Claude API', 'Netlify Functions', 'Stripe'],
-    timeline: '4 weeks',
-    url: 'https://launchpilot.marketing',
-    metric: '32 automated tasks'
+    title: 'Foreground.info',
+    subtitle: 'AI Visibility Scanner',
+    description: 'Shows business owners whether ChatGPT, Gemini, Claude and Grok recommend them, which competitors get named instead, and writes a fact-checked action plan. Scanning engine across four AI APIs, accounts and Stripe subscriptions. Solo build from concept to production.',
+    tech: ['Vue 3', 'TypeScript', 'Node.js', 'Neon PostgreSQL', '4 AI APIs', 'Stripe'],
+    // Ongoing product, not a fixed past build (same badge as the homepage card)
+    timeline: 'WIP',
+    url: 'https://foreground.info',
+    metric: 'Checks 4 AI engines in one scan'
   },
   {
-    title: 'Unplugged.cv',
-    subtitle: 'AI-First CV Builder',
-    description: 'AI-powered CV builder that parses job descriptions, generates tailored resumes, creates cover letters, and exports to PDF. Full auth + payments.',
-    tech: ['Next.js 16', 'React 19', 'Neon PostgreSQL', 'Claude API', 'Stripe'],
-    timeline: '3 weeks',
-    url: 'https://unplugged.cv',
-    metric: 'AI-generated CVs'
+    title: 'HappyRoam.travel',
+    subtitle: 'Thailand Travel App with Paid AI Tools',
+    description: 'One app for travellers to Thailand: a 60-second visa wizard, AI trip plans and packing lists, onward tickets with a PDF, 400+ places and 46 guides. Paid AI subscription with a free trial, plus paid onward tickets. Solo build from concept to production.',
+    tech: ['Vue 3', 'TypeScript', 'Neon PostgreSQL', 'Claude API', 'Stripe', 'Netlify Functions'],
+    timeline: '5 weeks',
+    url: 'https://happyroam.travel',
+    metric: '60-second visa wizard'
   },
   {
     title: 'Site Improver',

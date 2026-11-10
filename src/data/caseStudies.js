@@ -6,22 +6,23 @@
 // is optional — ProofSection only renders the "Built with" line when present.
 export const caseStudies = [
   {
-    title: 'LaunchPilot.marketing',
-    subtitle: 'For founders who don\'t know where to start with marketing',
-    description: 'A platform that walks founders through 32 marketing tasks in 4 phases, with AI writing the first drafts. Includes tiered pricing and payments. Built solo, from concept to production.',
-    tech: ['Vue 3', 'Supabase', 'Claude API', 'Netlify Functions', 'Stripe'],
-    timeline: '4 weeks',
-    url: 'https://launchpilot.marketing',
-    metric: '32 guided marketing tasks'
+    title: 'HappyRoam.travel',
+    subtitle: 'For travellers heading to Thailand',
+    description: 'Visa rules, onward-ticket checks, trip plans and safety info in one app: a 60-second visa wizard, AI trip plans and packing lists, onward tickets with a PDF, 400+ places and 46 guides. Free to start, with a paid AI subscription and paid onward tickets. Built solo.',
+    tech: ['Vue 3', 'TypeScript', 'Neon PostgreSQL', 'Claude API', 'Stripe', 'Netlify Functions'],
+    timeline: '5 weeks',
+    url: 'https://happyroam.travel',
+    metric: 'Visa check in 60 seconds'
   },
   {
-    title: 'Unplugged.cv',
-    subtitle: 'For job seekers who want a CV tailored to every application',
-    description: 'Paste a job ad and get a CV and cover letter tailored to it, exported as PDF. Includes user accounts and payments.',
-    tech: ['Next.js 16', 'React 19', 'Neon PostgreSQL', 'Claude API', 'Stripe'],
-    timeline: '3 weeks',
-    url: 'https://unplugged.cv',
-    metric: 'A tailored CV per job ad'
+    // No build duration: the first commit already held the whole MVP, so
+    // the real build time can't be stated from the repo.
+    title: 'TestSwap.dev',
+    subtitle: 'For indie developers who need honest feedback',
+    description: 'Test someone else\'s app to earn a credit, then spend it on a review of yours. Sign-in with X, a credit system where every step is one database transaction, and dashboards for makers and testers. Live with real makers and apps.',
+    tech: ['Vue 3', 'TypeScript', 'Firebase Auth', 'Neon PostgreSQL', 'Netlify Functions'],
+    url: 'https://testswap.dev',
+    metric: 'Give a test, get a test'
   },
   {
     title: 'Foreground.info',

@@ -50,8 +50,8 @@ const reasons = [
 
           <p class="why-text">
             I built and run my own products too, including
-            <a href="https://launchpilot.marketing" target="_blank" rel="noopener">LaunchPilot.marketing</a>
-            and <a href="https://unplugged.cv" target="_blank" rel="noopener">Unplugged.cv</a>,
+            <a href="https://foreground.info" target="_blank" rel="noopener">Foreground.info</a>
+            and <a href="https://happyroam.travel" target="_blank" rel="noopener">HappyRoam.travel</a>,
             so I know first-hand what it takes to get from idea to a live product.
           </p>
         </div>
