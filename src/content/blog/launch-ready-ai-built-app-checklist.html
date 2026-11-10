@@ -97,7 +97,7 @@
 <ol>
 <li>On your phone, sign up with a new account, confirm it and reset the password.</li>
 <li>Buy with a real card, then refund it in Stripe. Check that the account upgraded and the webhook says "Delivered".</li>
-<li>Log in as a second user and try to open the first user's data (the <a href="/blog/ai-built-app-database-security-checks">database post</a> shows how).</li>
+<li>Log in as a second user and try to open the first user's data (the <a href="/blog/ai-built-app-database-security-checks">database post</a> shows how), and the admin pages (see <a href="/blog/admin-page-roles-idor-ai-built-app">anyone can open your admin page</a>). Search the live site's JavaScript for secret keys (see <a href="/blog/api-key-exposed-ai-built-app-check">is your API key exposed?</a>).</li>
 <li>Use the AI feature a few times and check the provider's usage page.</li>
 <li>Restore a backup into a copy.</li>
 <li>Check that the live deploy matches your latest commit.</li>

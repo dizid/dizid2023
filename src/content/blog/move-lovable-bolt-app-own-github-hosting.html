@@ -43,7 +43,7 @@
 <li><strong>Secret.</strong> Stripe secret keys, webhook signing secrets, email API keys, a Supabase service role key. Server code and the host's environment settings only.</li>
 </ul>
 
-<p>Search the repository for keys pasted into code. If a real secret was ever committed, create a new key and retire the old one. Git keeps history, so deleting the line is not enough.</p>
+<p>Search the repository for keys pasted into code. If a real secret was ever committed, create a new key and retire the old one. Git keeps history, so deleting the line is not enough. To check the live site and the history step by step, see <a href="/blog/api-key-exposed-ai-built-app-check">is your API key exposed?</a></p>
 
 <p>On the new host, add the variables in the project settings. Vercel's <a href="https://vercel.com/docs/environment-variables">environment variables page</a> says a change applies only to new deployments, so redeploy after you edit. It also lets you paste in a whole <code>.env</code> file, which helps when you move a project.</p>
 
@@ -70,6 +70,8 @@
 <h2>6. Custom domain and DNS</h2>
 
 <p>Test on the host's own address first. Switch the domain last. Netlify's <a href="https://docs.netlify.com/manage/domains/configure-domains/configure-external-dns/">external DNS guide</a> says a subdomain needs a CNAME record, and an apex domain needs an ALIAS, ANAME or flattened CNAME record, or an A record as a fallback. It also warns that it may take a full day for DNS changes to spread. Use the exact values your host shows.</p>
+
+<p>Also check what Google gets on the new host. Lovable's SEO docs describe how it renders pages for crawlers on apps it hosts, and say nothing about an app you host yourself. After the move, check that your public pages still arrive as real HTML: see <a href="/blog/spa-seo-lovable-bolt-google-cant-see">Google can't see your Lovable or Bolt app</a>.</p>
 
 <p>Before you switch, write down your current DNS records, especially email ones, and change only the website records.</p>
 
