@@ -12,6 +12,7 @@ import './assets/styles/main.css'
 import App from './App.vue'
 import { routes, scrollBehavior } from './router'
 import { trackVisits } from './services/visits.js'
+import { reloadOnStaleChunks } from './services/staleChunkReload.js'
 
 // Hydrate (reuse the prerendered HTML) instead of vite-ssg's default of throwing it away
 // and rendering every page a second time in the browser. Only when this HTML was
@@ -28,8 +29,12 @@ export const createApp = ViteSSG(
   App,
   { routes, scrollBehavior },
   ({ router, isClient }) => {
-    // Cookie-less page-view counting, in the browser only (not during prerender).
-    if (isClient) trackVisits(router)
+    if (isClient) {
+      // Cookie-less page-view counting, in the browser only (not during prerender).
+      trackVisits(router)
+      // Pages still open from before a deploy: reload instead of a dead link.
+      reloadOnStaleChunks(router)
+    }
   },
   { hydration: shouldHydrate() },
 )
