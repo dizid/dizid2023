@@ -228,7 +228,7 @@ const stats = [
         </div>
         <div class="tech-categories">
           <div class="tech-category">
-            <h4 class="tech-cat-title">Frontend</h4>
+            <h3 class="tech-cat-title">Frontend</h3>
             <div class="tech-tags">
               <span class="tag">Vue 3</span>
               <span class="tag">React / Next.js</span>
@@ -238,7 +238,7 @@ const stats = [
             </div>
           </div>
           <div class="tech-category">
-            <h4 class="tech-cat-title">Backend</h4>
+            <h3 class="tech-cat-title">Backend</h3>
             <div class="tech-tags">
               <span class="tag">Node.js</span>
               <span class="tag">Netlify Functions</span>
@@ -248,7 +248,7 @@ const stats = [
             </div>
           </div>
           <div class="tech-category">
-            <h4 class="tech-cat-title">AI & Automation</h4>
+            <h3 class="tech-cat-title">AI & Automation</h3>
             <div class="tech-tags">
               <span class="tag tag-accent">Claude API</span>
               <span class="tag tag-accent">AI Agents</span>
@@ -325,22 +325,22 @@ const stats = [
         <div class="why-grid">
           <div class="why-card">
             <div class="why-icon"><i class="fa-solid fa-bolt"></i></div>
-            <h4>Ship Fast</h4>
+            <h3>Ship Fast</h3>
             <p>I've built 20+ products solo. No committee decisions, no bloat. Idea to deployed product in 2-4 weeks.</p>
           </div>
           <div class="why-card">
             <div class="why-icon"><i class="fa-solid fa-brain"></i></div>
-            <h4>AI-Native</h4>
+            <h3>AI-Native</h3>
             <p>I don't just add a chatbot. I architect AI into your product's core — content generation, analysis, automation, agents.</p>
           </div>
           <div class="why-card">
             <div class="why-icon"><i class="fa-solid fa-handshake"></i></div>
-            <h4>Senior Experience</h4>
+            <h3>Senior Experience</h3>
             <p>25+ years from Microsoft enterprise to modern SaaS. I've managed teams, shipped software, and run businesses.</p>
           </div>
           <div class="why-card">
             <div class="why-icon"><i class="fa-solid fa-globe-europe"></i></div>
-            <h4>EU Friendly</h4>
+            <h3>EU Friendly</h3>
             <p>Dutch native, fluent English, EU timezone. Direct communication, no agency overhead, invoicing in EUR.</p>
           </div>
         </div>
@@ -364,28 +364,28 @@ const stats = [
               <div class="process-step">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                  <h4>You Describe</h4>
+                  <h3>You Describe</h3>
                   <p>Tell me what you need built and your timeline</p>
                 </div>
               </div>
               <div class="process-step">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                  <h4>I Scope & Quote</h4>
+                  <h3>I Scope & Quote</h3>
                   <p>Fixed price proposal within 24 hours</p>
                 </div>
               </div>
               <div class="process-step">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                  <h4>We Build</h4>
+                  <h3>We Build</h3>
                   <p>Sprint-based delivery with weekly demos</p>
                 </div>
               </div>
               <div class="process-step">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                  <h4>You Ship</h4>
+                  <h3>You Ship</h3>
                   <p>Deployed, documented, and handed off</p>
                 </div>
               </div>
@@ -910,7 +910,9 @@ const stats = [
   margin: 0 auto var(--space-4);
 }
 
-.why-card h4 {
+.why-card h3 {
+  /* Same size as before (it was an h4; global h4 = text-xl) */
+  font-size: var(--text-xl);
   margin-bottom: var(--space-2);
 }
 
@@ -970,7 +972,7 @@ const stats = [
   flex-shrink: 0;
 }
 
-.step-content h4 {
+.step-content h3 {
   font-size: var(--text-base);
   margin-bottom: var(--space-1);
 }
