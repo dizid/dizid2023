@@ -90,11 +90,13 @@ export default async () => {
       offset = data.offset
     } while (offset)
 
-    // Cache at Netlify's CDN for an hour (and serve the old copy while refreshing),
-    // so page views don't each hit Airtable; browsers revalidate every 5 minutes.
+    // Airtable's image links are signed and expire a few hours after this fetch
+    // (2 h at the earliest), so no cached copy may live that long: the CDN keeps it
+    // 30 min plus at most 30 min stale while it refreshes, browsers 5 min. A longer
+    // stale window served quiet-hour visitors a list whose images no longer load.
     return json({ projects }, 200, {
       'Cache-Control': 'public, max-age=300',
-      'Netlify-CDN-Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      'Netlify-CDN-Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=1800',
     })
   } catch (err) {
     console.error(`Airtable request failed: ${(err as Error).message}`)

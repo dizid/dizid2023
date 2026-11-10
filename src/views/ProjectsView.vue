@@ -36,7 +36,7 @@ const fallbackProjects = [
     description: 'A digital playground for experimenting with web technologies and AI integrations.',
     icon: 'fa-solid fa-gamepad',
     tech: ['Vue 3', 'OpenAI', 'Netlify Functions'],
-    github: 'https://github.com/dizid/playground',
+    // No GitHub links here or on Marketing Todo: both repos are private (404 for visitors)
     url: 'https://playground.dizid.com'
   },
   {
@@ -44,8 +44,7 @@ const fallbackProjects = [
     title: 'Marketing Todo',
     description: 'A focused marketing tool designed for startups to plan and track their marketing initiatives.',
     icon: 'fa-solid fa-bullseye',
-    tech: ['JavaScript', 'Vue'],
-    github: 'https://github.com/dizid/marketing-todo'
+    tech: ['JavaScript', 'Vue']
   },
   {
     id: '3',
