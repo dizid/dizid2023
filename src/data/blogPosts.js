@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'password-reset-magic-link-expired-invalid',
+    title: "Reset or magic link says expired? Causes and fixes",
+    description: "Reset or magic link says expired or invalid in your AI-built app? Email scanners, redirect URLs, PKCE and limits, with fixes. Checked in November 2026.",
+    datePublished: '2026-11-14',
+    dateModified: '2026-11-14'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",
