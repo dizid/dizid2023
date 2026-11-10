@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'security-headers-ai-built-app-csp-hsts',
+    title: "Security headers for your AI-built app: what to add first",
+    description: "Scan says missing security headers? What CSP, HSTS and the rest do, and how to add them on Netlify or Vercel without breaking Stripe. Checked in Nov 2026.",
+    datePublished: '2026-11-13',
+    dateModified: '2026-11-13'
+  },
+  {
     slug: 'undo-deleted-data-soft-delete-audit-log',
     title: "Someone deleted data in your app by mistake: undo it",
     description: "How to undo a deleted record in your AI-built app: soft delete, a change history, and what host restores can't do. Checked in November 2026.",

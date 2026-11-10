@@ -1,0 +1,138 @@
+<p>A security scan, a client's IT check or a pen-test report came back with "missing security headers": Content-Security-Policy, Strict-Transport-Security and a few more. Your app works fine, so is this real? Yes, but it is a small, fixable job, and one header needs care. Facts below come from MDN, hstspreload.org and the Netlify, Vercel, Cloudflare and Stripe docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> add four low-risk headers first: Strict-Transport-Security (without preload), X-Content-Type-Options, Referrer-Policy and Permissions-Policy. Block framing with X-Frame-Options or CSP <code>frame-ancestors</code>. Then roll out Content-Security-Policy slowly, in report-only mode first, because it is the one that can break your app.</p>
+
+<h2>What each header does</h2>
+
+<p>A header is a line your host sends with every page. The browser reads it and applies rules. Here is each one, in plain English, with a safe starting value.</p>
+
+<ul>
+<li><strong>Strict-Transport-Security (HSTS).</strong> MDN says it "informs browsers that the host should only be accessed using HTTPS". So later visits over plain HTTP get upgraded. Start with <code>max-age=300</code> and raise it later.</li>
+<li><strong>X-Content-Type-Options.</strong> With <code>nosniff</code>, MDN says "the browser uses the supplied Content-Type as-is instead of examining the content to infer the type". It stops a file from being run as something it is not. Value: <code>nosniff</code>.</li>
+<li><strong>X-Frame-Options.</strong> MDN says sites use it "to avoid clickjacking attacks", where another site hides your page in a frame and tricks people into clicking. Value: <code>DENY</code>, unless you need your page framed.</li>
+<li><strong>Referrer-Policy.</strong> MDN says it "controls how much referrer information" goes out with requests. It limits how much of your URLs other sites see. MDN says <code>strict-origin-when-cross-origin</code> "is the default policy if no policy is specified", so setting it just makes it explicit.</li>
+<li><strong>Permissions-Policy.</strong> MDN says it lets you "allow and deny the use of browser features in a document". It stops a page or a framed widget from asking for your visitor's camera or location. Value: <code>camera=(), microphone=(), geolocation=()</code>, if your app uses none of them.</li>
+<li><strong>Content-Security-Policy (CSP).</strong> MDN says it tells the browser to "place restrictions on the things that the code comprising the site is allowed to do". It is your best defence if someone manages to inject a script into your page. It needs its own section below.</li>
+</ul>
+
+<p>Clickjacking has two fixes. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Frame-Options">X-Frame-Options page</a> says: "For more comprehensive options than offered by this header, see the frame-ancestors directive in a Content-Security-Policy header." MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CSP">CSP guide</a> says of <code>frame-ancestors</code>: "This directive is a more flexible replacement for the X-Frame-Options header." Sending both is fine.</p>
+
+<p>The pages for the others: <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security">Strict-Transport-Security</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Content-Type-Options">X-Content-Type-Options</a>, <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Referrer-Policy">Referrer-Policy</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Permissions-Policy">Permissions-Policy</a>.</p>
+
+<h2>HSTS: go slowly with preload</h2>
+
+<p>HSTS has three parts. <code>max-age</code> is, per MDN, "the time, in seconds, that the browser should remember that a host is only to be accessed using HTTPS". <code>includeSubDomains</code> applies the rule to all subdomains too. <code>preload</code> asks to be put on a list built into browsers.</p>
+
+<p>Be careful with the last two. If one subdomain cannot do HTTPS, <code>includeSubDomains</code> will break it. For preload, <a href="https://hstspreload.org/">hstspreload.org</a> is blunt: "Be aware that inclusion in the preload list cannot easily be undone." It also says removal "tends to be slow and painful" and tells you to "do not include the preload directive by default".</p>
+
+<p>My advice: start with a short <code>max-age</code>, confirm the site works on HTTPS everywhere, then raise it. Skip <code>preload</code> unless you have a real reason.</p>
+
+<h2>CSP without breaking the app</h2>
+
+<p>CSP is the one to roll out in steps.</p>
+
+<ol>
+<li><strong>Start in report-only mode.</strong> MDN: "To ease deployment, CSP can be deployed in report-only mode." Use the <code>Content-Security-Policy-Report-Only</code> header. The browser logs what it would have blocked and blocks nothing.</li>
+<li><strong>Read the browser console.</strong> Open your app, log in, pay with a test card, upload a file. Each warning names the blocked address.</li>
+<li><strong>Allow what your app really needs, then switch the header name to <code>Content-Security-Policy</code>.</strong></li>
+</ol>
+
+<p>Here is what usually breaks:</p>
+
+<ul>
+<li><strong>Inline scripts.</strong> MDN says that with <code>default-src</code> or <code>script-src</code>, inline JavaScript will not run unless you take extra steps. It warns: "Developers should avoid 'unsafe-inline'". Move scripts into files, or use a nonce or hash. On a nonce, MDN says "the nonce must be different for every HTTP response". That is hard on a static site, so files are easier.</li>
+<li><strong>Stripe.</strong> Stripe's <a href="https://docs.stripe.com/security/guide">integration security guide</a> lists "the full set of directives for Stripe products". For Stripe.js it lists <code>connect-src</code> <code>https://api.stripe.com</code>, <code>script-src</code> <code>https://js.stripe.com</code> and <code>https://*.js.stripe.com</code>, and <code>frame-src</code> <code>https://js.stripe.com</code>, <code>https://*.js.stripe.com</code> and <code>https://hooks.stripe.com</code>. It also says that for payment methods with redirects, such as 3D Secure, you should "include https://hooks.stripe.com as a frame-src directive". Checkout and Link have their own lists on that page.</li>
+<li><strong>Your database or login API.</strong> Calls from the browser to Supabase, Firebase or your own API are controlled by <code>connect-src</code>. Add your API host there. Check your provider's docs for any extra hosts, such as websocket addresses.</li>
+<li><strong>Analytics, fonts and images from other hosts.</strong> Each one needs its host in the right directive (<code>script-src</code>, <code>font-src</code>, <code>img-src</code>). The console warning tells you which.</li>
+</ul>
+
+<p>A <code>&lt;meta&gt;</code> tag is not the same as a header. MDN says a meta CSP is useful for some cases "such as a client-side-rendered single page app", but "this option does not support all CSP features". It also says a report-only policy "cannot be delivered in a &lt;meta&gt; element". So use real headers for the rollout.</p>
+
+<p>A starting policy to put in report-only mode, for an app that uses Stripe.js and one API host. Change the API host:</p>
+
+<pre>
+default-src 'self';
+script-src 'self'
+  https://js.stripe.com
+  https://*.js.stripe.com;
+connect-src 'self'
+  https://api.stripe.com
+  https://api.example.com;
+frame-src https://js.stripe.com
+  https://*.js.stripe.com
+  https://hooks.stripe.com;
+img-src 'self' data:;
+frame-ancestors 'none'
+</pre>
+
+<p>This is my example, not an official template. Your app will need changes.</p>
+
+<h2>How to add them on your host</h2>
+
+<p><strong>Netlify.</strong> The <a href="https://docs.netlify.com/manage/routing/headers/">Netlify headers docs</a> give two ways: "Save a plain text file called _headers to the publish directory" of your site, or "Add one or more headers tables to your Netlify configuration file". A <code>_headers</code> file looks like this:</p>
+
+<pre>
+/*
+  X-Content-Type-Options: nosniff
+  Permissions-Policy: camera=()
+  X-Frame-Options: DENY
+</pre>
+
+<p>In a Vite or similar project, put the file in <code>public/</code> so it is copied to the publish folder. Check that after a build. The same docs show the <code>netlify.toml</code> form as <code>[[headers]]</code>, with <code>for</code> and a <code>[headers.values]</code> table.</p>
+
+<p><strong>Vercel.</strong> Vercel's <a href="https://vercel.com/docs/project-configuration/vercel-json">vercel.json docs</a> have a <code>headers</code> list. Each entry has a <code>source</code> path and a <code>headers</code> list of <code>key</code> and <code>value</code> pairs:</p>
+
+<pre>
+{
+  "headers": [{
+    "source": "/(.*)",
+    "headers": [{
+      "key": "X-Frame-Options",
+      "value": "DENY"
+    }]
+  }]
+}
+</pre>
+
+<p><strong>Cloudflare Pages.</strong> <a href="https://developers.cloudflare.com/pages/configuration/headers/">Cloudflare's docs</a> say to create "a plain text file called _headers without a file extension, in the static asset directory of your project".</p>
+
+<p><strong>Lovable, Bolt and other builders.</strong> I found no official page that says how to set custom response headers there, so I won't guess. Check whether your host lets you set response headers. If it does not, put the site behind a host that does. See <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving a Lovable or Bolt app to your own GitHub and hosting</a>.</p>
+
+<h2>Check your result</h2>
+
+<ul>
+<li><strong>MDN HTTP Observatory.</strong> Per MDN, it "performs an in-depth assessment of a site's HTTP headers and other key security configurations". Open <a href="https://developer.mozilla.org/en-US/observatory">the Observatory</a>, enter your address and fix what it flags.</li>
+<li><strong>curl.</strong> Run <code>curl -I https://your-app.example</code> and look for your headers in the reply.</li>
+<li><strong>Browser Network tab.</strong> Click the page request and read the response headers. The Console shows CSP warnings.</li>
+<li><strong>Re-test after every change:</strong> log in, pay with a test card, upload a file.</li>
+</ul>
+
+<h2>What headers do not fix</h2>
+
+<p>Headers add a safety net in the browser. They do not replace server-side checks. A perfect score will not stop a stranger reading your database if the rules are open. Check <a href="/blog/ai-built-app-database-security-checks">the five database checks</a>, <a href="/blog/api-key-exposed-ai-built-app-check">whether an API key is exposed</a> and <a href="/blog/admin-page-roles-idor-ai-built-app">admin pages and roles</a>. A "blocked by CORS policy" error is a different thing from these headers. It is covered in <a href="/blog/cors-error-ai-built-app-fix">the CORS fix</a>.</p>
+
+<h2>Prompts for Lovable, Bolt and Cursor</h2>
+
+<ul>
+<li><em>"My app is hosted on Netlify. Add Strict-Transport-Security with a max-age of 300 seconds and no preload, X-Content-Type-Options nosniff, Referrer-Policy strict-origin-when-cross-origin, X-Frame-Options DENY and a Permissions-Policy that turns off camera, microphone and geolocation. Put them in the right file for my host and tell me where it is."</em></li>
+<li><em>"Build a Content-Security-Policy-Report-Only header from the hosts my app actually loads: list every script, style, font, image and API address in the code. Do not enforce it yet, and do not use 'unsafe-inline'."</em></li>
+<li><em>"Move every inline script and inline event handler into its own file, so a CSP does not need 'unsafe-inline'. Don't change how the app looks or works."</em></li>
+</ul>
+
+<p>Ask for one change at a time, and test login and payments after each.</p>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Scan your site with the MDN HTTP Observatory and note what is missing.</li>
+<li>Add X-Content-Type-Options, Referrer-Policy, Permissions-Policy and a framing rule.</li>
+<li>Add HSTS with a short max-age. No preload.</li>
+<li>Add CSP as Report-Only. Use the app fully and read the console.</li>
+<li>Add the missing hosts, such as Stripe and your API, then enforce.</li>
+<li>Re-run the scan and <code>curl -I</code>. Test login, payments and uploads.</li>
+<li>Do the other security checks too. Headers are only one layer.</li>
+</ol>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including setting security headers without breaking payments or login. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
