@@ -2,6 +2,8 @@
 
 <p><strong>Short answer:</strong> switch keys, prices and webhook secrets to live mode together; let your server learn about payments from verified webhooks, not from the browser; make repeated requests and events harmless; decide what the app does when a renewal fails; add the Customer Portal; set up tax before the first EU sale; know the dispute process; and run a 15-minute test with test cards.</p>
 
+<p>If your app takes payments for other people, like sellers or teachers on a marketplace, a normal Stripe account is not enough: read <a href="/blog/marketplace-payments-stripe-connect-basics">Stripe Connect basics</a> as well.</p>
+
 <h2>1. Test keys, live keys and live products</h2>
 
 <p>Stripe keeps test mode (now called a sandbox) and live mode completely separate. On the <a href="https://docs.stripe.com/keys">API keys page</a>, Stripe says each mode has its own keys and that objects in one mode aren't accessible to the other. A sandbox product can't be part of a live payment.</p>
