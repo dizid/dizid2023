@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'pdf-invoices-reports-ai-built-app',
+    title: "Create PDF invoices and reports in your AI-built app",
+    description: "Three ways to make PDFs in your AI-built app, the hosting limits that break them, and how to store and send invoices safely. Checked in November 2026.",
+    datePublished: '2026-11-14',
+    dateModified: '2026-11-14'
+  },
+  {
     slug: 'csv-import-ai-built-app-excel-semicolons',
     title: "Let users import a spreadsheet (CSV) without the mess",
     description: "How to add CSV import to your AI-built app: semicolons, encoding, dates, server checks, row errors and safe re-imports. Checked in November 2026.",

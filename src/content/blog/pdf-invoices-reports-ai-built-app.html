@@ -1,0 +1,114 @@
+<p>Your app needs to make a PDF. An invoice, a quote, a certificate, a monthly report. The AI tool builds a button in minutes. Then it goes wrong. It works on your laptop and times out live. The PDF is blank, or the fonts are wrong. Chrome will not start in the function. A table is cut in half at the page break. Worst of all, a user gets someone else's invoice. Vendor facts below come from the official docs, checked in November 2026. Hosting limits change often, so check the linked pages again before you rely on a number. This is not legal or tax advice.</p>
+
+<p><strong>Short answer:</strong> Pick the simplest way that fits. If the user only wants to print or save what they see, let the browser do it. For anything official, like an invoice, generate the PDF on the server, once, and keep the file. Check your host's time and size limits first. Store the file privately and give the user a short-lived link, after checking that the file is theirs. If it takes long, make it in the background and email the link.</p>
+
+<h2>Option 1: let the browser print it</h2>
+
+<p>The simplest way is a "Download this page" button that calls <code>window.print()</code>. MDN says <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/print">print()</a> "Opens the print dialog to print the current document." The user then picks "Save as PDF". You control the look with print CSS.</p>
+
+<ul>
+<li><code>@media print</code> holds the styles that only apply on paper. Hide menus and buttons there.</li>
+<li><code>@page</code> sets the paper. MDN says <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/@page">the at-rule</a> "targets and modifies the page's dimensions, orientation, and margins." Use it for A4 and margins.</li>
+<li><code>break-inside: avoid</code> stops a table row from splitting. MDN says <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/break-inside">the value</a> "Avoids any break (page, column, or region) from being inserted within the principal box."</li>
+</ul>
+
+<pre><code>@page { size: A4; margin: 15mm; }
+@media print {
+  nav, button { display: none; }
+  tr { break-inside: avoid; }
+}</code></pre>
+
+<p>This is fine for "print this report". It is not fine for invoices you must keep or email. The user's browser makes the file, so you do not have a copy, and it can look different on every device.</p>
+
+<h2>Option 2: headless Chrome on a server</h2>
+
+<p>Here your server opens your own page in a browser nobody sees, and saves it as a PDF. Puppeteer's <a href="https://pptr.dev/api/puppeteer.page.pdf">page.pdf()</a> "Generates a PDF of the page with the print CSS media type." Playwright's <a href="https://playwright.dev/docs/api/class-page#page-pdf">page.pdf()</a> "generates a pdf of the page with print css media." So your print CSS from option 1 applies here too. Both docs also warn: "By default, page.pdf() generates a pdf with modified colors for printing." If a coloured header comes out white, that is why. Their docs name a fix: the <code>-webkit-print-color-adjust</code> property.</p>
+
+<p>This gives the best match with your web design. It is also where most live failures happen.</p>
+
+<h3>Limits that bite</h3>
+
+<p>A real browser is heavy. It is a large download next to a normal function, and it needs time to start. Check your host's limits, and see whether it offers a way to run a browser at all. Today these pages say:</p>
+
+<ul>
+<li>Netlify: in its <a href="https://docs.netlify.com/build/functions/configuration/">functions settings</a>, "Synchronous execution limit" is "60 seconds" and "Background execution limit" is "15 minutes". The same page names "image or PDF manipulation" as work that can hit memory errors or timeouts. Its <a href="https://docs.netlify.com/build/functions/background-functions/">background functions page</a> says they "run for up to 15 minutes".</li>
+<li>Vercel: the <a href="https://vercel.com/docs/functions/limitations">limits page</a> lists "Size (uncompressed)" as "250 MB" and, on the Hobby plan, "300s default and maximum" duration. Other plans differ, so read the page for yours.</li>
+<li>Supabase: the <a href="https://supabase.com/docs/guides/functions/limits">Edge Functions limits</a> list the wall clock limit as "Free plan: 150s" and "Paid plans: 400s", and a maximum function size of "20MB" when bundled locally with the CLI.</li>
+</ul>
+
+<p>Put plainly: a full Chrome may not fit or may be too slow on your plan. Then you slim it down, move the job to a host that allows a browser, or use a PDF service. Ask your AI tool which of these your host supports, and test it live, not only on your laptop.</p>
+
+<h3>Fonts and blank pages</h3>
+
+<p>A blank or wrong-font PDF usually means the page was saved before it finished loading. Wait for the fonts. MDN says <a href="https://developer.mozilla.org/en-US/docs/Web/API/FontFaceSet/ready">document.fonts.ready</a> resolves "once the document has completed loading fonts, layout operations are completed, and no further font loads are needed." Await it before you call <code>pdf()</code>. Also load fonts from your own site, not from a link that may be blocked on the server.</p>
+
+<pre><code>await page.setContent(html);
+await page.evaluate(
+  () =&gt; document.fonts.ready
+);
+const pdf = await page.pdf({
+  format: 'A4'
+});</code></pre>
+
+<h2>Option 3: a PDF library</h2>
+
+<p>A library builds the PDF directly. It does not use a browser, so it is small and fast.</p>
+
+<ul>
+<li><a href="https://pdf-lib.js.org/">pdf-lib</a> says: "Create PDF documents from scratch, or modify existing PDF documents." It can draw text, images and graphics, and "Embed your own fonts."</li>
+<li><a href="https://pdfkit.org/">PDFKit</a> says it "makes creating complex, multi-page, printable documents easy."</li>
+</ul>
+
+<p>This fits a simple, fixed layout, like a certificate or a one-page invoice. It takes more work when the content grows. A long table with wrapping text means you place and split every line yourself. If your invoice has a variable number of lines, test it with 1, 30 and 200 lines.</p>
+
+<h2>Invoices need extra care</h2>
+
+<ul>
+<li>Generate the invoice once, when it is issued. Store the file. Never rebuild an old invoice from current data. Prices, names and addresses change, and the old invoice must not.</li>
+<li>Number invoices in order, with no gaps. The EU's <a href="https://taxation-customs.ec.europa.eu/taxation/vat/vat-businesses/invoicing_en">VAT invoicing page</a> lists "Date of issue" and "Unique sequential number identifying the invoice" among the details a full invoice must contain. Your Europe says "Your VAT identification number must be shown on all invoices you give to customers", on its <a href="https://europa.eu/youreurope/business/finance-and-tax/vat/charging-deducting-vat/index_en.htm">VAT page</a>.</li>
+<li>Rules differ by country and by case. Ask an accountant what your invoices need before you launch.</li>
+<li>Let two requests for the same order give one invoice. See <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>.</li>
+</ul>
+
+<p>If you take payments with Stripe, Stripe Invoicing can make the PDFs for you. Stripe's <a href="https://docs.stripe.com/invoicing/send-email">email docs</a> say: "When Stripe emails an invoice, we automatically include a PDF attachment of the same invoice to assist your customer with record keeping." That can save you from building any of the above. For the payment side, see <a href="/blog/stripe-payments-ai-built-app-launch">Stripe payments in your AI-built app</a>.</p>
+
+<h2>Store and send it safely</h2>
+
+<ul>
+<li>Keep the files in a private bucket, not a public one. Basics are in <a href="/blog/file-uploads-ai-built-app-checks">file uploads: what to check</a>.</li>
+<li>Give the user a short-lived link. In Supabase, <a href="https://supabase.com/docs/reference/javascript/storage-from-createsignedurl">createSignedUrl</a> takes <code>expiresIn</code>, "The number of seconds until the signed URL expires."</li>
+<li>Before you make the link, check on the server that this user may see this file. This is the "someone else's invoice" bug. See <a href="/blog/admin-page-roles-idor-ai-built-app">admin pages, roles and IDOR</a>.</li>
+<li>Prefer sending a link over an attachment. Resend's <a href="https://resend.com/docs/dashboard/emails/attachments">attachment docs</a> say: "Emails can be no larger than 40MB (including attachments after Base64 encoding)." Check your own email provider for its limit.</li>
+</ul>
+
+<h2>Long jobs: do them in the background</h2>
+
+<p>A monthly report with thousands of rows will not fit in a web request. Do not make the user stare at a spinner. Save a "report requested" row, make the PDF in a background job, and email a link when it is ready. See <a href="/blog/scheduled-jobs-cron-netlify-vercel-supabase">scheduled jobs on Netlify, Vercel and Supabase</a>. Jobs get retried, so make each one safe to run twice: check whether the file already exists before you make it again.</p>
+
+<h2>Prompts for Lovable, Bolt or Cursor</h2>
+
+<ul>
+<li><em>"Add print CSS so the report page prints cleanly on A4 with 15mm margins. Hide the menu and buttons when printing. Never split a table row across pages."</em></li>
+<li><em>"Generate invoice PDFs on the server when an invoice is issued, not in the browser. Store each PDF in a private bucket. Return a signed link valid for 10 minutes, and only if the logged-in user owns that invoice. Never regenerate an issued invoice."</em></li>
+<li><em>"Move PDF generation to a background job. When the user asks for a report, save a pending record and return at once. When the file is ready, email the user a link. If the job runs twice, it must not create a second file."</em></li>
+</ul>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Chosen the simplest option: browser print, server browser, or library.</li>
+<li>Invoices are made on the server, once, and the file is stored.</li>
+<li>Invoice numbers run in order with no gaps.</li>
+<li>I checked my host's time and size limits and tested the PDF on the live site.</li>
+<li>Fonts are loaded before the PDF is saved. Colours and page breaks look right.</li>
+<li>Tested with 1, 30 and 200 lines.</li>
+<li>Files are in a private bucket. Links expire.</li>
+<li>The server checks that the user owns the file.</li>
+<li>Long reports run in the background and email a link.</li>
+<li>A retry cannot make a second invoice.</li>
+<li>An accountant has checked what my invoices must contain.</li>
+</ol>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including PDF invoices and reports that work on the live site. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
