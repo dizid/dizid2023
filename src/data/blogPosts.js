@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'buttons-stop-working-after-deploy-stale-files',
+    title: "Buttons stop working after you deploy? Old files in open tabs",
+    description: "Why taps do nothing or pages go blank for people who had your app open during a deploy, and the fix: reload once, with a guard. Checked in November 2026.",
+    datePublished: '2026-11-12',
+    dateModified: '2026-11-12'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",

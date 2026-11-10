@@ -191,6 +191,21 @@ useBreadcrumbSchema([
   padding: 0.1em 0.35em;
 }
 
+/* Code blocks: long lines scroll inside the block, so the page never scrolls sideways on phones */
+.post-body :deep(pre) {
+  overflow-x: auto;
+  background: var(--color-bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  margin-bottom: var(--space-4);
+  line-height: 1.5;
+}
+
+.post-body :deep(pre code) {
+  background: none;
+  padding: 0;
+}
+
 @media (max-width: 768px) {
   .post-title {
     font-size: var(--text-3xl);
