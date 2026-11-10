@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'social-sign-in-google-apple-what-breaks',
+    title: "Adding Google, Apple or GitHub sign-in: what breaks in production",
+    description: "Adding Google, Apple or GitHub sign-in? The redirect, consent screen, Apple rule and duplicate-account problems that break it, plus a test checklist.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'app-uptime-monitoring-error-alerts',
     title: "Is your app down? Uptime checks and error alerts for small apps",
     description: "Customers should not be your alarm. How to set up uptime checks, cron heartbeats, error tracking and money-path alerts on free tiers in 30 minutes.",

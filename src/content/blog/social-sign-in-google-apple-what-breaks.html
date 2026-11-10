@@ -1,0 +1,90 @@
+<p>Email sign-in works, so you add "Sign in with Google" and it works on your laptop. Then it fails on the live site, or a user gets locked out, or Apple rejects your iOS app. Most of these problems are settings, not code. Here is what I would check, with each fact taken from the provider's own docs. Provider rules change, so open the linked page before you rely on a detail.</p>
+
+<p><strong>Short answer:</strong> register every exact callback URL for every environment; move the Google consent screen out of "Testing"; if you ship an iOS app with Google or Facebook login, add Sign in with Apple; decide what happens when the same email arrives from two providers; and test inside in-app browsers, not only in Chrome.</p>
+
+<h2>1. Redirect URIs must match exactly</h2>
+
+<p>The most common error is <code>redirect_uri_mismatch</code>. Google's <a href="https://developers.google.com/identity/protocols/oauth2/web-server">OAuth guide</a> says the URI in the request must exactly match one of the authorized redirect URIs for the client, and that scheme, case and trailing slash must all match.</p>
+
+<p>That means each of these needs its own entry:</p>
+
+<ul>
+<li><code>http://localhost:3000/...</code> for development</li>
+<li>each preview deploy URL, or a pattern that covers them</li>
+<li>the production domain</li>
+<li><code>www</code> and non-<code>www</code> as two different addresses</li>
+</ul>
+
+<p>The tool you use for auth has its own list on top of the provider's list. Supabase has a <a href="https://supabase.com/docs/guides/auth/redirect-urls">redirect URL allow list</a>. It supports wildcards, and its guide shows patterns for Netlify and Vercel preview deploys. It recommends exact paths for production rather than broad patterns. Firebase has authorized domains: its <a href="https://firebase.google.com/docs/auth/web/google-signin">Google sign-in guide</a> says that to use a custom domain you add it to the authorized domains list in the Firebase console.</p>
+
+<p>Apps built with Lovable, Bolt or Replit often get a new preview URL for each deploy. A login that worked yesterday can break on a new URL for this reason alone.</p>
+
+<h2>2. Google: leave "Testing" before real users arrive</h2>
+
+<p>Google's <a href="https://support.google.com/cloud/answer/15549945">OAuth consent help page</a> describes two publishing statuses:</p>
+
+<ul>
+<li><strong>Testing.</strong> Only test users you list on the consent screen can sign in, up to 100.</li>
+<li><strong>In production.</strong> Any Google account can authorize the app. You switch with the Publish app button.</li>
+</ul>
+
+<p>The page also says that apps asking only for basic profile scopes (email, profile, OpenID) are an exception: test users do not need to be listed, and authorizations do not expire after 7 days. Ask for any other scope and that exception ends. For other scopes, Google may show an "unverified app" warning until the app is verified, and unverified apps that request unapproved sensitive or restricted scopes are capped at 100 new users over the project's lifetime. So for sign-in only, ask for email and profile and nothing else. Every extra scope (calendar, Drive, Gmail) adds a review.</p>
+
+<p>The same page says the project's name and logo may be subject to verification before they are shown on the consent screen. Check what your users will see before you launch.</p>
+
+<h2>3. Apple: the rule and the private email</h2>
+
+<p>Apple's <a href="https://developer.apple.com/app-store/review/guidelines/">App Review Guideline 4.8</a> says that an app which uses a third-party or social login service (it lists Facebook Login, Google Sign-In, Log in with X and others) to set up or authenticate the user's primary account must also offer another login service as an equivalent option. That service must limit data collection to name and email, let users keep their email private, and not collect app interactions for advertising without consent. Sign in with Apple is built for this. The guideline lists exceptions, such as an app that only uses its own account system, or an education or enterprise app that requires an existing school or company account. Read them if you think you are exempt.</p>
+
+<p>Two practical points when you add Sign in with Apple:</p>
+
+<ul>
+<li><strong>Hide My Email.</strong> The user may give you a private relay address instead of their real one. Apple's <a href="https://developer.apple.com/help/account/capabilities/configure-private-email-relay-service/">relay service page</a> says you must register your outbound email domains, and that registered domains need SPF records to pass through the relay. Mail from a domain you did not register bounces. If your sign-up or reset emails come from an unregistered domain, these users get nothing. See <a href="/blog/app-emails-spam-spf-dkim-dmarc">SPF, DKIM and DMARC for app emails</a>.</li>
+<li><strong>The name arrives once.</strong> Supabase's <a href="https://supabase.com/docs/guides/auth/social-login/auth-apple">Apple guide</a> says Apple only provides the user's full name during the first sign-in. Save it then. A later sign-in returns nothing for the name.</li>
+</ul>
+
+<h2>4. Same email, different provider</h2>
+
+<p>A user signs up with email and password. Next month they click "Sign in with Google" with the same address. What happens depends on your auth tool:</p>
+
+<ul>
+<li><strong>Supabase</strong> <a href="https://supabase.com/docs/guides/auth/auth-identity-linking">links identities with the same email address</a> to a single user automatically. Its page warns that linking to a user with an unverified email address would be insecure because of pre-account takeover risk.</li>
+<li><strong>Firebase</strong> can be set to one account per email address. Its Google sign-in guide says the <code>auth/account-exists-with-different-credential</code> error is thrown when the email already belongs to an account with another provider, and that the user must sign in with the existing provider and then link the new credential. With the redirect flow you also have to keep the pending credential between page loads.</li>
+</ul>
+
+<p>Test both orders: email first then Google, and Google first then email. Check your database for two user rows with one email. Duplicate accounts mean split data, and wrong linking means someone can reach an account that is not theirs. For more on that risk, see <a href="/blog/ai-built-app-database-security-checks">database security checks for AI-built apps</a>.</p>
+
+<h2>5. Facebook: a deletion page is required</h2>
+
+<p>Facebook's <a href="https://developers.facebook.com/docs/development/create-an-app/app-dashboard/data-deletion-callback/">data deletion documentation</a> says apps that access user data must give people a way to ask for deletion. In the app's basic settings you give either a data deletion callback URL or a deletion instructions URL. Implementing the callback itself is optional.</p>
+
+<p>On permissions, Facebook's <a href="https://developers.facebook.com/docs/facebook-login/overview/">Login overview</a> says any app can ask for <code>public_profile</code> and <code>email</code> without review. Every other permission needs App Review, and advanced access can also require business verification. For plain sign-in you rarely need more.</p>
+
+<h2>6. X: check the cost first</h2>
+
+<p>X's <a href="https://docs.x.com/x-api/getting-started/pricing">API pricing page</a> says the X API uses pay-per-usage pricing, with credits bought up front and no subscriptions. I could not confirm from that page how "Log in with X" itself is billed, so check the current X developer docs before you promise it to users.</p>
+
+<h2>7. GitHub: OAuth app or GitHub App</h2>
+
+<p>For "Sign in with GitHub" a plain OAuth app is the usual start. GitHub's <a href="https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps">comparison page</a> says GitHub Apps are generally preferred, mainly for finer permissions and short-lived tokens, so read it if your app will also work with repositories. GitHub's OAuth app setup says you can enter up to 10 callback URLs, and the redirect has to match what you registered. Check the current docs for how matching works on your app, as GitHub has changed it for older apps with a single callback URL.</p>
+
+<h2>8. Test checklist before launch</h2>
+
+<ol>
+<li><strong>Fresh browser.</strong> Use a private window with no old sessions. Your own browser hides first-time problems.</li>
+<li><strong>Every environment.</strong> Local, a preview deploy, production, and both <code>www</code> and non-<code>www</code>.</li>
+<li><strong>Every provider on phone and desktop.</strong> A phone is where most people will sign in.</li>
+<li><strong>In-app browsers.</strong> Open your link from Instagram or Facebook. Google's <a href="https://developers.google.com/identity/protocols/oauth2/policies">OAuth policies</a> say apps must not send a Google OAuth request to an embedded user-agent. Those in-app browsers are usually of that kind, though Google does not name them on that page, so test it. A common fix is a banner that asks the user to open the page in Safari or Chrome.</li>
+<li><strong>Redirect flow on custom domains.</strong> Firebase's <a href="https://firebase.google.com/docs/auth/web/redirect-best-practices">redirect best practices</a> say redirect sign-in does not work in browsers that block third-party storage, and that apps on a custom domain need extra setup. Test in Chrome, Safari and Firefox.</li>
+<li><strong>Sign out, sign in again.</strong> The second sign-in differs from the first, as Apple's name shows.</li>
+<li><strong>Same email, two providers.</strong> See section 4.</li>
+<li><strong>Delete account.</strong> Check that the user's data is removed and that signing in again with the same provider starts clean.</li>
+</ol>
+
+<h2>What I did on my own app</h2>
+
+<p>On my music app TuneCraft (tunecraft.music) I added Google sign-in with Firebase, using the redirect flow. I am now adding GitHub, Facebook and X buttons there as a test before I use them on other apps. Each provider needed its own developer-console registration, and the account owner has to do that. It cannot be done from code, so ask your developer early who owns the provider accounts.</p>
+
+<h2>Want this set up or fixed?</h2>
+
+<p>I add and fix social sign-in in apps built with Lovable, Bolt, Cursor or Replit, and test each provider the way real users meet it. For the wider launch picture, see the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>, or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
