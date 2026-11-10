@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'wrong-day-dates-time-zones-ai-built-app',
+    title: "Wrong day in your AI-built app? Dates and time zones explained",
+    description: "Why your AI-built app shows dates a day off or an hour wrong, and how to fix it: UTC, timestamptz, Intl and daylight saving. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'analytics-small-app-what-to-measure-cookies',
     title: "Analytics for a small app: what to measure, and cookies",
     description: "The five numbers a small app needs, which analytics tool to pick, and when you need a cookie banner, incl. the Dutch rule. Checked in November 2026.",

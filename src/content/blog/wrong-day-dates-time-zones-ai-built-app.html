@@ -1,0 +1,122 @@
+<p>Your booking app says Tuesday, but the customer picked Wednesday. A deadline shows one day early for users in New York. A reminder fires an hour late after the clocks changed. Or "today" is not today. Apps built with Lovable, Bolt, Cursor and Replit all produce this bug, because dates are easy to get almost right. Facts below come from MDN, the PostgreSQL docs and the IANA site, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> there are three different things that people call "a date". A moment in time, a calendar date, and a wall-clock time. AI-generated code often mixes them up. The fix: store real moments in UTC, store plain dates as plain dates, keep the business's time zone name next to every booking, and only convert to the viewer's zone when you show the value.</p>
+
+<h2>1. Three things that look the same but are not</h2>
+
+<p>MDN says that JavaScript <code>Date</code> objects "represent a single moment in time in a platform-independent format". The number inside is the time since the start of 1970 in UTC. MDN calls this timestamp "timezone-agnostic". It points to one instant in history, for everybody on Earth.</p>
+
+<p>That is the first kind: a <strong>moment in time</strong>. Example: "the payment was received". Everyone agrees when it happened, even if they read different clocks.</p>
+
+<p>The second kind is a <strong>calendar date</strong>. Example: "invoice due on 10 November" or "birthday on 3 May". MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Temporal">Temporal page</a> describes it as a date without a time or time zone, like an event "which happens during the whole day no matter which time zone it's happening in". It has no hour. So it has no zone.</p>
+
+<p>The third kind is a <strong>wall-clock time</strong>. Example: "the shop opens at 09:00". MDN says this is a time you "read off a calendar or clock". It uses an example of a daily alarm: you want "8:00AM" whether or not it is daylight saving time, and whether or not you travelled to another zone.</p>
+
+<p>Most date bugs come from using one kind where another is needed. A due date stored as a moment becomes "midnight somewhere", and midnight is a different day in different places.</p>
+
+<h2>2. The classic bug: the day is off by one</h2>
+
+<p>This is the one most founders see. A user picks 10 November. The app shows 9 November. Here is why.</p>
+
+<p>The MDN <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date">Date reference</a> has a section called "Date time string format". It says: "When the time zone offset is absent, date-only forms are interpreted as a UTC time and date-time forms are interpreted as a local time." MDN adds that the UTC reading is due to "a historical spec error" that could not be changed because of web compatibility.</p>
+
+<p>The <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/parse">Date.parse page</a> shows the two cases side by side. The string <code>"2019-01-01"</code> "will imply UTC time because it's date-only". The string <code>"2019-01-01T00:00:00"</code> is set to midnight "in the local timezone of the system, because it has both date and time".</p>
+
+<p>So <code>new Date("2026-11-10")</code> means midnight at the start of 10 November in UTC. Now think about a user in New York. Their clock is behind UTC. Midnight UTC is still the evening of 9 November for them. If the code then shows the date in the user's local zone, it prints 9 November. The previous day.</p>
+
+<p>Users east of UTC, such as in the Netherlands, usually do not see it, because midnight UTC is already the same day for them. That is why the bug passes your own tests and then hits customers in the Americas. East of UTC a mirror bug waits: code that takes "today" from <code>new Date().toISOString()</code> gets a UTC date, so just after midnight in Amsterdam it still says yesterday.</p>
+
+<p>The two forms look almost the same, and they behave differently. <code>"2026-11-10"</code> and <code>"2026-11-10T00:00:00"</code> are read in two different ways. A small change in the text, a different day on screen.</p>
+
+<p>The fix is not to add or subtract hours. The fix is to decide what the value is. A due date is a calendar date, so keep it as a plain date, show it as a plain date, and never turn it into a moment in between.</p>
+
+<h2>3. Storing dates in the database</h2>
+
+<p>Supabase uses PostgreSQL, so the PostgreSQL rules apply to a Lovable or Bolt app on Supabase. The page to read is the <a href="https://www.postgresql.org/docs/current/datatype-datetime.html">date/time types documentation</a>. Three types matter.</p>
+
+<ul>
+<li><strong><code>timestamptz</code></strong> (short for <code>timestamp with time zone</code>): for moments. The docs say: "the value is stored internally as UTC, and the originally stated or assumed time zone is not retained." When you read it back, it "is always converted from UTC to the current timezone zone". That means the session time zone, a setting on the database connection.</li>
+<li><strong><code>timestamp</code></strong> (without time zone): the docs say PostgreSQL "will silently ignore any time zone indication". The value is not adjusted. If your app writes <code>2026-11-10 09:00:00+02</code> into this type, the <code>+02</code> is dropped. Nobody can tell later which zone the 09:00 was in.</li>
+<li><strong><code>date</code></strong>: a date with "no time of day". Use it for due dates, birthdays and invoice dates.</li>
+</ul>
+
+<p>A simple rule for the founder to hand to the AI tool: moments (created, paid, sent, scheduled) are <code>timestamptz</code>. Plain calendar days are <code>date</code>. Avoid plain <code>timestamp</code> unless you know why you need it.</p>
+
+<p>The PostgreSQL docs also say they do not recommend <code>time with time zone</code>. They advise using types "that contain both date and time when using time zones".</p>
+
+<p>Check what your tables use today. Ask your AI tool to list every date and time column with its type. A column called <code>due_date</code> that is a <code>timestamp</code> or a text string is a likely source of your bug.</p>
+
+<h2>4. Showing dates to the user</h2>
+
+<p>Store UTC. Convert at the last step, in the browser, in the zone of the person looking.</p>
+
+<p>The <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/DateTimeFormat"><code>Intl.DateTimeFormat</code> page</a> on MDN describes a <code>timeZone</code> option. It "can be any IANA time zone name", with examples such as <code>"UTC"</code> and <code>"America/New_York"</code>. The default is "the runtime's time zone". So you can write <code>new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "America/New_York" }).format(date)</code> and always get the New York clock.</p>
+
+<p>To find the user's own zone, MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/resolvedOptions">resolvedOptions page</a> says <code>Intl.DateTimeFormat</code> without options "uses the current system settings". You call <code>new Intl.DateTimeFormat().resolvedOptions().timeZone</code> and get a name such as <code>"Europe/Brussels"</code>.</p>
+
+<p>Two practical points. First, detection is a good default, but let users change it in their profile. People travel, and some use a work calendar in another country. Second, the order of day and month, and the names of months, depend on the language. A date like 03/11 means different things in different countries. Pass the right locale to <code>Intl</code>. If your app has more than one language, see <a href="/blog/add-second-language-dutch-german-ai-built-app">adding a second language</a>, because date formats belong with that work.</p>
+
+<p>For a plain calendar date such as a due date, do not run it through a zone at all. Format it as text from the year, month and day. If you must use <code>Intl</code> with a <code>date</code> value, pass <code>timeZone: "UTC"</code> to match how the string was read in section 2.</p>
+
+<h2>5. Bookings, appointments and daylight saving</h2>
+
+<p>A booking is the hard case. "Tuesday 14:00 at the clinic in Amsterdam" is a wall-clock time in a place. It is not just a moment. If the clinic is in the Netherlands, the customer is in London and the clocks change between the booking and the visit, the UTC time of "14:00 at the clinic" moves, but the 14:00 does not.</p>
+
+<p>So store two things for each business or location: the moment as <code>timestamptz</code>, and the business's <strong>IANA time zone name</strong>, for example <code>Europe/Amsterdam</code>. Do not store only an offset like <code>+01:00</code>. An offset does not know when the clocks change. MDN's Temporal page says it directly: "Occasional changes such as daylight saving time are not part of the calendar, but are part of the time zone's information."</p>
+
+<p>The IANA <a href="https://www.iana.org/time-zones">Time Zone Database</a> is where these names come from. It holds the history of local time, updated for changes "made by political bodies to time zone boundaries, UTC offsets, and daylight-saving rules". The rules do change, so keep your platform and libraries updated rather than copying rules into your own code. The docs checked for this post do not say how often.</p>
+
+<p>The same MDN page explains why plain <code>Date</code> struggles here. With <code>Date</code> the time can only be in two zones, "UTC and local (device)", and "there's no way to specify an arbitrary time zone". It says "Time zones underlie a significant number of date-related bugs."</p>
+
+<p>The <code>Temporal</code> API was built to fix this. It has a type for calendar dates, <code>Temporal.PlainDate</code>, and one for a date and time with a zone, <code>Temporal.ZonedDateTime</code>. But MDN currently marks Temporal as "Limited availability" and says: "This feature is not Baseline because it does not work in some of the most widely-used browsers." So do not ask your AI tool to build on Temporal without a plan for those browsers. A well-known date library is a safer ask today. Check browser support again when you decide.</p>
+
+<p>Two things to ask the AI tool: show the booking time in the business's zone, and also in the customer's zone if they differ. Label the zone on screen, for example "14:00 (Amsterdam time)".</p>
+
+<h2>6. Server functions and scheduled jobs</h2>
+
+<p>The same traps exist on the server. Code that runs in a function or a cron job has its own idea of "now" and "today". On many platforms that is UTC, not your zone. A job meant for "9 in the morning" can run at another hour, and it can shift by one hour when the clocks change. Daily jobs that build "today's" report can use the wrong day near midnight.</p>
+
+<p>The platform details are in <a href="/blog/scheduled-jobs-cron-netlify-vercel-supabase">scheduled jobs on Netlify, Vercel and Supabase</a>, so they are not repeated here. The rule for your own code: when a job needs "today for this business", ask for the business's zone name and work out the day from that. Do not use the server's local date.</p>
+
+<h2>7. How to test it</h2>
+
+<p>You cannot find these bugs from your own desk in one zone. Do these checks.</p>
+
+<ol>
+<li>Change the time zone on your computer or phone to a place far behind UTC, such as Los Angeles. Reload the app. Do all dates still show the right day? Then try a zone far ahead, such as Auckland or Tokyo.</li>
+<li>Test around midnight. Create a booking or deadline at 23:30 and at 00:30. Check the day shown to you and to a user in another zone.</li>
+<li>Test around a clock change. Make a booking on the day before the change, for a day after it. The visit time must stay at the same clock time in the business's zone. Do the same with a repeating reminder.</li>
+<li>Test with a real user in another country. Ask a friend abroad to open the same booking and read out what they see.</li>
+<li>Check what is stored. Open the table and look at the raw value. Does a plain date column hold only a date? Do moments end in <code>Z</code> or a <code>+00</code> offset?</li>
+</ol>
+
+<p>For phones, the TestSwap post <a href="https://testswap.dev/blog/test-on-phones-you-dont-own">test on phones you don't own</a> explains how to get more devices into your testing, including devices set to other regions.</p>
+
+<h2>8. Prompts for your AI tool</h2>
+
+<ul>
+<li>"List every date or time column in the database with its type. Mark which hold a moment in time and which hold a calendar day. Do not change anything yet."</li>
+<li>"Change moment columns to timestamptz and plain-day columns to date. Write a migration that keeps the existing data correct. Explain how existing values will be converted."</li>
+<li>"Find every use of new Date() with a string in the code. Show which strings are date-only and which are date-time without an offset."</li>
+<li>"Add a time_zone column with an IANA name such as Europe/Amsterdam to the business table. Show booking times in that zone, with the zone name on screen."</li>
+<li>"Format all dates with Intl.DateTimeFormat and an explicit timeZone. Detect the user's zone with resolvedOptions().timeZone and let them change it in settings."</li>
+<li>"Show me how the app computes 'today' on the server. It must use the business's time zone, not the server's."</li>
+</ul>
+
+<h2>9. Checklist</h2>
+
+<ul>
+<li>Every value is one of three kinds: a moment, a calendar date, or a wall-clock time.</li>
+<li>Moments are stored as <code>timestamptz</code>. Plain days are stored as <code>date</code>.</li>
+<li>No date-only string is turned into a moment and then shown in the user's local zone.</li>
+<li>Bookings store the business's IANA zone name, not only an offset.</li>
+<li>Dates are shown with an explicit <code>timeZone</code> and the right language setting.</li>
+<li>Users can change their zone.</li>
+<li>Server code and scheduled jobs do not rely on the server's local date.</li>
+<li>Temporal is not used unless browser support has been checked.</li>
+<li>Tested in a zone behind UTC, a zone ahead of UTC, around midnight, and around a clock change.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including dates and times that show the wrong day for some users. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
