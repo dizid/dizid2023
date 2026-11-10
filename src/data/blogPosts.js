@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'lock-down-accounts-that-run-your-app',
+    title: "Lock down the accounts that run your app: 2FA, access, recovery",
+    description: "Secure the accounts behind your AI-built app: 2FA, recovery codes, team access and domain lock, in a 30-minute checklist. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'add-teams-invites-roles-ai-built-app',
     title: "Add teams to your AI-built app: invites, roles, data per company",
     description: "Add teams to your Lovable, Bolt, Cursor or Replit app: invites, roles and data per company, with a two-company test plan. Checked in November 2026.",
