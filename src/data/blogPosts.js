@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'staging-copy-ai-built-app-preview-test-database',
+    title: "A staging copy of your AI-built app: test before customers do",
+    description: "Test changes to a Lovable, Bolt or Cursor app safely: preview deploys, a test database, Stripe test keys and preview sign-in. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'add-second-language-dutch-german-ai-built-app',
     title: "Add Dutch or German to your AI-built app without breaking it",
     description: "Adding Dutch or German to a Lovable, Bolt or Cursor app: one URL per language, hreflang, Intl formats and what breaks. Checked in November 2026.",

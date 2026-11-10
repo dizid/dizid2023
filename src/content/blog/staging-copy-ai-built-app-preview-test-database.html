@@ -1,0 +1,111 @@
+<p>You ask Lovable, Bolt or Cursor for a change, it looks fine in the editor, and you publish. Now the change runs on your real users and your real data. If it breaks something, they find out first. A staging copy is a second version of your app where changes land first. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> give every change a preview URL, point that preview at a separate test database, and give it test keys for payments and email. Keep live keys only in production. The danger is a preview that quietly uses your live database or live Stripe key. If a bad change already went live, see <a href="/blog/roll-back-broken-deploy-netlify-vercel-lovable-bolt">how to roll back a broken deploy</a>. This post is about not needing that.</p>
+
+<h2>1. A preview URL for the code</h2>
+
+<p>A preview deploy is a copy of your site at its own address, built from a branch or pull request. Your live site does not change.</p>
+
+<p><strong>Netlify.</strong> The <a href="https://docs.netlify.com/deploy/deploy-types/deploy-previews/">Deploy Previews page</a> says Netlify builds a Deploy Preview by default when you open a pull or merge request in a connected repository. For pull request #42 the address looks like "<code>deploy-preview-42--mysitename.netlify.app</code>". The docs add that the base branch must be a production branch, or a branch that has branch deploys enabled.</p>
+
+<p><strong>Vercel.</strong> The <a href="https://vercel.com/docs/deployments/environments">Environments page</a> says Vercel creates a preview deployment by default when you push a commit to a branch that is not your production branch, or create a pull request. Each deployment gets its own URL: a branch URL for the latest changes on that branch, and a commit URL for that exact deployment. New projects start with Vercel Authentication unless your team set a different default, so visitors to a preview must log in with a Vercel account that has access to the project. To show a preview to someone else, the docs say to approve their access request or send a Shareable Link.</p>
+
+<p><strong>Lovable and Bolt.</strong> Lovable's <a href="https://docs.lovable.dev/features/publish">publish page</a> says "The live site keeps showing the version you published, and later changes stay off it until you publish again." Bolt's <a href="https://support.bolt.new/bolt-cloud/hosting/publish">publish page</a> says "After you publish, changes you make to your Bolt project aren't automatically applied to your published site." So in both tools the editor is a place to try things, and publishing is a separate step.</p>
+
+<p>Netlify and Vercel previews need your code in GitHub with your own hosting. See <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving a Lovable or Bolt app to your own GitHub and hosting</a>.</p>
+
+<h2>2. A separate database for testing</h2>
+
+<p>This is the part people skip. A preview deploy of the code is worthless as a safety net if it reads and writes your live database. A test that deletes rows deletes real rows.</p>
+
+<ul>
+<li><strong>A second Supabase project.</strong> The simplest one: own URL, own keys, own tables. Copy the table structure over and add a few fake rows.</li>
+<li><strong>Supabase branching.</strong> Supabase's <a href="https://supabase.com/docs/guides/deployment/branching">branching page</a> says "Each branch is a separate environment with its own Supabase instance and API credentials." It also says "By default, new branches do not start with any data or storage objects from your base project." So a branch starts empty. You add test data with a seed file or the "Include data" option. That page does not say which plans include branching, so check Supabase's pricing page before you plan around it.</li>
+<li><strong>Neon branches.</strong> Neon's <a href="https://neon.com/docs/introduction/branching">branching page</a> says "A branch is a copy-on-write clone of your data." Branches are created with all of the data that existed in the parent branch by default. That is handy, but it puts real customer data in your test copy. Think about who can see it.</li>
+<li><strong>Firebase.</strong> Firebase's <a href="https://firebase.google.com/docs/projects/dev-workflows/overview-environments">environments page</a> says "Firebase recommends using a separate Firebase project for each environment in your development workflow." For local work, the <a href="https://firebase.google.com/docs/emulator-suite">Emulator Suite</a> lets you connect your app to emulators for testing "without touching production data."</li>
+</ul>
+
+<p>Whichever you pick, never run a destructive test on live data. And <a href="/blog/app-database-backups-supabase-neon-firebase">know how to restore a backup</a> before you need one.</p>
+
+<h2>3. Environment variables per context</h2>
+
+<p>Your app reads its database address and its keys from environment variables. Both hosts let you set a different value for each kind of deploy.</p>
+
+<p><strong>Netlify.</strong> The <a href="https://docs.netlify.com/build/environment-variables/overview/">environment variables page</a> says environment variables have one value for all deploy contexts by default, but you can set a different value for each context: Production, Deploy Previews and Branch deploys. You can also set a value for one branch, such as <code>staging</code>.</p>
+
+<p><strong>Vercel.</strong> The <a href="https://vercel.com/docs/environment-variables">environment variables page</a> lets you choose the environments a variable applies to: Production, Preview, Development, or a custom environment. Its Environments page answers the key question: "Do preview deployments use production environment variables?" with "No. Preview deployments use the variables you scope to the Preview environment." One exception: the first deployment of a new project is always a production deployment, so it builds with your Production variables.</p>
+
+<p>Two things to know:</p>
+
+<ul>
+<li><strong>Changes need a new deploy.</strong> Vercel says changes to environment variables apply only to new deployments, not to previous ones. Redeploy after you change a value, and check Netlify's docs for how your site picks up changes.</li>
+<li><strong>Vercel custom environments.</strong> A named <code>staging</code> environment needs a Pro or Enterprise plan. The same page shows another way that works on all plans, Hobby included: a Git branch called <code>staging</code> with its own domain and its own Preview variables.</li>
+</ul>
+
+<p>The setup to aim for: live database address and live keys only in Production. Test database address and test keys in Preview or Deploy Previews. If a variable is missing in preview, never copy the live value over. For keys that must stay secret, see <a href="/blog/api-key-exposed-ai-built-app-check">the API key check</a>.</p>
+
+<h2>4. Payments in staging</h2>
+
+<p>Stripe calls its testing environment a sandbox. The <a href="https://docs.stripe.com/test-mode">testing page</a> says sandboxes "allow you to test your integration without making actual charges or payments." In a sandbox you use test API keys and test card numbers, and the page says test card numbers "are only valid in sandboxes. Don't use them for real payments."</p>
+
+<p>Stripe also says objects in one mode are not reachable from the other: "API objects in one mode aren't accessible to the other." And: "Your test and live mode API keys affect the behavior of your code." So whether a preview takes real money depends on which key it holds, not on which Stripe screen you looked at. Put test keys in Preview, live keys in Production only.</p>
+
+<p>Webhooks need the same care. Stripe's <a href="https://docs.stripe.com/webhooks">webhooks page</a> says "Stripe generates a unique secret key for each endpoint. If you use the same endpoint for both test and live API keys, the secret is different for each one." So the preview needs its own webhook endpoint and its own signing secret (it starts with <code>whsec_</code>). A live signing secret in a preview makes every test webhook fail verification. For the full payment checks, read <a href="/blog/stripe-payments-ai-built-app-launch">payments in an AI-built app</a>.</p>
+
+<p>One warning from the same page: Stripe's older test mode sandbox shares some settings with live mode. For new integrations it recommends a general sandbox. Check which one you are in before you change settings.</p>
+
+<h2>5. Emails from staging</h2>
+
+<p>A test that signs up fifty fake users must not email real addresses. Two rules:</p>
+
+<ul>
+<li><strong>Use only addresses you own.</strong> Test with your own inbox or a throwaway test inbox. Never load a copy of the live customer list into the test database.</li>
+<li><strong>Use a different sender setup in preview.</strong> A test key from your email provider, or a switch in the code that sends everything to one inbox.</li>
+</ul>
+
+<p>Two facts I could confirm. Stripe's testing page says it does not email customers from sandboxes by default. And Supabase's <a href="https://supabase.com/docs/guides/auth/auth-smtp">custom SMTP page</a> says its default email service "will refuse to deliver messages to addresses that are not part of the project's team," with a limit of 2 messages per hour that "can change without notice." So that default sender is safe for tests by accident, but too limited to test many sign-ups. For real sending, see <a href="/blog/app-emails-spam-spf-dkim-dmarc">why app emails land in spam</a>.</p>
+
+<h2>6. Sign-in on preview URLs</h2>
+
+<p>Sign-in often works on your live domain and fails on a preview. The reason: login providers only send people back to addresses on an allow list, and the preview address is not on it.</p>
+
+<p>Supabase's <a href="https://supabase.com/docs/guides/auth/redirect-urls">redirect URLs page</a> says "Supabase allows you to specify wildcards when adding redirect URLs to the allow list." It suggests <code>https://**--my_org.netlify.app/**</code> for Netlify deploy previews and <code>https://*-&lt;team-or-account-slug&gt;.vercel.app/**</code> for Vercel, and says to set the Site URL to your official site URL. The Site URL is the default redirect, so keep it on your live address.</p>
+
+<p>If you use Google or Apple sign-in, they have their own rules about which addresses are allowed. <a href="/blog/social-sign-in-google-apple-what-breaks">What breaks with social sign-in</a> covers that. Put the preview wildcards in your test project, not your live one.</p>
+
+<h2>7. A simple routine</h2>
+
+<ol>
+<li><strong>Branch.</strong> Make the change on a branch, not on the main branch.</li>
+<li><strong>Preview.</strong> Open a pull request. Wait for the preview URL.</li>
+<li><strong>Check it points at test.</strong> Check the network tab for the database host. If the live database shows up, stop.</li>
+<li><strong>Click the key flows.</strong> Sign up, sign in, the main action, a test payment with a Stripe test card, the email in your own inbox. <a href="/blog/testing-ai-built-app-first-tests">The first tests worth writing</a> turn these into automatic checks.</li>
+<li><strong>Merge.</strong> The live site deploys.</li>
+<li><strong>Smoke check live.</strong> Sign in, do the main thing once. Keep the rollback page open in another tab.</li>
+</ol>
+
+<p>Example prompts for your AI tool, adapted to your stack:</p>
+
+<ul>
+<li>"Read the database URL and the Stripe key from environment variables only. List every place the app reads a key."</li>
+<li>"I have a separate test Supabase project. Make previews use its URL and anon key through environment variables. Never use the live project's keys in code that runs on previews."</li>
+</ul>
+
+<p>Set the real values yourself in your host's settings. Never paste live keys into an AI chat.</p>
+
+<h2>8. Checklist</h2>
+
+<ul>
+<li>Every change goes through a branch and a preview URL.</li>
+<li>Previews use a test database, never the live one.</li>
+<li>Live keys exist only in Production. Previews hold test keys.</li>
+<li>Stripe test keys and a separate test webhook with its own signing secret in previews.</li>
+<li>No real customer addresses in the test database. Test emails go to inboxes you own.</li>
+<li>Preview URLs are on the sign-in redirect allow list of the test project.</li>
+<li>After changing an environment variable, redeploy.</li>
+<li>After merging, one smoke check on the live site.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including setting up a safe staging copy with its own test database, test payments and working preview sign-in. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
