@@ -1,0 +1,76 @@
+<p>Your app worked fine with ten test records. Now it has real users and real data, and every page takes three seconds to show anything. That is normal for apps built quickly with Lovable, Bolt, Cursor or v0: the code was written to work, not to work with 10,000 rows on a phone over 4G. The good news is that slowness almost always comes from a handful of causes, and most of them are cheap to fix once you know which one you have.</p>
+
+<p><strong>Short answer:</strong> measure before you change anything. In most AI-built apps the time goes to the database (too many small queries, missing indexes, security rules that run per row), to loading everything at once, or to large images. Fix the biggest measured cause first; it is often a one-line change.</p>
+
+<h2>Measure first: 10 minutes</h2>
+
+<ol>
+<li><strong>Run <a href="https://pagespeed.web.dev/">PageSpeed Insights</a> on your slowest page, mobile tab.</strong> Look at Largest Contentful Paint (good is 2.5 seconds or less): how long until the main content shows. The report also names your heaviest images and scripts.</li>
+<li><strong>Open the page in Chrome with DevTools, Network tab, throttling set to "Fast 4G".</strong> Reload. Sort by time. Count the requests to your database or API: if one page makes 30 or 100 of them, you have found your problem.</li>
+<li><strong>Check the database's own report.</strong> Supabase has Query Performance and a Performance Advisor in the dashboard; Neon has a monitoring page. Both show which queries take the most total time.</li>
+<li><strong>Write down three numbers</strong> (page load, number of requests, slowest query) so you can tell whether a fix helped.</li>
+</ol>
+
+<h2>1. One query per item (the N+1 problem)</h2>
+
+<p>The page loads a list of 50 orders, then asks the database for each order's customer, one by one: 51 round trips instead of 1. AI-generated code does this a lot because each component fetches its own data. On a phone, every round trip adds tens to hundreds of milliseconds.</p>
+
+<p><strong>Fix:</strong> fetch related data in one query. In Supabase that is an embedded select, for example <code>select('*, customer(*)')</code>; in plain SQL it is a join. Then pass the data down to the components instead of letting each one fetch.</p>
+
+<h2>2. No index on the columns you filter by</h2>
+
+<p>Postgres does not create indexes on foreign key columns for you. Without an index, "all orders for this user" reads the whole table. With 100 rows nobody notices; with 100,000 rows every page waits.</p>
+
+<p><strong>Fix:</strong> add an index on every column you filter or join on: <code>user_id</code>, <code>created_at</code> if you sort by it, foreign keys. Supabase's Performance Advisor lists unindexed foreign keys for you.</p>
+
+<h2>3. Security rules that run once per row</h2>
+
+<p>In Supabase, row level security (RLS) policies decide which rows a user may see. A policy like <code>user_id = auth.uid()</code> can call <code>auth.uid()</code> for every row it checks. Supabase's <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">RLS guide</a> gives three performance rules:</p>
+
+<ul>
+<li>wrap the function in a select, <code>(select auth.uid())</code>, so Postgres computes it once per query "rather than calling the function on each row";</li>
+<li>index every column a policy filters on, because "an unindexed filter column turns a read into a sequential scan";</li>
+<li>name the role with <code>to authenticated</code>, so the policy doesn't even run for visitors who aren't signed in.</li>
+</ul>
+
+<p>Do not fix slowness by switching RLS off. That trades a speed problem for a data leak.</p>
+
+<h2>4. The page loads everything before it shows anything</h2>
+
+<p>Typical signs: a dashboard that downloads every record to count them in the browser, a list without pagination, or a blank screen until all data has arrived.</p>
+
+<p><strong>Fix:</strong> count and sum in the database, not in the browser. Load 20 or 50 rows at a time. Show the page frame straight away and fill in the data as it arrives. For public pages that search engines should read, render them on the server or prerender them, so visitors see content before the JavaScript has finished.</p>
+
+<h2>5. Images straight from the phone camera</h2>
+
+<p>A 4 MB photo shown as a 300-pixel thumbnail is still a 4 MB download. PageSpeed Insights will name these files.</p>
+
+<p><strong>Fix:</strong> resize images when they are uploaded, serve WebP or AVIF, set width and height so the page doesn't jump, and add <code>loading="lazy"</code> to images below the fold. Netlify and Vercel can resize images on the fly, and so can Supabase Storage on paid plans.</p>
+
+<h2>6. Cold starts: the first visitor waits</h2>
+
+<p>Serverless databases and functions go to sleep when nobody uses them. Neon, for example, <a href="https://neon.com/docs/introduction/scale-to-zero">scales to zero after 5 minutes</a> of inactivity and starts again "within a few hundred milliseconds". Serverless functions have a similar first-request delay. For a small app this is usually fine and saves money. It becomes a problem when one page triggers several cold pieces in a row.</p>
+
+<p><strong>Fix:</strong> first check whether cold starts are really your problem (the first load is slow, the second fast). If they are, cut the chain of calls per page, or pay for an always-on database only for the app that needs it. Don't keep everything awake "just in case"; that is a monthly bill for a few hundred milliseconds.</p>
+
+<h2>7. Waiting for slow outside services</h2>
+
+<p>Calls to an AI model, a payment provider or an email service can take seconds. If the page waits for them before responding, the user waits too.</p>
+
+<p><strong>Fix:</strong> stream long AI answers so text appears as it is written, send emails and other follow-up work in the background, and set a timeout with a clear message instead of a spinner that never stops. Cache answers that don't change, such as a product description generated once.</p>
+
+<h2>What to fix first</h2>
+
+<ul>
+<li><strong>Dozens of requests per page:</strong> start with 1 (N+1), then 4 (pagination).</li>
+<li><strong>Few requests, but each one slow:</strong> start with 2 (indexes) and 3 (RLS).</li>
+<li><strong>Slow even when empty:</strong> look at 5 (images) and your JavaScript size in PageSpeed Insights.</li>
+<li><strong>Only the first load is slow:</strong> 6 (cold starts).</li>
+<li><strong>One action hangs, the rest is fine:</strong> 7 (outside services).</li>
+</ul>
+
+<p>After each fix, measure the same three numbers again. If a change didn't move them, undo it: speed work without measuring tends to add complexity and no speed.</p>
+
+<h2>Want someone to find it for you?</h2>
+
+<p>I look at apps built with Lovable, Bolt, Cursor or v0 and fix what slows them down, starting with a measured list of causes so you know what you are paying for. Read <a href="/blog/fix-or-rebuild-ai-built-app">fix it or rebuild it</a> if you are not sure your app is worth fixing, or <a href="/hire">send me the link on the hire page</a> and I'll reply within 24 hours.</p>

@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'slow-ai-built-app-fixes',
+    title: "Why is my AI-built app slow? 7 causes and what to fix first",
+    description: "Your Lovable, Bolt or Cursor app feels slow? How to measure it in 10 minutes, the 7 usual causes (database, images, cold starts) and what to fix first.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'hiring-developer-app-access-handover',
     title: "Hiring a developer for your app? What to share, and how",
     description: "Hiring a developer to fix your app? What to put in the brief, how to give access on GitHub, Supabase, Firebase and Stripe without passwords, and clean-up.",
