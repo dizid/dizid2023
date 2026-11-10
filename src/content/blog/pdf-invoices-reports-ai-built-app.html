@@ -22,7 +22,7 @@
 
 <h2>Option 2: headless Chrome on a server</h2>
 
-<p>Here your server opens your own page in a browser nobody sees, and saves it as a PDF. Puppeteer's <a href="https://pptr.dev/api/puppeteer.page.pdf">page.pdf()</a> "Generates a PDF of the page with the print CSS media type." Playwright's <a href="https://playwright.dev/docs/api/class-page#page-pdf">page.pdf()</a> "generates a pdf of the page with print css media." So your print CSS from option 1 applies here too. Both docs also warn: "By default, page.pdf() generates a pdf with modified colors for printing." If a coloured header comes out white, that is why. Their docs name a fix: the <code>-webkit-print-color-adjust</code> property.</p>
+<p>Here your server opens your own page in a browser nobody sees, and saves it as a PDF. Puppeteer's <a href="https://pptr.dev/api/puppeteer.page.pdf">page.pdf()</a> "Generates a PDF of the page with the print CSS media type." Playwright's <a href="https://playwright.dev/docs/api/class-page#page-pdf">page.pdf()</a> "generates a pdf of the page with print css media." So your print CSS from option 1 applies here too. Both docs also warn: "By default, page.pdf() generates a pdf with modified colors for printing." If a colored header comes out white, that is why. Their docs name a fix: the <code>-webkit-print-color-adjust</code> property.</p>
 
 <p>This gives the best match with your web design. It is also where most live failures happen.</p>
 
@@ -65,7 +65,7 @@ const pdf = await page.pdf({
 
 <ul>
 <li>Generate the invoice once, when it is issued. Store the file. Never rebuild an old invoice from current data. Prices, names and addresses change, and the old invoice must not.</li>
-<li>Number invoices in order, with no gaps. The EU's <a href="https://taxation-customs.ec.europa.eu/taxation/vat/vat-businesses/invoicing_en">VAT invoicing page</a> lists "Date of issue" and "Unique sequential number identifying the invoice" among the details a full invoice must contain. Your Europe says "Your VAT identification number must be shown on all invoices you give to customers", on its <a href="https://europa.eu/youreurope/business/finance-and-tax/vat/charging-deducting-vat/index_en.htm">VAT page</a>.</li>
+<li>Number invoices in sequence. The EU's <a href="https://taxation-customs.ec.europa.eu/taxation/vat/vat-businesses/invoicing_en">VAT invoicing page</a> lists "Date of issue" and "Unique sequential number identifying the invoice" among the details a full invoice must contain. Your Europe says "Your VAT identification number must be shown on all invoices you give to customers", on its <a href="https://europa.eu/youreurope/business/finance-and-tax/vat/charging-deducting-vat/index_en.htm">VAT page</a>.</li>
 <li>Rules differ by country and by case. Ask an accountant what your invoices need before you launch.</li>
 <li>Let two requests for the same order give one invoice. See <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>.</li>
 </ul>
@@ -98,9 +98,9 @@ const pdf = await page.pdf({
 <ol>
 <li>Chosen the simplest option: browser print, server browser, or library.</li>
 <li>Invoices are made on the server, once, and the file is stored.</li>
-<li>Invoice numbers run in order with no gaps.</li>
+<li>Invoice numbers run in sequence (ask your accountant whether gaps are allowed).</li>
 <li>I checked my host's time and size limits and tested the PDF on the live site.</li>
-<li>Fonts are loaded before the PDF is saved. Colours and page breaks look right.</li>
+<li>Fonts are loaded before the PDF is saved. Colors and page breaks look right.</li>
 <li>Tested with 1, 30 and 200 lines.</li>
 <li>Files are in a private bucket. Links expire.</li>
 <li>The server checks that the user owns the file.</li>
