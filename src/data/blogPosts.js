@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'app-emails-spam-spf-dkim-dmarc',
+    title: "Your app's emails land in spam: SPF, DKIM and DMARC explained",
+    description: "Sign-up and password-reset emails landing in spam? How to tell, why default senders fail, what SPF, DKIM and DMARC do, and a safe setup in 15 minutes.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'stripe-payments-ai-built-app-launch',
     title: "Taking payments in an AI-built app: 8 things that break at launch",
     description: "Taking payments with Stripe in an AI-built app? The 8 things I check before launch: live keys, webhooks, double charges, failed renewals, VAT, disputes.",

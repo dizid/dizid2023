@@ -1,0 +1,91 @@
+<p>Sign-up confirmations that never arrive, password resets that sit in spam, receipts customers swear they did not get. When I check an app with this problem, the cause is almost never the app's code. It is how the email is sent and whether the receiving mailbox trusts it. Here is how to tell, and what to fix, in plain words.</p>
+
+<h2>First: is it really a deliverability problem?</h2>
+
+<p>Trigger the email yourself with a fresh Gmail or Outlook address, then check in this order:</p>
+
+<ol>
+<li><strong>Spam and promotions folders.</strong> If it is there, the email was sent and accepted, but the mailbox does not trust you. That is a deliverability problem.</li>
+<li><strong>The sending service's logs.</strong> Whatever your app uses to send (Supabase, Resend, Postmark, SendGrid, Amazon SES or similar) shows each message and its status: delivered, bounced, rejected. "Delivered" plus nothing in the inbox means spam placement. "Bounced" or an error means the provider refused it.</li>
+<li><strong>No log entry at all.</strong> Then the app never asked to send it, and that is a bug, not a deliverability issue.</li>
+</ol>
+
+<h2>The default sender is for testing</h2>
+
+<p>Apps built with tools like Lovable or Bolt often start on the sending service that comes with the backend. Supabase's own docs say its built-in email server <a href="https://supabase.com/docs/guides/auth/auth-smtp">"is not meant for production use"</a>. When I read the page today it also said the limit is currently 2 messages per hour (and that this value can change), and that it only delivers to addresses belonging to your project's team members. Anyone else gets an "Email address not authorized" failure. There is no delivery guarantee either.</p>
+
+<p>So if your sign-up emails work for you and your developer but not for real customers, this is the first thing to check. The fix is to connect your own sending service and send from your own domain, for example <code>hello@yourcompany.com</code>.</p>
+
+<h2>SPF, DKIM and DMARC in plain words</h2>
+
+<p>Email has no built-in proof of who sent it, so anyone can claim to be you. These three DNS records are how a mailbox like Gmail checks that a message really comes from you. They are text entries you add where your domain's DNS is managed.</p>
+
+<ul>
+<li><strong>SPF</strong> is a list of the servers allowed to send email for your domain. The receiving mailbox checks whether the sender is on the list.</li>
+<li><strong>DKIM</strong> is a digital signature added to every message. Your sending service signs it with a private key, and a public key in your DNS lets the mailbox verify it was not forged or changed on the way.</li>
+<li><strong>DMARC</strong> is your instruction for what to do when SPF and DKIM fail, plus a way to get reports back. It also requires that the domain in the visible "From" address matches the domain that passed SPF or DKIM.</li>
+</ul>
+
+<h2>Setting up your own sending domain</h2>
+
+<p>Every transactional provider has the same shape: you add your domain, it shows you DNS records, you paste them in at your domain registrar or DNS host, and it verifies them. Use the provider's own page for the exact records, because they differ:</p>
+
+<ul>
+<li><a href="https://resend.com/docs/dashboard/domains/introduction">Resend</a> recommends sending from a subdomain (such as <code>updates.yourcompany.com</code>) to keep your sending reputation separate from your main domain. It also has a <a href="https://resend.com/docs/dashboard/domains/dmarc">DMARC guide</a>.</li>
+<li><a href="https://postmarkapp.com/support/article/1091-how-do-i-set-up-dkim-for-postmark">Postmark</a> uses a DKIM record plus a custom Return-Path record, and has a <a href="https://postmarkapp.com/support/article/how-do-i-verify-a-domain">verification guide</a>.</li>
+<li><a href="https://docs.aws.amazon.com/ses/latest/dg/creating-identities.html">Amazon SES</a> sets up DKIM when you create a domain identity, and says DNS changes can take up to 72 hours to propagate.</li>
+<li><a href="https://www.twilio.com/docs/sendgrid/ui/account-and-settings/how-to-set-up-domain-authentication">SendGrid</a> calls it domain authentication. It generates the DNS records for SPF, DKIM and DMARC, and removes the "via sendgrid.net" label.</li>
+</ul>
+
+<p>Do not use the sending service's shared address as your "From". The point is that the mailbox sees your domain, authenticated, every time.</p>
+
+<h2>What Gmail and Yahoo require since 2024</h2>
+
+<p>Both started enforcing sender rules in February 2024. I read each page today. Google's <a href="https://support.google.com/a/answer/81126">Email sender guidelines</a>:</p>
+
+<ul>
+<li><strong>Every sender</strong> must set up SPF or DKIM for the sending domain, have valid forward and reverse DNS records, use a TLS connection, and keep the spam rate reported in Postmaster Tools below 0.3%.</li>
+<li><strong>Bulk senders</strong>, defined by Google as more than 5,000 messages a day, must set up SPF and DKIM and also DMARC, and the "From" domain must align with the SPF or DKIM domain. The DMARC policy is allowed to be <code>none</code>. Marketing and subscribed messages must also support one-click unsubscribe.</li>
+</ul>
+
+<p>Yahoo's <a href="https://senders.yahooinc.com/best-practices/">sender best practices</a> split the same way: all senders need SPF or DKIM at a minimum and a spam rate below 0.3%, and Yahoo strongly urges everyone to publish a DMARC policy. Bulk senders need both SPF and DKIM, a valid DMARC policy of at least <code>p=none</code>, and an unsubscribe header. I did not find a 5,000 figure on Yahoo's page, so check it for your volume.</p>
+
+<p>A small app sending a few hundred emails a day is not a "bulk sender" on Google's definition. But I would still set up all three records. They are free, and mailboxes treat unauthenticated mail with suspicion whatever the volume.</p>
+
+<h2>Rolling out DMARC safely</h2>
+
+<p>A strict DMARC policy tells mailboxes to reject mail that fails the checks. If you switch that on before everything legitimate is authenticated, you can block your own emails. So go in steps:</p>
+
+<ol>
+<li>Publish a TXT record at <code>_dmarc.yourcompany.com</code> with <code>v=DMARC1; p=none; rua=mailto:dmarc@yourcompany.com</code>. <code>p=none</code> changes nothing about delivery. It only asks for reports.</li>
+<li>Read the reports for a few weeks. They show who is sending as your domain: your app, your newsletter tool, your office email, and anything you forgot. Fix each legitimate sender so it passes.</li>
+<li>Move to <code>p=quarantine</code> (failing mail goes to spam). Once that has been quiet for a while, consider <code>p=reject</code>.</li>
+</ol>
+
+<p>Raw report files are unreadable XML, so most people use a free report viewer from a provider or a DMARC monitoring service. I will not name one here because I have not compared them for this post.</p>
+
+<h2>Free checks</h2>
+
+<ul>
+<li><a href="https://toolbox.googleapps.com/apps/checkmx/">Google Admin Toolbox Check MX</a> checks your MX and SPF records and has an optional DKIM selector field.</li>
+<li><a href="https://mxtoolbox.com/dmarc.aspx">MxToolbox DMARC lookup</a> fetches your DMARC record and flags errors.</li>
+<li><a href="https://www.mail-tester.com/">mail-tester.com</a> gives you an address to send a test email to, then scores how spammy the message looks. See the site for its current free limits.</li>
+</ul>
+
+<h2>The 15-minute check</h2>
+
+<ol>
+<li>Send yourself a sign-up email from a fresh Gmail address. Inbox, spam, or nothing?</li>
+<li>Open your sending service's log. Delivered, bounced or missing?</li>
+<li>Find out which service the app really uses to send. If it is the backend's built-in sender, plan to replace it.</li>
+<li>Check the "From" address uses your own domain, not the provider's.</li>
+<li>Run your domain through Check MX and confirm SPF is found.</li>
+<li>In the sending service, confirm the domain shows as verified, DKIM included.</li>
+<li>Look up your DMARC record. If there is none, publish <code>p=none</code> with a reporting address.</li>
+<li>In Gmail, use "Show original" on a received test email and check SPF, DKIM and DMARC all say PASS.</li>
+<li>Send one test through mail-tester.com and read what it flags.</li>
+</ol>
+
+<h2>Want this fixed on your app?</h2>
+
+<p>I check and fix email sending on apps built with Lovable, Bolt, Cursor or Base44: moving off the default sender, setting up the domain and DNS records, and testing every email the app sends, from sign-up to password reset. See also the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>, or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
