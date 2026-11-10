@@ -55,6 +55,8 @@ useHead({
         datePublished: post.value.datePublished,
         dateModified: post.value.dateModified,
         inLanguage: 'en',
+        // Google lists image as recommended for articles; the posts share the site's share image
+        image: { '@type': 'ImageObject', url: `${SITE_URL}/og-image.png`, width: 1200, height: 630 },
         mainEntityOfPage: { '@type': 'WebPage', '@id': canonicalUrl.value },
         url: canonicalUrl.value,
         author: {
