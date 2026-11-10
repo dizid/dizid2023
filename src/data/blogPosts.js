@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'roll-back-broken-deploy-netlify-vercel-lovable-bolt',
+    title: "Roll back a broken deploy on Netlify, Vercel, Lovable and Bolt",
+    description: "A deploy broke your app? How to roll back on Netlify, Vercel, Lovable, Bolt or GitHub, what a rollback does not undo, and how to prevent the next one.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'testing-ai-built-app-first-tests',
     title: "Testing an AI-built app: the first tests worth writing",
     description: "Every AI prompt breaks something that worked? The first tests to write, in order of risk: payments, permissions, webhooks, a browser test and a week plan.",

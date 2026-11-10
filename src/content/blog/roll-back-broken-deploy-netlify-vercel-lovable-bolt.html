@@ -1,0 +1,102 @@
+<p>You changed something, the new version went live, and now login fails or a button does nothing. Here is how to undo it on each host, what an undo does not fix, and how to make the next deploy safer. Vendor facts come from each vendor's own docs, checked in November 2026. Screens change, so open the linked page if a button looks different.</p>
+
+<p><strong>Short answer:</strong> roll back the code first and look for the cause after. A rollback puts the old version back in seconds. It does not undo database changes, data the bad version wrote, emails it sent or payments it handled. Check those separately.</p>
+
+<h2>1. The first 10 minutes</h2>
+
+<ol>
+<li><strong>Confirm it was the deploy.</strong> When did the last deploy go live, and when did the problem start? If the times match, the deploy is the first suspect. If nothing was deployed, look elsewhere: an expired key, a used-up quota, a service that is down.</li>
+<li><strong>Roll back</strong> to the last version that worked. Look for the real fix later, not while customers are stuck.</li>
+<li><strong>Check the main path.</strong> On your phone, in a private window, sign in and do the main thing your app is for.</li>
+<li><strong>Then read the logs</strong> of the bad deploy, the same day. Some hosts keep them only briefly (see <a href="/blog/app-uptime-monitoring-error-alerts">uptime checks and error alerts</a>).</li>
+</ol>
+
+<h2>2. How to roll back on each host</h2>
+
+<h3>Netlify</h3>
+
+<p>Netlify's <a href="https://docs.netlify.com/deploy/manage-deploys/manage-deploys-overview/">manage deploys page</a>: open your site's <strong>Deploys</strong> list, click a deploy that worked, and on its detail page click <strong>Publish Deploy</strong>. Nothing is rebuilt, and the docs say rollbacks are instantaneous.</p>
+
+<p>Then watch the next push. If your site deploys from Git with auto publishing on, the next production deploy from Git overwrites your rollback. If that push may not be the fix, click <strong>Lock to stop auto publishing</strong> in the Deploys list. Netlify still builds new deploys but does not publish them. Later, click <strong>Unlock to start auto publishing</strong>.</p>
+
+<p>How far back: Netlify deletes deploys after 30 days by default, or 90 on paid plans.</p>
+
+<h3>Vercel</h3>
+
+<p>Vercel calls it <a href="https://vercel.com/docs/instant-rollback">Instant Rollback</a>. On your project's overview page, the production deployment tile has an <strong>Instant Rollback</strong> button. Pick a deployment, click <strong>Continue</strong>, check the details and click <strong>Confirm Rollback</strong>.</p>
+
+<ul>
+<li><strong>How far back.</strong> On Hobby, only to the previous deployment. On Pro and Enterprise, to any deployment that was once live on a production domain.</li>
+<li><strong>New pushes stop going live.</strong> After a rollback, Vercel turns off auto-assignment of production domains, so your next push builds but does not replace the rollback. To go back to normal, click <strong>Manage</strong> on the production deployment tile, pick a deployment to promote and click <strong>Confirm</strong>, or run <code>vercel promote</code>.</li>
+</ul>
+
+<h3>Lovable</h3>
+
+<p>Lovable's <a href="https://docs.lovable.dev/features/projects/history">version history page</a>: open the <strong>History</strong> toggle in the top bar of the editor, find a version that worked, click <strong>Revert</strong> and confirm. This restores your project's code only, and redeploys your edge functions to match. Very old versions can be previewed but not restored.</p>
+
+<p>The live site is a separate step. Lovable's <a href="https://docs.lovable.dev/features/publish">publish page</a> says the live site keeps showing the version you published until you publish again. So after the revert, click <strong>Publish</strong>, then <strong>Publish changes</strong>.</p>
+
+<h3>Bolt</h3>
+
+<p>Bolt's <a href="https://support.bolt.new/building/using-bolt/rollback-backup">version history page</a>: click <strong>Version history</strong> (the clock icon) in the top menu, pick a version, click <strong>Restore this version</strong> and confirm with <strong>Restore version</strong>.</p>
+
+<p>Bolt's <a href="https://support.bolt.new/bolt-cloud/hosting/publish">publish page</a> says changes are not applied to your published site automatically. Open the <strong>Publish</strong> menu and click <strong>Update</strong>.</p>
+
+<h3>Plain GitHub</h3>
+
+<p>If your host deploys from GitHub, you can undo the change in the code. That is also the usual way once a Lovable or Bolt app <a href="/blog/move-lovable-bolt-app-own-github-hosting">lives in your own GitHub and hosting</a>. <code>git revert &lt;commit&gt;</code> makes a new commit that undoes the bad one. Push it, and your host deploys it like any other push. For a merged pull request, GitHub's <a href="https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/reverting-a-pull-request">revert guide</a> shows a <strong>Revert</strong> button near the bottom of it. It opens a new pull request that undoes the merge.</p>
+
+<p>Use revert, not reset. <a href="https://git-scm.com/docs/git">Git's docs</a> explain the difference: revert makes a new commit, reset moves your branch back and changes the commit history. Pushing a reset needs <code>--force</code>, which the <a href="https://git-scm.com/docs/git-push">git push docs</a> warn can make the remote repository lose commits. And remember: after a Vercel rollback or a Netlify lock, your revert waits until you promote or publish it.</p>
+
+<h2>3. What a rollback does not undo</h2>
+
+<p>A rollback swaps the code. Everything outside it stays the way the bad version left it.</p>
+
+<ul>
+<li><strong>Database changes.</strong> If the bad version added, renamed or removed a column, that change stays, and the old code may fail on it. Data the bad version wrote also stays, wrong data included.</li>
+<li><strong>Environment variables.</strong> Netlify's <a href="https://docs.netlify.com/build/functions/environment-variables/">functions docs</a> say each deploy uses the values that were set when it was deployed. Vercel says a rollback won't update environment variables you change in the project settings. So a rollback can hide a bad value. Fix the setting too, or the next deploy brings the problem back.</li>
+<li><strong>Emails already sent.</strong> Decide whether a short correction is needed.</li>
+<li><strong>Payments and webhooks.</strong> What the bad version handled stays done. Check your payment dashboard for that time.</li>
+<li><strong>Settings in other services.</strong> Login redirect URLs, DNS records, webhook addresses. If you changed them for the new version, change them back by hand.</li>
+</ul>
+
+<p><strong>Lovable and Bolt databases.</strong> Neither version restore brings data back. Lovable's history page says a revert does not restore or roll back your database data, and later data changes or migrations stay. Bolt's page says restoring an earlier version will not change your current Bolt or Supabase databases.</p>
+
+<p>Lovable has a separate <a href="https://docs.lovable.dev/features/database-backups">database backup</a>: one a day, kept for about 14 days, restored with <strong>Restore to this backup</strong>. The page warns that this cannot be undone, data written after the backup is lost, and your code may no longer match the restored database. Use it only when the data itself is broken. For other databases, see <a href="/blog/app-database-backups-supabase-neon-firebase">what Supabase, Neon and Firebase back up</a>.</p>
+
+<h2>4. Open tabs after a deploy</h2>
+
+<p>Some people had your app open before the deploy. They click a link and nothing happens. A reload would fix it, but they don't know.</p>
+
+<p>Modern apps load the code for a page as a separate file when it is first needed. After a new deploy, the host may no longer serve the old files, so the open tab asks for a file that is gone. In a Vite app this is a failed dynamic import. Vite's <a href="https://vite.dev/guide/build">build guide</a> describes this case and documents a <code>vite:preloadError</code> event for it. Its example simply reloads the page. The guide also says to set <code>Cache-Control: no-cache</code> on the HTML file, so a reload gets the new HTML. A rollback swaps the files too, so the same can happen to people who opened the bad version.</p>
+
+<p>On my own sites, when a page file from an older deploy is missing, the page reloads once to the new version, with a guard so it can't reload in a loop. One of my sites did loop before I added the guard: a missing file made it reload again and again. If you add an automatic reload, add the guard too.</p>
+
+<h2>5. Prevent the next one</h2>
+
+<ul>
+<li><strong>Check a preview first.</strong> Netlify builds a <a href="https://docs.netlify.com/deploy/deploy-types/deploy-previews/">Deploy Preview</a> for each pull request by default. Vercel <a href="https://vercel.com/docs/deployments/environments">creates a preview deployment</a> for each pull request and each push to a branch that is not your production branch. In Lovable and Bolt, test in the editor preview: both say the published site does not change until you publish.</li>
+<li><strong>Deploy small changes,</strong> so you know what broke.</li>
+<li><strong>Run a smoke check after each deploy.</strong> A short script that loads the key pages and checks for a word on each, as in <a href="/blog/testing-ai-built-app-first-tests">the first tests worth writing</a>.</li>
+<li><strong>Change the database in two steps.</strong> Add first, remove later. Add the new column, deploy the code that uses it, and remove the old column in a later deploy. Then a rollback never meets a database it can't read.</li>
+<li><strong>Back up before a migration,</strong> so you have a way back.</li>
+<li><strong>Set up alerts,</strong> so you hear about a broken deploy before a customer tells you. See <a href="/blog/app-uptime-monitoring-error-alerts">uptime checks and error alerts</a>.</li>
+</ul>
+
+<h2>Checklist for the next bad deploy</h2>
+
+<ol>
+<li>Compare when the problem started with the time of the last deploy.</li>
+<li>Roll back. In Lovable or Bolt, also publish the restored version.</li>
+<li>On Netlify, lock auto publishing if the next push may not be the fix.</li>
+<li>Test the main path on your phone.</li>
+<li>Read the logs of the bad deploy.</li>
+<li>Check what the rollback did not undo (section 3).</li>
+<li>Fix the cause, check it on a preview, then put it live: publish it and unlock on Netlify, or promote it on Vercel. Run your smoke check.</li>
+</ol>
+
+<p>Before a launch, also go through the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including setting up safe deploys with previews, rollbacks and checks after each deploy. Or <a href="/hire">send me the details on the hire page</a> and I'll reply within 24 hours.</p>
