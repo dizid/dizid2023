@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'security-headers-ai-built-app-csp-hsts',
+    title: "Security headers for your AI-built app: what to add first",
+    description: "Scan says missing security headers? What CSP, HSTS and the rest do, and how to add them on Netlify or Vercel without breaking Stripe. Checked in Nov 2026.",
+    datePublished: '2026-11-13',
+    dateModified: '2026-11-13'
+  },
+  {
     slug: 'marketplace-payments-stripe-connect-basics',
     title: "Marketplace payments in your app: Stripe Connect basics",
     description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",
