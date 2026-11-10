@@ -1,0 +1,165 @@
+<p>You are building an app with two sides. Teachers and students. Coaches and clients. Sellers and buyers. A customer pays, you keep a cut, and the other side gets the rest. Lovable, Bolt, Cursor and Replit can build the screens fast. The money part is where these apps most often go wrong, and a mistake there is costly. Vendor facts below come from Stripe's own docs, checked in November 2026. This is not legal or tax advice.</p>
+
+<p><strong>Short answer:</strong> A normal Stripe account is built to collect money for your own business. If you collect money that belongs to other people and pay it on, you use Stripe Connect. Each seller gets a connected account. Stripe checks their identity, and you cannot pay them until that is done. You choose a charge type, and for most simple marketplaces that is a destination charge with an application fee, which is your cut. Work out the fee on your server, never in the browser. Listen for Connect webhooks. When you refund, decide on purpose what happens to the seller's share and to your fee. Test it all in a Stripe sandbox first.</p>
+
+<h2>1. Why a normal Stripe account is not enough</h2>
+
+<p>With a normal account, the customer pays you and the money is yours. That works for a shop with its own products. It does not work when the money belongs to a teacher, a coach or a seller. You need a way to hold money for a third party, send it to them, and prove who they are. A normal account does not give you that.</p>
+
+<p>Stripe's Connect overview says you use Connect "to build a platform, marketplace, fintech, or other business that requires you to model multiple accounts and move money between parties." Stripe's own marketplace guide describes the flow in one line: customers pay the marketplace, "and see the marketplace's name on their receipt." The marketplace then pays the sellers.</p>
+
+<p>In Connect words, you are the <strong>platform</strong>. Each seller is a <strong>connected account</strong>. Stripe defines that as a person or business accepting payments or receiving payouts on a Connect platform.</p>
+
+<h2>2. The choices you make for each connected account</h2>
+
+<p>When you create a connected account, you decide who is responsible for what. Stripe's current way to describe this is with a few settings, not with fixed account types.</p>
+
+<p>The current Stripe docs use the Accounts v2 API. An account there can have one or more configurations, such as merchant or customer. For the seller side of a marketplace, the docs describe settings under "responsibilities" and a "dashboard" setting. Stripe's docs say these correspond to the older "controller properties" in the Accounts v1 API. In plain words, the settings answer these questions:</p>
+
+<ul>
+<li><strong>Who collects the Stripe fees?</strong> The <code>fees_collector</code> setting. Stripe's page says that for destination charges or separate charges, Stripe always collects fees from your platform. Only for direct charges can Stripe collect fees from the seller instead.</li>
+<li><strong>Who covers negative balances?</strong> The <code>losses_collector</code> setting. If it is set to your platform, your platform is responsible for the seller's negative balances and manages risk for that account. If it is set to Stripe, Stripe is liable for the connected account's negative balances, and your platform is still liable for negative balances on your own account.</li>
+<li><strong>What can the seller see?</strong> The <code>dashboard</code> setting: the limited Express Dashboard, the full Stripe Dashboard, or none. With none, your platform must provide all Stripe-related functionality.</li>
+<li><strong>Who does onboarding and identity checks (KYC)?</strong> You do not set this directly. Stripe's docs say that in most configurations Stripe collects it. Your platform is responsible only when losses are set to your platform and the dashboard is set to none.</li>
+</ul>
+
+<p>Some of these cannot be changed later. Stripe says you cannot update the responsibilities after you add the merchant configuration, and that the dashboard type on a connected account is permanent. So decide before you build, and do not let your AI tool pick defaults for you.</p>
+
+<h3>The old names: Standard, Express, Custom</h3>
+
+<p>You will still see these names in tutorials and in AI-generated code. Stripe's docs list the three legacy types, Standard, Express and Custom, and mark that page as a deprecated feature that applies only to platforms that already use them. For a new platform Stripe points to its interactive platform guide instead. Stripe also says that "Stripe recommends that you use controller properties instead of account types." So if your tool generates <code>type: 'express'</code>, that is not wrong for an existing setup, but ask why it was chosen. Stripe's marketplace guide describes a recommended starting setup: you are the merchant of record, Stripe handles onboarding, each seller has an Express Dashboard or a custom dashboard, you pay Stripe fees and manage disputes and refunds, and you collect an application fee on each payment.</p>
+
+<h2>3. Charge types and your cut</h2>
+
+<p>A "charge" is the payment from the customer. The type of charge decides where the money lands first. Stripe's charges page says the type determines how funds are split between the platform, the connected account and Stripe, whose details show on the customer's statement, and "which account Stripe debits for refunds and chargebacks." There are three types.</p>
+
+<h3>Direct charges</h3>
+
+<p>The charge is created on the seller's account. The seller is the merchant, and customers are often unaware of your platform. Stripe says this works best for platforms that provide software as a service, and gives online storefront tools and course-selling tools as examples. You can take an application fee. Refunds and chargebacks reduce the seller's balance. Each transaction involves one seller and one customer. You can choose whether Stripe takes its fees from the seller or from you.</p>
+
+<h3>Destination charges</h3>
+
+<p>The charge is created on your platform, and part of the money is moved to the seller straight away. Stripe says this is best suited for marketplaces. The customer deals with your platform. Stripe debits fees, refunds and chargebacks from your platform balance. Each transaction involves one seller and one customer. Stripe also recommends destination charges for connected accounts that do not have access to the full Stripe Dashboard.</p>
+
+<h3>Separate charges and transfers</h3>
+
+<p>You charge on your platform first. Then you create a separate transfer to move money to a seller. Use this only when you need it. Stripe's examples: one payment must be split between several sellers, a charge happens before you know which seller will do the job, or you need to transfer funds before a payment arrives. Stripe warns that it needs a more complex integration. Like destination charges, your platform balance is debited for Stripe fees, refunds and chargebacks.</p>
+
+<p><strong>Which one for a simple app?</strong> If a customer buys one thing from one teacher, coach or seller, and your brand is on the checkout, a destination charge is the usual fit. If the customer buys from several sellers in one cart, look at separate charges and transfers. If your sellers run their own shop and the customer sees them as the business, look at direct charges. If you are unsure, ask Stripe support or a developer. This choice is hard to undo.</p>
+
+<h3>Your cut: the application fee</h3>
+
+<p>Stripe's destination charge page explains the fee. You set <code>application_fee_amount</code>, which Stripe describes as "the amount your platform plans to take from the transaction." The full charge amount goes to the seller's account, and then the application fee goes back to your platform. Your platform then pays the Stripe fee, taken from your side. Stripe's page notes that the fee amount is capped at the total transaction amount and is always in the same currency as the charge.</p>
+
+<p>Stripe also describes a second way, <code>transfer_data[amount]</code>, where you subtract your fee yourself and pass the amount to transfer. Stripe suggests the application fee for simpler reporting, because it creates an explicit fee record linked to the charge.</p>
+
+<p>In Stripe's example, an application fee of 123 on a 10.00 USD charge means 1.23 USD, so amounts are whole numbers in the smallest unit. I do not quote any fee percentages here. Stripe's prices change and depend on your country and plan, so read them on Stripe's own Connect pricing page.</p>
+
+<h2>4. Onboarding: sellers cannot be paid until verified</h2>
+
+<p>A seller cannot just type in a bank account. Stripe must verify who they are. Stripe's docs say that a capability must be active for a connected account to do the matching actions. Most capabilities need verification of information about the account holder's business before Stripe turns them on. In the account data, the flags <code>charges_enabled</code> and <code>payouts_enabled</code> show whether payments and payouts are switched on.</p>
+
+<p>The simplest route is Stripe-hosted onboarding. Stripe's onboarding page lists three options: Stripe-hosted onboarding, embedded onboarding inside your app, and API onboarding where you build your own forms. Stripe recommends the first two, because they update by themselves when requirements change. Of the API option, Stripe says it is not recommended "unless you're committed to the operational complexity required to build and maintain an API onboarding flow."</p>
+
+<p>The flow works like this:</p>
+
+<ol>
+<li>Your server creates a connected account for the seller.</li>
+<li>Your server creates an <strong>Account Link</strong> for that account. It has a return address and a refresh address.</li>
+<li>You send the logged-in seller to the link. Each link can be used only once, and Stripe says not to email or text it. Show it inside your app to the signed-in seller.</li>
+<li>The seller fills in Stripe's form. When they finish or leave, Stripe sends them to your return address.</li>
+<li>Your server checks the account to see if anything is still missing.</li>
+</ol>
+
+<p>Step 5 matters. Stripe's docs say the return address "only means the flow was entered and exited properly." It does not mean the seller is verified. Retrieve the account and check its requirements, or listen for the <code>account.updated</code> event, and save the state in your own database. If something is missing, show a clear "Finish setting up payouts" button in your app. Stripe also says that if required fields are still due when the deadline arrives, "the corresponding functionality is disabled." So a seller can be fine today and blocked later.</p>
+
+<p>The refresh address is used when the link has expired or was already used. Stripe says messaging apps that preview links can use them up, too. Your refresh address should create a new link and send the seller to it.</p>
+
+<h3>Payouts</h3>
+
+<p>Stripe's payout page says that by default, charges you make for a connected account collect in that account's balance and are paid out "on a daily rolling basis." Depending on the setup, your platform can change the schedule, make manual payouts, or hold funds in your platform balance when using destination charges or separate charges and transfers. If a payout fails, Stripe says the bank account involved is disabled until it is updated. The <code>payout.failed</code> event tells you.</p>
+
+<h3>Countries</h3>
+
+<p>Where Connect works depends on your country, the seller's country and the account setup. Stripe's docs list available countries per account setup, say some countries are only available with cross-border payouts, and say the country of some account types cannot be changed after creation. I do not list countries here, because they change. Check Stripe's current Connect country support information before you promise anything to sellers abroad.</p>
+
+<h2>5. Test with test accounts first</h2>
+
+<p>Do all of this in a Stripe sandbox, not with real money. Stripe's Connect testing page says you can use sandboxes "to simulate live mode while taking advantage of Stripe-provided special tokens." You can create test connected accounts through the API or in the Dashboard. Some of the special values Stripe documents:</p>
+
+<ul>
+<li>When a test account asks for an SMS code, use <code>000-000</code>.</li>
+<li>A date of birth of <code>1901-01-01</code> gives a successful match. Any other date gives a no-match.</li>
+<li>The address value <code>address_full_match</code> gives a successful address match, and <code>address_no_match</code> does not.</li>
+<li>Test bank numbers exist to make a payout succeed or fail, so you can see what your app does when a payout fails.</li>
+<li>Special test cards can move an account into a state where requirements are due or payouts are blocked.</li>
+</ul>
+
+<p>Stripe also notes that sandboxes "might not enforce some capabilities", which means a test can pass that would fail in live mode. Retest the full seller flow once with a real, small payment before you open to the public. Stripe's hosted onboarding page also says the return and refresh addresses may use plain HTTP in a sandbox but live mode accepts only HTTPS, so check those links before launch.</p>
+
+<h2>6. What breaks in AI-built marketplaces</h2>
+
+<h3>The fee is calculated in the browser</h3>
+
+<p>If the page works out your cut and sends <code>application_fee_amount</code>, anyone can change it. They can set the fee to zero, or the price to one cent. Stripe's own example says "On your server, create a Checkout Session", and your secret key must stay on the server. The browser should only send what was picked, such as a course or a booking id. The server looks up the real price and the seller, and works out the fee. The same rule is in <a href="/blog/form-validation-server-side-ai-built-app">form checks that must run on the server</a>.</p>
+
+<h3>Webhooks for connected accounts are missing</h3>
+
+<p>Do not trust the redirect after payment. Stripe says to listen for events instead of waiting on a callback from the client, because the customer can close the window. Stripe's Connect webhook page says all Connect integrations should set up a webhook endpoint for Connect events. It describes two scopes. <strong>Your account</strong> covers events on resources in your own account, such as your customers, direct charges, and indirect charges. <strong>Connected accounts</strong> covers events from resources that exist in connected accounts. When you create the endpoint, you choose the scope, with the <code>connect</code> setting in the API. Each event for a connected account contains a top-level <code>account</code> property that identifies the account. Then you must make API requests for that object as the connected account.</p>
+
+<p>Useful events Stripe lists include <code>account.updated</code> (requirement and status changes), <code>payment_intent.succeeded</code>, and <code>payout.failed</code>. Stripe also says "You must define separate webhook endpoints for your sandbox accounts", and tells you to check the <code>livemode</code> value. Webhooks can arrive twice, so use the checks in <a href="/blog/duplicate-records-double-clicks-retries">duplicate records, double clicks and retries</a>, and see <a href="/blog/stripe-payments-ai-built-app-launch">Stripe payments in an AI-built app</a> for the basic launch checks.</p>
+
+<h3>Refunds forget the seller's share and your fee</h3>
+
+<p>On a destination charge, a refund does not automatically take the money back from the seller. Stripe's page says that, by default, the destination account keeps the funds that were transferred to it, "leaving the platform account to cover the negative balance from the refund." To pull the money back from the seller, create the refund with <code>reverse_transfer</code> set to true. If the whole charge is refunded, the whole transfer is reversed. Otherwise a proportional amount is reversed.</p>
+
+<p>The same goes for your fee. Stripe says that by default the platform keeps the application fee when a charge is refunded. To give the fee back to the seller, set <code>refund_application_fee</code> to true. Stripe adds that if you refund the application fee on a destination charge, you must also reverse the transfer. Which you want is a business decision, so write it down in your terms. Do not leave it to whatever the generated code does. Stripe also notes that if the seller has too little balance, a refund that tries to reverse the transfer returns an error.</p>
+
+<p>Disputes work in a similar way. For destination charges, Stripe debits the disputed amount and fee from your platform, and you can try to recover the money by reversing the transfer. Your platform pays first.</p>
+
+<h3>The seller never finished onboarding</h3>
+
+<p>The most common one. A seller signs up, creates a listing, a buyer pays, and the money cannot go anywhere. Check the seller's state before you show their listing as buyable, or before you let a buyer pay. Show the seller a clear banner until they are done. Stripe's capability rules say a capability must be active to do the matching action, so build the "can this seller get paid?" check from the account's real status, saved by your webhook, not from a "signed up" flag.</p>
+
+<h2>7. When a Merchant of Record service might fit instead</h2>
+
+<p>With Connect, your platform stays responsible for a lot. Stripe's marketplace guide says that in its recommended setup you are the merchant of record, "legally responsible for the goods and services that connected accounts provide to customers", and that you cover negative balances of your connected accounts. Stripe defines a merchant of record as the legal entity responsible for facilitating the sale to a customer, handling the rules and liabilities that apply, including sales taxes.</p>
+
+<p>A different model exists, where a separate company acts as the merchant of record and takes on those responsibilities instead of you. Whether that fits depends on what you sell, where you and your sellers live, and how much control you need over checkout and payouts. I can't tell you which model fits your case. Compare what each service takes on, in writing, and talk to an accountant or lawyer before you choose.</p>
+
+<p>Taxes, seller contracts and payout rules are not something an AI tool can decide for you. If you collect personal data from sellers, also read the <a href="/blog/gdpr-checklist-small-app">GDPR checklist for a small app</a>.</p>
+
+<h2>8. Prompts for your AI tool</h2>
+
+<p>Adapt these to your app. Ask the tool to show you the plan before it changes code, and keep your Stripe keys out of the chat.</p>
+
+<ul>
+<li>"List every place in this app where money moves: checkout, payouts, refunds, webhooks. For each one, say which Stripe object it creates and whether it runs in the browser or on the server."</li>
+<li>"Which Stripe Connect charge type does this code use: direct, destination, or separate charges and transfers? Explain in plain words and tell me if it fits a marketplace where one customer buys from one seller."</li>
+<li>"Move the platform fee calculation to a server function. The browser may only send the item id. The server must look up the real price and the seller's connected account id, and calculate application_fee_amount."</li>
+<li>"Add Stripe-hosted onboarding for sellers: create the connected account, create an Account Link with return and refresh URLs, and send the signed-in seller to it. On return, retrieve the account and save charges_enabled and payouts_enabled in our database. Do not assume the return means they are verified."</li>
+<li>"Block listings and checkout for any seller whose payouts are not enabled, and show them a Finish setting up payouts button that makes a new Account Link."</li>
+<li>"Add a Connect webhook endpoint with a verified signature that handles account.updated, payment_intent.succeeded and payout.failed. Use the account property on the event, log processed event ids, and use a separate endpoint for the sandbox."</li>
+<li>"Change the refund function so it states clearly whether it uses reverse_transfer and refund_application_fee, and handle the error when the seller balance is too low. Do not change anything until you show me the plan."</li>
+</ul>
+
+<h2>9. Checklist</h2>
+
+<ul>
+<li>You know why you need Connect and have chosen your connected account setup on purpose (fees, losses, dashboard).</li>
+<li>You chose a charge type that matches how your customers buy, and wrote down why.</li>
+<li>The application fee and the price are worked out on the server, never sent from the browser.</li>
+<li>Sellers go through Stripe-hosted or embedded onboarding, and you save their real status in your database.</li>
+<li>Return and refresh addresses are handled, including expired or reused links.</li>
+<li>Listings and checkout stay off until the seller can receive payouts.</li>
+<li>You have a Connect webhook endpoint, a separate one for the sandbox, signatures are verified and repeats are ignored.</li>
+<li>You decided what a refund does to the seller's share and to your fee, and the code matches it.</li>
+<li>You know who handles disputes in your setup and how you recover the money.</li>
+<li>You tested a full flow in a sandbox with test accounts, including a failed payout and a seller who does not finish.</li>
+<li>You checked Stripe's current Connect country information for every country you sell in.</li>
+<li>You asked an accountant or lawyer about tax, contracts and whether a merchant of record fits you.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including marketplace payments, seller onboarding and refund flows that were never checked. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>

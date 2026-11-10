@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'marketplace-payments-stripe-connect-basics',
+    title: "Marketplace payments in your app: Stripe Connect basics",
+    description: "How to take a cut and pay sellers in your AI-built app: Stripe Connect, charge types, onboarding, refunds and tests. Checked in November 2026.",
+    datePublished: '2026-11-11',
+    dateModified: '2026-11-11'
+  },
+  {
     slug: 'search-ai-built-app-postgres-full-text',
     title: "Slow or missing search in your AI-built app: how to fix it",
     description: "Fix slow or missing search in your AI-built app with Postgres full-text search, typo matching and tests. Vendor facts checked in November 2026.",
