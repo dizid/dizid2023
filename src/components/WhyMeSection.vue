@@ -73,6 +73,11 @@ const reasons = [
 </template>
 
 <style scoped>
+/* In-text links: underline so they don't rely on colour alone (WCAG 1.4.1) */
+.why-text a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .why-me {
   background: var(--color-bg-secondary);
 }

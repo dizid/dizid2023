@@ -137,6 +137,9 @@ import QuickOffers from './QuickOffers.vue'
 
 .offers-more a {
   font-weight: 600;
+  /* underline so the link doesn't rely on colour alone (WCAG 1.4.1) */
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 @media (max-width: 1024px) {

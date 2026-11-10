@@ -211,6 +211,11 @@ const resetForm = () => {
 </template>
 
 <style scoped>
+/* In-text links: underline so they don't rely on colour alone (WCAG 1.4.1) */
+.contact-intro a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
 .contact {
   background: var(--color-bg-primary);
 }
