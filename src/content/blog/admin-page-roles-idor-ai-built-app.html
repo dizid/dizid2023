@@ -1,0 +1,104 @@
+<p>You built an app with Lovable, Bolt, Cursor or Replit. It has an admin page, and a customer area where people see "my orders". You log in as a normal user and the admin menu is gone. It looks safe. But a hidden menu is not a lock. I checked the facts below against the official docs in November 2026.</p>
+
+<p><strong>Short answer:</strong> a role check that only runs in the browser is a suggestion, not security. The server or the database must check the role on every request. To test it, sign up a second normal account, open the admin URLs directly, and replay the admin page's requests with that account. Then change the IDs in the requests and see if you get someone else's data.</p>
+
+<h2>The pattern: the browser checks, the data does not</h2>
+
+<p>AI tools often protect an admin page like this. The app asks "is this user an admin?" and, if not, hides the menu or redirects to the home page. That is a route guard. It runs in the visitor's browser, which the visitor controls.</p>
+
+<p>The data calls behind the page are separate. If the admin page loads all users from your database or API, and that call only needs a signed-in user, then any signed-in user can make the same call. They do not need your admin page. They can open the URL directly, or send the request with their own login.</p>
+
+<p>The second version of the same mistake is "only my own data". The page asks for <code>/orders/123</code>, and the server returns order 123 without checking that it belongs to the user. Change 123 to 124 and you see another customer's order. This is called IDOR, short for insecure direct object reference.</p>
+
+<p>This is a well-known problem class. <a href="https://top10.owasp.org/2021/A01_2021-Broken_Access_Control">OWASP lists Broken Access Control as number one (A01) in its Top 10:2021</a>. Two of the examples on that page match what I described: "Bypassing access control checks by modifying the URL (parameter tampering or force browsing)" and "Permitting viewing or editing someone else's account, by providing its unique identifier". On the fix, OWASP says access control is "only effective in trusted server-side code or server-less API", and: "Except for public resources, deny by default."</p>
+
+<h2>Check it in 15 minutes, as a normal user</h2>
+
+<p>Only test your own app. You need two accounts: your admin account and a second, normal test account.</p>
+
+<ol>
+<li><strong>Make a normal test account.</strong> Sign up with a second email. Use a private browser window so you stay logged in as both.</li>
+<li><strong>Open the admin URLs directly.</strong> Log in as the normal user and type the admin page address into the browser bar, for example <code>/admin</code> or <code>/dashboard/users</code>. If you do not know the paths, look for the routes in your code. If the page opens, that is already a problem.</li>
+<li><strong>Record what the admin page requests.</strong> Log in as your admin account, open DevTools in Chrome, go to the Network tab, and open the admin page. Note the requests that return lists of users, orders or settings.</li>
+<li><strong>Replay them as the normal user.</strong> In the admin window, right-click one of those requests and choose Copy, then Copy as fetch. Paste it into the console of the normal user's window, and swap the sign-in token (the Authorization header) for the normal user's own token. Run it. If the data comes back, the check is missing on the server.</li>
+<li><strong>Change the IDs.</strong> As the normal user, open one of your own records, like an order or a profile. Find its request in the Network tab. Change the ID in the URL or the body to the ID of a record that belongs to your admin account. If it loads, that is IDOR.</li>
+<li><strong>Try the write calls too.</strong> Reading is bad. Changing or deleting is worse. Repeat steps 4 and 5 for update and delete requests, on test data only.</li>
+<li><strong>Check what the database allows.</strong> In Supabase, read the policies on every table in the dashboard. In Firebase, read the Security Rules. If a rule only says the user is signed in, every account is allowed.</li>
+</ol>
+
+<p>Every attempt as the normal user should end in an error or an empty result. Anything else is a gap. For the Supabase basics of switching on Row Level Security (RLS), see <a href="/blog/ai-built-app-database-security-checks">the database security checks</a>.</p>
+
+<h2>Where roles must live</h2>
+
+<p>The rule is simple. A role must come from a place the user cannot change, and it must be checked where the data is, not in the browser.</p>
+
+<h3>Supabase</h3>
+
+<p>On <a href="https://supabase.com/docs/guides/database/postgres/row-level-security">its Row Level Security page</a> the docs say <code>raw_user_meta_data</code> "can be updated by the authenticated user using the <code>supabase.auth.update()</code> function." They add: "It is not a good place to store authorization data." About <code>raw_app_meta_data</code> they say it "cannot be updated by the user, so it's a good place to store authorization data."</p>
+
+<p>So if the AI tool wrote <code>user_metadata.role = 'admin'</code> into a policy or a check, treat that as a bug. A user can give themselves that value.</p>
+
+<p>Supabase also describes a pattern for roles in its guide <a href="https://supabase.com/docs/guides/api/custom-claims-and-role-based-access-control-rbac">Custom Claims &amp; Role-based Access Control (RBAC)</a>. It says to "Use Auth Hooks to add custom claims for managing role-based access control." The guide has you create "a table to track user roles and permissions" and use a custom access token hook, which "runs before a token is issued", to add the role to the user's token. Your RLS policies then check that role. Ask your AI tool to follow that guide.</p>
+
+<p>Whatever you choose, the table that holds the roles needs RLS as well. If any signed-in user can write to it, they can make themselves an admin.</p>
+
+<h3>Firebase</h3>
+
+<p>Firebase calls this custom claims. <a href="https://firebase.google.com/docs/auth/admin/custom-claims">Its custom claims guide</a> says they "should only be set from a privileged server environment by the Firebase Admin SDK." The browser app must not set them. The same page says custom claims are "only used to provide access control", not for profile data.</p>
+
+<p>Security Rules can then read the claim. <a href="https://firebase.google.com/docs/rules/rules-and-auth">The Firebase page on rules and auth</a> says "the <code>auth.token</code> variable also contains any custom claims you specify." Its Firestore example is <code>allow write: if request.auth.token.admin == true;</code>. A rule that only checks that someone is signed in is not enough for admin data.</p>
+
+<h3>Your own server functions</h3>
+
+<p>Netlify Functions, Vercel Functions and Supabase Edge Functions all run on the server, so a check there cannot be skipped by the visitor. The steps are the same on each:</p>
+
+<ol>
+<li>Read the sign-in token from the request.</li>
+<li>Verify it on the server.</li>
+<li>Get the user ID and role from the verified token or from your database, and decide.</li>
+<li>Never take "isAdmin" or a user ID from the request body or the URL. The caller can write anything there.</li>
+</ol>
+
+<p>On Firebase, <a href="https://firebase.google.com/docs/auth/admin/verify-id-tokens">the Admin SDK can verify an ID token</a> to "retrieve the <code>uid</code> from it" and securely identify the signed-in user on your server. That page also notes it "does not check whether or not the token has been revoked." On Supabase, <a href="https://supabase.com/docs/guides/auth/jwts">the JWT guide</a> says to rely on <code>supabase.auth.getClaims()</code> to verify the signature. The <a href="https://supabase.com/docs/reference/javascript/auth-getuser">getUser reference</a> says it "performs a network request to the Supabase Auth server", so the result can be used for authorization decisions.</p>
+
+<h2>"Only my own data" rules</h2>
+
+<p>For "my orders" the check has to compare the row's owner with the person asking. Both can do that in the database layer.</p>
+
+<ul>
+<li><strong>Supabase:</strong> The docs say <code>auth.uid()</code> "Returns the ID of the user making the request." A policy like <code>using ( auth.uid() = user_id )</code> on the orders table only lets a user see rows where <code>user_id</code> is theirs. The page notes that without a signed-in user, <code>auth.uid()</code> "returns <code>null</code>", and recommends adding <code>auth.uid() IS NOT NULL AND</code>. It also warns that a policy such as <code>to anon using ( true )</code> "grants every unauthenticated visitor read access to every row the role can already reach through grants."</li>
+<li><strong>Firebase:</strong> <a href="https://firebase.google.com/docs/firestore/security/rules-conditions">the Security Rules conditions page</a> shows this pattern: "Another common pattern is to make sure users can only read and write their own data", with the rule <code>allow read, update, delete: if request.auth != null &amp;&amp; request.auth.uid == userId;</code>.</li>
+</ul>
+
+<p>If your app calls your own API instead, the same idea applies in code. Take the user ID from the verified token, and filter the query with it. Do not use an ID that came in the request. That is the whole fix for IDOR.</p>
+
+<h2>Prompts for your AI tool</h2>
+
+<p>"Make it secure" makes the tool rewrite things you did not ask about. Name the table, say where to enforce it, and say what must not change.</p>
+
+<ul>
+<li><em>"The /admin page hides itself for non-admins, but the data calls behind it don't check the role. Enforce the admin check in the database with RLS policies on the tables the admin page reads and writes, not just in the frontend. Keep the UI exactly the same."</em></li>
+<li><em>"Show me every place the app reads a role from user_metadata. Don't change anything yet. Then move the role to a roles table that only admins can write, following Supabase's RBAC guide."</em></li>
+<li><em>"The orders table: add an RLS policy so a signed-in user can only select, update and delete rows where user_id equals auth.uid(). Only admins can see all rows. Don't change the page layout."</em></li>
+<li><em>"In the Netlify function that returns orders, verify the sign-in token on the server and take the user ID from the verified token. Ignore any user ID sent in the request. Return 403 if the user is not allowed."</em></li>
+</ul>
+
+<p>Do not trust "done" from the tool. Repeat the 15-minute check with the second account. Then log in as the admin and make sure the admin page still works. A tight rule can lock out the real admin too.</p>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>A normal test account cannot open admin pages or load admin data.</li>
+<li>Replaying admin requests as a normal user returns an error.</li>
+<li>Changing an ID in a URL or request never shows another user's record.</li>
+<li>Roles are not stored in <code>user_metadata</code> or anywhere a user can edit.</li>
+<li>The roles table (if you have one) cannot be written by normal users.</li>
+<li>Firebase claims are set only on a server, and Security Rules check them.</li>
+<li>Every server function verifies the token and takes the user ID and role from it, never from the request body.</li>
+</ol>
+
+<p>Related: the <a href="/blog/launch-ready-ai-built-app-checklist">launch-ready checklist</a>, <a href="/blog/api-key-exposed-ai-built-app-check">checking for exposed API keys</a>, <a href="/blog/stop-fake-bot-signups-app">stopping fake sign-ups</a> (anyone can create a normal account) and <a href="/blog/testing-ai-built-app-first-tests">the first tests for an AI-built app</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including moving role and "own data" checks from the browser into the database and server. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>

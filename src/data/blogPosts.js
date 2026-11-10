@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'admin-page-roles-idor-ai-built-app',
+    title: "Anyone can open your admin page: fix roles in AI-built apps",
+    description: "Admin page hidden only in the browser? Check roles and \"my own data\" rules in your Lovable, Bolt or Cursor app as a normal user, and how to fix them.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'api-key-exposed-ai-built-app-check',
     title: "Is your API key exposed? Check your AI-built app in 15 minutes",
     description: "Which API keys may be public and which never? Check your AI-built app in 15 minutes, and what to do first if a secret key leaked. Checked in November 2026.",
