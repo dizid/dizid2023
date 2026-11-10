@@ -12,8 +12,14 @@ export default defineConfig({
     assetsInlineLimit: (filePath) => (/\.(woff2?|ttf|otf)$/.test(filePath) ? false : undefined),
   },
   ssgOptions: {
+    // Every static route, plus /404: the catch-all route renders "Page not found"
+    // there, written to dist/404.html, which netlify.toml serves (status 404) for
+    // any path without a page. Routes with params (the catch-all) can't be prerendered.
+    includedRoutes(paths) {
+      return [...paths.filter((path) => !path.includes(':') && !path.includes('*')), '/404']
+    },
     // Stamp each prerendered page with its route; src/main.js only hydrates when it
-    // matches the URL (the SPA fallback serves the home HTML for other paths).
+    // matches the URL (unknown paths get the 404 HTML and render fresh).
     onPageRendered(route, renderedHTML) {
       return renderedHTML.replace(
         '<div id="app" data-server-rendered="true">',

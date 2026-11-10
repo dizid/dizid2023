@@ -51,7 +51,14 @@ export const routes = [
     name: 'blog',
     component: () => import('../views/BlogIndexView.vue')
   },
-  ...blogPostRoutes
+  ...blogPostRoutes,
+  // Anything else: "Page not found". Prerendered once as /404 (vite.config.js) and
+  // served by Netlify with status 404 for every path that has no page.
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('../views/NotFoundView.vue')
+  }
 ]
 
 // Scroll to top on route change, or to hash if present

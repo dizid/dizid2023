@@ -16,8 +16,8 @@ import { reloadOnStaleChunks } from './services/staleChunkReload.js'
 
 // Hydrate (reuse the prerendered HTML) instead of vite-ssg's default of throwing it away
 // and rendering every page a second time in the browser. Only when this HTML was
-// prerendered for this exact path: Netlify's SPA fallback serves the home HTML for paths
-// that weren't prerendered, and those must render fresh. vite.config.js stamps the route.
+// prerendered for this exact path: Netlify serves the /404 HTML for paths that weren't
+// prerendered, and those must render fresh. vite.config.js stamps the route.
 function shouldHydrate() {
   if (typeof document === 'undefined') return false
   const renderedFor = document.getElementById('app')?.dataset.ssgRoute
