@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'ai-built-app-works-in-editor-breaks-live',
+    title: "Your AI-built app works in the editor but breaks live: 8 causes",
+    description: "Lovable, Bolt, Cursor or Replit app fine in the editor but broken live? 8 causes, how to check each fast, and a fix order. Checked in November 2026.",
+    datePublished: '2026-11-10',
+    dateModified: '2026-11-10'
+  },
+  {
     slug: 'cors-error-ai-built-app-fix',
     title: "'Blocked by CORS policy' in your AI-built app: the real fix",
     description: "Fix the 'blocked by CORS policy' error in your AI-built app: what it means, preflight, per-platform fixes and a checklist. Checked in November 2026.",

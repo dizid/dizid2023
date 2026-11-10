@@ -1,0 +1,125 @@
+<p>Your app works in the builder's preview or on your own computer. Then you deploy it, and something is broken. A blank page. A login that fails. Data that never loads. A page that gives a 404 when you refresh. Images that are missing. This happens a lot with apps from Lovable, Bolt, Cursor and Replit, and it is almost always one of a short list of causes. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> the editor and the live site are two different places. They have different addresses, different settings and a different build step. Your app was only ever tested in the first one. Open the browser console first, then the Network tab, then the host's deploy log. Those three tell you which of the eight causes below you have. Work through them in order and change one thing at a time.</p>
+
+<h2>1. Environment variables are missing on the host</h2>
+
+<p><strong>Symptom:</strong> blank page, "undefined" in the console, or data calls that fail with an authorization error. The app worked locally because a <code>.env</code> file on your computer held the values. That file usually is not uploaded, and it should not be.</p>
+
+<p><strong>Confirm it:</strong> open the host's settings (Netlify: site settings, environment variables. Vercel: project settings, environment variables). Compare the names with your local <code>.env</code> file. Any name that is in the file but not on the host is a suspect. Then look at the spelling. Vite's <a href="https://vite.dev/guide/env-and-mode">env docs</a> say: "Variables prefixed with <code>VITE_</code> will be exposed in client-side source code after Vite bundling." So a browser variable named <code>SUPABASE_URL</code> without the prefix will be <code>undefined</code> in the browser, even if you set it on the host.</p>
+
+<p><strong>Fix:</strong> add each missing variable on the host, with the exact same name. Then redeploy. This step is easy to forget. The same Vite docs say the values "are bundled into your source code at build time." Vercel's <a href="https://vercel.com/docs/environment-variables">environment variable docs</a> say: "Any change you make to environment variables are not applied to previous deployments, they only apply to new deployments." Netlify's <a href="https://docs.netlify.com/build/configure-builds/environment-variables/">build variable docs</a> say its variables are "accessible during your build". So on both hosts, treat a changed value as a reason to build again.</p>
+
+<p><strong>One warning:</strong> Vite also says <code>VITE_*</code> variables "should not contain sensitive information such as API keys". Anyone can read them in the public JavaScript. If your secret key has a <code>VITE_</code> name, read <a href="/blog/api-key-exposed-ai-built-app-check">the API key check</a> before you do anything else.</p>
+
+<h2>2. API URLs still point at localhost or the builder's preview</h2>
+
+<p><strong>Symptom:</strong> the page loads, but lists and forms stay empty or show an error. Often it works on your computer only.</p>
+
+<p><strong>Confirm it:</strong> open the browser developer tools, then the Network tab, then reload. Look for red requests. Click one and read the address. If it starts with <code>http://localhost</code>, or with the address of the builder's preview, you found it. Visitors' browsers cannot reach your laptop, and a preview address may be switched off or changed.</p>
+
+<p><strong>Fix:</strong> put the address in one environment variable, such as <code>VITE_API_URL</code>, and set the live value on the host (see cause 1). Then redeploy. Prompt for your AI tool: "Search the whole project for localhost, 127.0.0.1 and the preview domain. Replace each hard-coded address with an environment variable. List every file you changed." If you also have a separate test database, see <a href="/blog/staging-copy-ai-built-app-preview-test-database">staging copies and preview databases</a> so the live site does not write into test data.</p>
+
+<h2>3. Refresh or a direct link gives a 404</h2>
+
+<p><strong>Symptom:</strong> the home page works. You click around, and it works. You press refresh on <code>/pricing</code>, or open a shared link, and you get a 404 page from the host.</p>
+
+<p><strong>Why:</strong> most AI-built front ends are single-page apps. There is only one real file, <code>index.html</code>. The app draws the other pages in the browser. The host looks for a file called <code>/pricing</code>, finds nothing and says 404.</p>
+
+<p><strong>Confirm it:</strong> open a deep link in a new tab. If the host's own 404 page shows up, and the console is empty, this is it.</p>
+
+<p><strong>Fix on Netlify:</strong> add a rewrite rule. Netlify's <a href="https://docs.netlify.com/manage/routing/redirects/rewrites-proxies/">rewrites docs</a> show this line for a <code>_redirects</code> file in your publish folder: <code>/*  /index.html  200</code>. The <code>netlify.toml</code> version is a <code>[[redirects]]</code> block with <code>from = "/*"</code>, <code>to = "/index.html"</code> and <code>status = 200</code>. Netlify says it will "effectively serve the <code>index.html</code> instead of giving a <code>404</code> no matter what URL the browser requests."</p>
+
+<p><strong>Fix on Vercel:</strong> Vercel's <a href="https://vercel.com/docs/project-configuration/vercel-json">vercel.json docs</a> show a rewrite for single-page apps: <code>"rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]</code>.</p>
+
+<p>One note: a real 404 page for URLs that truly do not exist is still good for visitors, so ask your AI tool to add a "not found" page inside the app. Also, single-page apps have limits with search engines, see <a href="/blog/spa-seo-lovable-bolt-google-cant-see">why Google may not see your pages</a>.</p>
+
+<h2>4. File names with the wrong upper or lower case</h2>
+
+<p><strong>Symptom:</strong> the build fails on the host with "Could not resolve" or "Module not found", but works on your computer. Or images are missing live.</p>
+
+<p><strong>Why:</strong> your computer may treat <code>Header.vue</code> and <code>header.vue</code> as the same file. The build server may not. Netlify's <a href="https://docs.netlify.com/build/configure-builds/troubleshooting-tips/">troubleshooting tips</a> say the Netlify build "may fail as the file system used in Netlify builds is case sensitive while your build environment is not." It adds that the error messages "may not clearly indicate this".</p>
+
+<p><strong>Confirm it:</strong> read the deploy log. Find the first error line and the file name in it. Compare the spelling and the capital letters with the import and with the real file on disk. For example, <code>./Components/Header</code> against a folder called <code>components</code>.</p>
+
+<p><strong>Fix:</strong> make the import and the real file name match exactly, including capitals. The same Netlify page warns that on a case-insensitive computer, renaming a file and committing may not register in Git. You may need <code>git mv</code> to change the case. If that sounds hard, ask your AI tool: "Find every import and image path where the letter case does not match the real file name. Fix them and use <code>git mv</code> for renames."</p>
+
+<h2>5. The build differs from the dev server</h2>
+
+<p><strong>Symptom:</strong> everything works while you run the dev server. The deploy fails, or the live site is blank.</p>
+
+<p><strong>Why:</strong> the dev server is forgiving. The production build is stricter, and it bundles and shrinks your code. Some mistakes only show up there.</p>
+
+<p><strong>Confirm it:</strong> run the real build on your computer. Vite's <a href="https://vite.dev/guide/static-deploy">deployment guide</a> says: "You may run <code>npm run build</code> command to build the app." Then run <code>npm run preview</code>. Vite describes it as "an easy way to check if the production build looks OK in your local environment." Open the address it prints (by default <code>http://localhost:4173</code>) and look at the console. If it breaks here, it will break live. Vite also notes that <code>vite preview</code> is "not meant as a production server", so use it for checking only.</p>
+
+<p><strong>Fix:</strong> read the first error, not the last. Copy it to your AI tool with the file name. If the build passes locally but fails on the host, open the host's deploy log and compare the Node version and the build command with your local ones. Do the same checks again after each change.</p>
+
+<h2>6. Mixed content: an https page calls an http address</h2>
+
+<p><strong>Symptom:</strong> data does not load on the live site. The console says "Mixed Content" and that the request was blocked.</p>
+
+<p><strong>Why:</strong> your live site runs on https. Somewhere in the code, an address starts with <code>http://</code>. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content">mixed content page</a> says browsers "block insecure requests for all other resource types", after auto-upgrading images, video and audio. It lists <code>fetch()</code> requests among the blocked kinds.</p>
+
+<p><strong>Confirm it:</strong> in the console, look for the word "Mixed Content". In the Network tab, a blocked request shows the <code>http://</code> address in red.</p>
+
+<p><strong>Fix:</strong> change the address to <code>https://</code>. If the other service does not offer https at all, call it from a server function you control instead of from the browser. Prompt: "Find every http:// address in this project and switch it to https. Tell me if any service does not support https."</p>
+
+<h2>7. The sign-in service does not know your live domain</h2>
+
+<p><strong>Symptom:</strong> login works on localhost. On the live site you get an error, a redirect back to localhost, or a loop. Email links for "confirm email" or "reset password" open the wrong address.</p>
+
+<p><strong>Supabase:</strong> the <a href="https://supabase.com/docs/guides/auth/redirect-urls">redirect URL docs</a> say the Site URL "defines the default redirect URL when no <code>redirectTo</code> is specified in the code." It defaults to <code>http://localhost:3000</code>, and the docs say to change it "to your production URL." They also say a <code>redirectTo</code> value "should match the Redirect URLs list configuration". In the dashboard, open Authentication, then URL Configuration, and check both.</p>
+
+<p><strong>Firebase:</strong> Firebase's <a href="https://firebase.google.com/docs/auth/web/google-signin">Google sign-in guide</a> talks about adding your domain "to the list of authorized domains in the Firebase console" when you use a custom domain. Open Authentication settings in the console and check that your live domain is on that list. Include the <code>www</code> version if you use it.</p>
+
+<p><strong>Confirm it:</strong> try to sign in on the live site. Read the address bar after the redirect, and the console message. Then compare the live domain with the list in your auth settings, letter by letter. Social buttons have their own redirect list at Google or Apple too, see <a href="/blog/social-sign-in-google-apple-what-breaks">what breaks with social sign-in</a>.</p>
+
+<h2>8. CORS on the live address</h2>
+
+<p><strong>Symptom:</strong> the console says "blocked by CORS policy". It only happens on the live domain, because your server only allows the old address. A short version: the browser asks the other server "is this page allowed to read your answer?", and the answer is no. The fix is on the server side, not in the browser. See <a href="/blog/cors-error-ai-built-app-fix">the full CORS guide</a> for the steps per platform.</p>
+
+<h2>The 10-minute diagnostic order</h2>
+
+<ol>
+<li>Open the live site in a private window. Open developer tools, then the Console tab. Reload. Copy the first red error.</li>
+<li>Open the Network tab and reload. Sort by status. Click the first red request and read its address and status. A localhost address means cause 2. A blocked http address means cause 6. A CORS message means cause 8.</li>
+<li>If the page itself is a host 404 on refresh, go to cause 3.</li>
+<li>If the deploy failed, open the host's deploy log. Read the first error. A missing file means cause 4. Anything else, try cause 5 on your computer.</li>
+<li>Compare the host's environment variables with your local <code>.env</code> file. Check names and the <code>VITE_</code> prefix (cause 1).</li>
+<li>If the problem is login only, check the auth service's Site URL, Redirect URLs or authorized domains (cause 7).</li>
+<li>Change one thing. Redeploy. Test again on the live site. Do not stack several changes.</li>
+<li>Still stuck? Roll back to the last working deploy, so visitors are fine while you look. See <a href="/blog/roll-back-broken-deploy-netlify-vercel-lovable-bolt">how to roll back a broken deploy</a>.</li>
+</ol>
+
+<h2>Example prompts for your AI tool</h2>
+
+<ul>
+<li>"This is the console error from the live site: [paste]. Which file and line does it come from? Explain the cause in plain words before you change code."</li>
+<li>"List every environment variable this project reads. Mark which are used in the browser and which on the server. Tell me which names need the VITE_ prefix."</li>
+<li>"Add a rewrite so every path returns index.html with status 200 on Netlify. Show me the file you change."</li>
+<li>"Run npm run build and fix every error. Then tell me what npm run preview shows."</li>
+<li>"List every place the live domain must be added: auth redirect URLs, allowed origins and email templates."</li>
+</ul>
+
+<p>If you are moving the app between tools, <a href="/blog/move-lovable-bolt-app-own-github-hosting">moving a Lovable or Bolt app to your own hosting</a> shows which settings do not travel with the code.</p>
+
+<h2>Checklist</h2>
+
+<ul>
+<li>The first console error is copied, with the failing address.</li>
+<li>Every variable from <code>.env</code> exists on the host, with the same name.</li>
+<li>Browser variables start with <code>VITE_</code>, and none holds a secret.</li>
+<li>The app was redeployed after the last variable change.</li>
+<li>No <code>localhost</code> or preview address is left in the code.</li>
+<li>A rewrite to <code>index.html</code> is in place, and refresh works on a deep link.</li>
+<li>Import paths and file names match in upper and lower case.</li>
+<li><code>npm run build</code> and <code>npm run preview</code> work on your computer.</li>
+<li>No <code>http://</code> address is called from the https site.</li>
+<li>The live domain, with and without <code>www</code>, is in the auth settings.</li>
+<li>CORS allows the live origin.</li>
+<li>Tested on the live domain, in a private window, on a phone too.</li>
+</ul>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including apps that work in the editor but break on the live site. <a href="/hire/fix-ai-built-app">Send me the details</a> and I'll reply within 24 hours.</p>
