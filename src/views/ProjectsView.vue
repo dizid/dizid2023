@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useHead } from '@unhead/vue'
 import ProjectCard from '../components/ProjectCard.vue'
 import { fetchProjects } from '../services/airtable.js'
+import { caseStudies } from '../data/caseStudies.js'
 import { useBreadcrumbSchema } from '../composables/useBreadcrumbSchema.js'
 
 useHead({
@@ -28,41 +29,23 @@ useBreadcrumbSchema([
   { name: 'Projects', url: 'https://dizid.com/projects' }
 ])
 
-// Fallback projects when Airtable is not configured
-const fallbackProjects = [
-  {
-    id: '1',
-    title: 'Playground',
-    description: 'A digital playground for experimenting with web technologies and AI integrations.',
-    icon: 'fa-solid fa-gamepad',
-    tech: ['Vue 3', 'OpenAI', 'Netlify Functions'],
-    // No GitHub links here or on Marketing Todo: both repos are private (404 for visitors)
-    url: 'https://playground.dizid.com'
-  },
-  {
-    id: '2',
-    title: 'Marketing Todo',
-    description: 'A focused marketing tool designed for startups to plan and track their marketing initiatives.',
-    icon: 'fa-solid fa-bullseye',
-    tech: ['JavaScript', 'Vue']
-  },
-  {
-    id: '3',
-    title: 'Analyze.me',
-    description: 'An AI-powered self-analyzer that provides insights and analysis based on user input.',
-    icon: 'fa-solid fa-brain',
-    tech: ['Vue', 'AI/ML'],
-    github: 'https://github.com/dizid/analyze.me'
-  },
-  {
-    id: '4',
-    title: 'Chess',
-    description: 'An interactive chess game implementation with a clean UI and smooth gameplay.',
-    icon: 'fa-solid fa-chess',
-    tech: ['Vue', 'Game Logic'],
-    github: 'https://github.com/dizid/chess'
-  }
-]
+// Shown before the live Airtable list loads, and the list in the prerendered
+// HTML that AI crawlers read (they don't run JavaScript): the same own
+// products as the homepage's proof section (src/data/caseStudies.js), not old
+// experiments. Also what visitors keep if Airtable is down.
+const FALLBACK_ICONS = {
+  'HappyRoam.travel': 'fa-solid fa-earth-asia',
+  'TestSwap.dev': 'fa-solid fa-vial-circle-check',
+  'Foreground.info': 'fa-solid fa-chart-line'
+}
+const fallbackProjects = caseStudies.map((study, index) => ({
+  id: `case-${index + 1}`,
+  title: study.title,
+  description: study.description,
+  icon: FALLBACK_ICONS[study.title] || 'fa-solid fa-code',
+  tech: study.tech || [],
+  url: study.url
+}))
 
 // Present synchronously at SSG-render time so prerendered HTML always has
 // real project content; onMounted overwrites with live Airtable data once
