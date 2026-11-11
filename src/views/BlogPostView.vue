@@ -189,6 +189,8 @@ useBreadcrumbSchema([
   background: var(--color-bg-tertiary);
   border-radius: var(--radius-sm);
   padding: 0.1em 0.35em;
+  /* Long inline code (URLs, API calls) may break so posts don't scroll sideways on phones */
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 768px) {
