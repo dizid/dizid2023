@@ -96,10 +96,11 @@ export default async () => {
     // stale window served quiet-hour visitors a list whose images no longer load.
     return json({ projects }, 200, {
       'Cache-Control': 'public, max-age=300',
-      'Netlify-CDN-Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=1800',
+      'Netlify-CDN-Cache-Control': 'public, durable, s-maxage=1800, stale-while-revalidate=1800',
       // One cache entry whatever the query string (T-0563): by default every ?x=... got its
       // own entry, so each made-up query cost one of Airtable's free monthly API calls.
-      // Only the never-used '_v' parameter varies the key.
+      // Only the never-used '_v' parameter varies the key. 'durable' (above) shares the
+      // cached copy between Netlify's edge nodes, so a miss on one node doesn't call Airtable.
       'Netlify-Vary': 'query=_v',
     })
   } catch (err) {
