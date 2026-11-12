@@ -63,7 +63,12 @@ const json = (body: unknown, status: number, extraHeaders: Record<string, string
     headers: { 'Content-Type': 'application/json; charset=utf-8', ...extraHeaders },
   })
 
-export default async () => {
+export default async (req: Request) => {
+  // The page asks for the bare URL. Any query string is refused before Airtable is
+  // called (T-0573): the CDN keys entries by '_v', so '?_v=1', '?_v=2', ... each missed
+  // the cache and cost one of Airtable's ~1,000 free monthly API calls.
+  if (new URL(req.url).search) return json({ error: 'This address takes no query string' }, 400)
+
   const token = process.env.AIRTABLE_API_KEY || process.env.VITE_AIRTABLE_API_KEY
   const baseId = process.env.AIRTABLE_BASE_ID || process.env.VITE_AIRTABLE_BASE_ID
   const table = process.env.AIRTABLE_TABLE_NAME || process.env.VITE_AIRTABLE_TABLE_NAME || 'Projects'
@@ -99,7 +104,8 @@ export default async () => {
       'Netlify-CDN-Cache-Control': 'public, durable, s-maxage=1800, stale-while-revalidate=1800',
       // One cache entry whatever the query string (T-0563): by default every ?x=... got its
       // own entry, so each made-up query cost one of Airtable's free monthly API calls.
-      // Only the never-used '_v' parameter varies the key. 'durable' (above) shares the
+      // Only the never-used '_v' parameter varies the key, and any query string gets a 400
+      // above without calling Airtable (T-0573). 'durable' (above) shares the
       // cached copy between Netlify's edge nodes, so a miss on one node doesn't call Airtable.
       'Netlify-Vary': 'query=_v',
     })
