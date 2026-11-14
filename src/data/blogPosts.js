@@ -8,6 +8,20 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'duplicate-stripe-subscriptions-one-customer',
+    title: "Customer charged twice? Stop duplicate Stripe subscriptions",
+    description: "Why a customer ends up with two Stripe subscriptions, and how to stop it: one Customer, a server check, the billing portal, webhook alerts. Nov 2026.",
+    datePublished: '2026-11-15',
+    dateModified: '2026-11-15'
+  },
+  {
+    slug: 'lost-updates-two-tabs-overwrite-changes',
+    title: "Saving in one tab wipes another tab's changes? Lost updates",
+    description: "Edits vanish when two tabs or two people save the same record? Why lost updates happen and how to fix them with a version check. Checked in Nov 2026.",
+    datePublished: '2026-11-15',
+    dateModified: '2026-11-15'
+  },
+  {
     slug: 'pdf-invoices-reports-ai-built-app',
     title: "Create PDF invoices and reports in your AI-built app",
     description: "Three ways to make PDFs in your AI-built app, the hosting limits that break them, and how to store and send invoices safely. Checked in November 2026.",

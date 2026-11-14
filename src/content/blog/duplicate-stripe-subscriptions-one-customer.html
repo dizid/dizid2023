@@ -1,0 +1,112 @@
+<p>The email every app owner dreads: "Why am I being charged twice?" You open Stripe and see one person with two active subscriptions for the same plan. In November 2026 I found the paths to this in two of my own apps, HappyRoam and ClientPilot: both would open a new checkout for someone who already paid, and HappyRoam offered a fresh subscription to a member whose renewal had failed, while Stripe kept retrying the old one. Both were fixed before any customer hit them. Stripe facts below come from Stripe's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> Duplicate subscriptions come from your app, not from Stripe. Give each user one Stripe Customer and always pass it to Checkout. Before you create a checkout, ask Stripe whether that customer already has a live subscription, and if so, send them to the billing portal instead. Turn on Stripe's own "one subscription" setting as a second guard. Send failed payments to the billing portal, never to a new checkout. And make your webhook notice a second subscription, so you hear about it before the customer does.</p>
+
+<h2>1. How a second subscription happens</h2>
+
+<ul>
+<li><strong>No customer passed to Checkout.</strong> Stripe's <a href="https://docs.stripe.com/api/checkout/sessions/create">Checkout Session API</a> says that if the customer is blank "for Checkout Sessions in subscription mode", "Checkout will create a new Customer object based on information provided during the payment flow." So every checkout makes a new customer, and nothing links the second subscription to the first.</li>
+<li><strong>The Upgrade button still shows for paying users.</strong> Your app decides who is "Pro" from its own database. If that flag is late (the webhook has not arrived yet) or wrong, a paying user sees "Go Pro" and buys again.</li>
+<li><strong>A failed renewal.</strong> Stripe's <a href="https://docs.stripe.com/billing/subscriptions/overview">subscriptions overview</a> says "a failed renewal payment makes the subscription past_due. Stripe continues to generate invoices and attempts payment based on your retry settings." If your app switches Pro off at that point and shows the normal checkout, the user subscribes again. If a retry on the old subscription then succeeds, they pay twice. This was the HappyRoam case.</li>
+<li><strong>Two tabs or the back button.</strong> Someone opens checkout twice, or pays and goes back to the pricing page.</li>
+</ul>
+
+<h2>2. Turn on Stripe's own guard</h2>
+
+<p>Stripe has a setting for this. Its <a href="https://docs.stripe.com/payments/checkout/limit-subscriptions">limit customers to one subscription</a> page says: "You can redirect customers that already have an active subscription to the customer portal or your website to manage their subscription. This redirection works with Checkout (including the pricing table) and Payment Links." Three details on that page matter:</p>
+
+<ul>
+<li>"Stripe uses either the Customer object (if you provide it in the Checkout Session) or the email address to detect if a customer already has an active subscription." If you don't pass the customer, a different email at checkout gets past it.</li>
+<li>For the portal option: "Disabling the login link disables this feature, which means that customers can create multiple subscriptions."</li>
+<li>The page lists four statuses that count as an active subscription: Active, PastDue, Unpaid and Paused. Trialing is not in that list. If you offer a free trial, test whether a customer in a trial can start a second subscription.</li>
+</ul>
+
+<p>Use this setting, but don't rely on it alone. The check in your own server, below, also covers trials, and gives you control over the message.</p>
+
+<h2>3. Check on your server before every checkout</h2>
+
+<p>Create the Stripe Customer once, when the user first wants to pay, and store its ID on the user. Then, in the server function that creates the checkout, ask Stripe about that customer first. The <a href="https://docs.stripe.com/api/subscriptions/list">list subscriptions API</a> says "By default, returns a list of subscriptions that have not been canceled", and for the <code>status</code> filter, "Passing in a value of all will return subscriptions of all statuses."</p>
+
+<pre><code>// Server only: the Stripe secret key never goes to the browser.
+const LIVE = ['active', 'trialing', 'past_due', 'unpaid', 'paused']
+
+const subs = await stripe.subscriptions.list({
+  customer: user.stripeCustomerId, status: 'all', limit: 20
+})
+const current = subs.data.find(s => LIVE.includes(s.status))
+
+if (current) {
+  // Already subscribed, or a payment needs fixing: billing portal, not a new plan.
+  const portal = await stripe.billingPortal.sessions.create({
+    customer: user.stripeCustomerId,
+    return_url: 'https://example.com/account'
+  })
+  return { url: portal.url }
+}
+
+const firstTime = subs.data.length === 0
+const session = await stripe.checkout.sessions.create({
+  mode: 'subscription',
+  customer: user.stripeCustomerId,
+  line_items: [{ price: PRICE_ID, quantity: 1 }],
+  ...(firstTime ? { subscription_data: { trial_period_days: 7 } } : {}),
+  success_url: 'https://example.com/welcome',
+  cancel_url: 'https://example.com/pricing'
+})
+return { url: session.url }</code></pre>
+
+<p>Three things this does. A paying user gets the billing portal, where they can change or cancel their plan. A user with a failed payment also gets the portal, to fix their card on the subscription Stripe is already retrying. And the free trial only goes to customers who never had a subscription. Without that last check, a user can cancel before the trial ends and start a new trial, again and again. That was the second HappyRoam fix. Stripe's <a href="https://docs.stripe.com/payments/checkout/free-trials">free trials guide</a> names the parameter: "subscription_data.trial_period_days, the length (in days) of your free trial."</p>
+
+<p>For the portal, Stripe's <a href="https://docs.stripe.com/customer-management/integrate-customer-portal">portal guide</a> says that to create a session "you need the customer's ID and a return_url, which is required if a default return URL isn't set in the Dashboard configuration." Turn the portal on in your Stripe settings first, and choose which plans people may switch between there.</p>
+
+<p>One choice to make: if Stripe can't be reached for the check, do you block the checkout or let it through? HappyRoam lets it through, so a real buyer is never blocked, and the webhook check below catches the rare duplicate.</p>
+
+<h2>4. Hide the Buy button from paying users, and say why</h2>
+
+<p>On your pricing page, a paying user should see "Your plan" and a "Manage billing" button, not "Subscribe". A user with a failed payment should see "Your last payment failed. Update your card", linked to the portal. Do this in the page and in the server check: the page is for clarity, the server is what actually stops the second subscription.</p>
+
+<h2>5. Let the webhook catch what slips through</h2>
+
+<p>Stripe's <a href="https://docs.stripe.com/billing/subscriptions/webhooks">subscription webhooks page</a> lists <code>customer.subscription.created</code>, "Sent when the subscription is created", and <code>customer.subscription.updated</code>, "Sent when a subscription starts or changes." In your handler:</p>
+
+<ul>
+<li>On <code>created</code>, list the customer's other live subscriptions. If there is more than one, send yourself an alert at once. Then you can cancel and refund the extra one before the customer notices.</li>
+<li>Store the subscription ID that gives the user access. Ignore cancel and update events for any other subscription. Otherwise, cancelling the duplicate can switch off access the customer still pays for. ClientPilot and HappyRoam both needed this fix.</li>
+<li>Check the event's customer and price belong to your app, if one Stripe account serves several apps.</li>
+</ul>
+
+<h2>6. If it already happened</h2>
+
+<ol>
+<li>Find customers with more than one live subscription. A short script with the list call above, grouped by customer, does it.</li>
+<li>Keep the oldest subscription, so the customer's renewal date doesn't change. Cancel the newer one.</li>
+<li>Refund the duplicate charges in Stripe, and write to the customer before they write to you.</li>
+<li>Then add the server check from section 3, so it can't happen again.</li>
+</ol>
+
+<h2>Prompts for Lovable, Bolt and Cursor</h2>
+
+<ul>
+<li><em>"In the server function that creates the Stripe Checkout Session: create one Stripe Customer per user and store its id on the user; always pass customer to Checkout. Before creating a session, list the customer's subscriptions with status all. If one is active, trialing, past_due, unpaid or paused, return a billing portal session URL instead. Only add trial_period_days if the customer never had a subscription."</em></li>
+<li><em>"On the pricing page, users with an active plan see 'Manage billing' instead of 'Subscribe'. Users whose payment failed see 'Your last payment failed. Update your card' with a link to the billing portal."</em></li>
+<li><em>"In the Stripe webhook, on customer.subscription.created, check if the customer now has more than one live subscription and email me if so. Only change a user's access for events about the subscription id stored on that user."</em></li>
+</ul>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Each user has one Stripe Customer, stored on the user, passed to every checkout.</li>
+<li>The server checks for a live subscription before creating a checkout.</li>
+<li>Paying users and failed payments go to the billing portal.</li>
+<li>Stripe's "limit customers to one subscription" setting is on.</li>
+<li>The free trial is only for customers who never subscribed.</li>
+<li>The webhook alerts you about a second live subscription.</li>
+<li>Access only changes for events about the stored subscription.</li>
+<li>You tested it in test mode: subscribe, then try to subscribe again.</li>
+</ol>
+
+<p>Getting payments ready for launch in general: <a href="/blog/stripe-payments-ai-built-app-launch">Stripe payments in an AI-built app, before launch</a>. Double charges from one double click are a different bug: <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including Stripe checkouts, webhooks and billing pages that charge each customer once. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>

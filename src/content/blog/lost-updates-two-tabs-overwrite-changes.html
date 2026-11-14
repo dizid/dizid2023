@@ -1,0 +1,123 @@
+<p>A user says: "I changed the price, and an hour later it was back to the old one." Nobody gets an error. The data is simply gone, because a second save, from another tab or another person, wrote an older copy over it. This is called a lost update. I found this bug in my own app 3P on November 12, 2026: with two tabs open, saving a decision in one tab deleted the decisions saved in the other. It was fixed the same day, and section 1 shows how. Vendor facts below come from each vendor's own docs, checked in November 2026.</p>
+
+<p><strong>Short answer:</strong> A lost update happens when your app loads a copy, the user edits it for a while, and the save sends the whole copy back. Fix it in two layers. First, save only what changed: single fields, not the whole record, and never a whole list. Second, add a version check, so a save based on an old copy is refused instead of applied. Then tell the user what happened, and keep their typing so they can redo it.</p>
+
+<h2>1. How the lost update happens</h2>
+
+<p>The pattern is simple, and it is everywhere:</p>
+
+<ol>
+<li>Tab A loads a product: name "Lamp", price 40, stock 12.</li>
+<li>Tab B loads the same product.</li>
+<li>In tab A, someone sets the price to 35 and saves. The database now holds price 35.</li>
+<li>In tab B, someone fixes a typo in the name and saves. Tab B sends its whole copy, including price 40.</li>
+<li>The price is 40 again. Nobody saw a warning.</li>
+</ol>
+
+<p>Tab B could be the same person in a second tab, a colleague, a phone that was left open since this morning, or an automatic save that fires later. The cause is the same: the save writes values the user never touched.</p>
+
+<p>Your database cannot see this. The gap between loading and saving can be minutes, and no database transaction stays open that long. PostgreSQL's <a href="https://www.postgresql.org/docs/current/transaction-iso.html">isolation docs</a> describe conflict errors such as "could not serialize access due to concurrent update", but those apply to transactions that overlap inside the database. Two separate requests, sent minutes apart, are two separate transactions, and the second one simply wins. You have to build the check into the app.</p>
+
+<h3>The worst version: saving a whole list</h3>
+
+<p>3P stored a person's decision history as one list. Each tab kept its own copy of that list in memory. When a tab saved a new decision, it wrote its whole list back. A decision saved in the other tab a minute earlier was not in that copy, so it disappeared. Any app that keeps a list inside one record has this risk: a JSON column with all of a user's items, a Firestore document with an array, or a list in <code>localStorage</code>. The fix in 3P was to read the saved list again right before each change, and to apply only that one change to it.</p>
+
+<h2>2. Layer one: save only what changed</h2>
+
+<p>Most lost updates disappear if a save sends only the fields the user edited. If tab B sends only the new name, the price from tab A survives.</p>
+
+<ul>
+<li><strong>SQL apps (Supabase, Neon, any Postgres):</strong> update the changed columns, not the whole row. For counters and stock, let the database do the math: <code>update products set stock = stock - 1 where id = 42</code>, never "read 12, write 11" from the browser.</li>
+<li><strong>Firestore:</strong> the <a href="https://firebase.google.com/docs/firestore/manage-data/add-data">add data guide</a> says that with <code>set()</code> on an existing document, "its contents will be overwritten with the newly provided data, unless you specify that the data should be merged into the existing document". Use <code>updateDoc</code> with only the changed fields, or <code>set</code> with merge.</li>
+<li><strong>Lists in Firestore:</strong> the same guide says "you can use arrayUnion() and arrayRemove() to add and remove elements. arrayUnion() adds elements to an array but only elements not already present." Use those instead of writing the whole array.</li>
+<li><strong>Lists in a JSON column:</strong> better, give items their own table, one row per item. Then adding an item is an insert, and it can never remove another item.</li>
+</ul>
+
+<h2>3. Layer two: refuse a save based on an old copy</h2>
+
+<p>Saving only changed fields still loses work when two people edit the same field. For that, add a version number. This is often called optimistic locking.</p>
+
+<ol>
+<li>Add a column <code>version integer not null default 1</code>.</li>
+<li>When the app loads a record, it keeps the version it saw.</li>
+<li>The save only updates the row if the version is still the same, and raises it by one.</li>
+<li>If no row was updated, someone else saved first. Show a conflict instead of overwriting.</li>
+</ol>
+
+<pre><code>update products
+set price = 35, version = version + 1
+where id = 42 and version = 7
+returning id, version;
+-- 1 row back: saved. 0 rows back: someone saved first.</code></pre>
+
+<p>The <a href="https://www.postgresql.org/docs/current/sql-update.html">PostgreSQL UPDATE docs</a> say "The optional RETURNING clause causes UPDATE to compute and return value(s) based on each row actually updated." So zero returned rows means the version did not match.</p>
+
+<p>With the Supabase JavaScript client, note the default from the <a href="https://supabase.com/docs/reference/javascript/update">update reference</a>: "By default, updated rows are not returned. To return it, chain the call with .select() after filters." Without <code>.select()</code> you cannot tell a save from a silent miss.</p>
+
+<pre><code>const { data, error } = await supabase
+  .from('products')
+  .update({ price: 35, version: loadedVersion + 1 })
+  .eq('id', 42)
+  .eq('version', loadedVersion)
+  .select()
+if (error) throw error
+if (data.length === 0) showConflict() // someone saved first</code></pre>
+
+<p>Row Level Security can also make an update match zero rows, so test the conflict path with a user who is allowed to edit. Also make sure the version comes from the database, never from a field the user can type in.</p>
+
+<h3>If your app has its own API</h3>
+
+<p>HTTP has this check built in. MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/If-Match">If-Match page</a> says that "in particular for PUT, If-Match can be used to prevent the lost update problem. It can check if the modification of a resource that the user wants to upload will not override another change that has been done since the original resource was fetched." The <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/ETag">ETag page</a> explains the flow: the server sends an <code>ETag</code> with the data, the save sends it back in <code>If-Match</code>, and "If the hashes don't match, it means that the document has been edited in-between and a 412 Precondition Failed error is thrown." Your version number can serve as the ETag.</p>
+
+<h3>Firestore: transactions</h3>
+
+<p>Firestore's <a href="https://firebase.google.com/docs/firestore/manage-data/transactions">transactions page</a> says that if a transaction reads documents "and another client modifies any of those documents, Cloud Firestore retries the transaction." That protects a read-then-write done in one go, such as a counter. It does not cover the minutes a user spends in a form, so store a version field and check it inside the transaction before you write. Also note: "Transactions will fail when the client is offline."</p>
+
+<h2>4. What the user should see on a conflict</h2>
+
+<p>Never drop the user's work. A good conflict message:</p>
+
+<ul>
+<li>Says what happened in plain words: "This product was changed in another tab or by someone else since you opened it."</li>
+<li>Keeps what they typed on screen, so they can copy it.</li>
+<li>Offers one clear action: "Load the latest version", then they redo their change.</li>
+</ul>
+
+<p>For simple records you can merge automatically: if the other save changed the price and this one changed the name, apply only the name and save again. If both changed the same field, ask the user. For apps where several people edit together all day, show live changes instead, see <a href="/blog/live-updates-realtime-or-polling-ai-built-app">realtime or polling</a>.</p>
+
+<h2>5. The same user in two tabs</h2>
+
+<p>Data that lives in the browser has the same problem, and the fix is the one 3P got: read the stored copy again right before each change, then write. The browser can also tell other tabs that something changed:</p>
+
+<ul>
+<li>MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/API/Window/storage_event">storage event page</a>: the event "fires when another document that shares the same storage area (either localStorage or sessionStorage) as the current window updates that storage area. The event is not fired on the window that made the change." Listen to it and reload your in-memory copy.</li>
+<li>MDN's <a href="https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel">BroadcastChannel page</a>: it "allows communication between different documents (in different windows, tabs, frames or iframes) of the same origin." Post a short "saved" message after each save, so other tabs refresh.</li>
+</ul>
+
+<p>These messages keep tabs in sync. The version check in your database is still what stops the overwrite, because a message can arrive late, or a tab can be asleep.</p>
+
+<h2>Prompts for Lovable, Bolt and Cursor</h2>
+
+<ul>
+<li><em>"Find every save in this app that sends a whole record or a whole list back to the database. Change each one to send only the fields the user changed, and change counters to update in the database (stock = stock - 1). List every place you changed."</em></li>
+<li><em>"Add an integer version column to the products table. Load it with each product. On save, update only where id and version match, raise the version by one, and use .select() to check that a row came back. If no row came back, keep the form as it is and show: 'This was changed by someone else. Load the latest version.'"</em></li>
+<li><em>"This app keeps data in localStorage. Before every change, read the stored data again and apply only that change. Listen to the storage event so other open tabs reload their copy."</em></li>
+</ul>
+
+<h2>Checklist</h2>
+
+<ol>
+<li>Saves send only changed fields, not whole records.</li>
+<li>No save writes a whole list. Items have their own rows, or you use arrayUnion and arrayRemove.</li>
+<li>Counters and stock change inside the database.</li>
+<li>Records people edit have a version column, and saves check it.</li>
+<li>A failed version check shows a clear message and keeps the user's input.</li>
+<li>Browser-stored data is read again right before each change.</li>
+<li>You tested it: two tabs, edit both, save both, and see what survives.</li>
+</ol>
+
+<p>The two-tab test belongs in your test list, see <a href="/blog/testing-ai-built-app-first-tests">first tests for an AI-built app</a>. Double saves from one click are a different bug with a different fix: <a href="/blog/duplicate-records-double-clicks-retries">duplicate records from double clicks and retries</a>. And if data is already lost, read <a href="/blog/undo-deleted-data-soft-delete-audit-log">how to undo deleted data</a>.</p>
+
+<h2>Want this fixed for you?</h2>
+
+<p>I finish and fix apps built with Lovable, Bolt, Cursor or Replit, including saves that silently overwrite other people's changes. Or <a href="/hire/fix-ai-built-app">send me the details</a> and I'll reply within 24 hours.</p>
