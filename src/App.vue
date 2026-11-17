@@ -7,7 +7,10 @@ import FooterSection from './components/FooterSection.vue'
 // (those are set per-view via useHead in HomeView/ProjectsView/HireView).
 // The share image is sitewide too: no view sets its own, so every page shared on
 // LinkedIn/X/WhatsApp shows public/og-image.png (1200x630).
+// lang: the site is English; the Dutch AI-features page overrides it, and
+// without this default <html lang> would be empty after leaving that page.
 useHead({
+  htmlAttrs: { lang: 'en' },
   meta: [
     { property: 'og:image', content: 'https://dizid.com/og-image.png' },
     { property: 'og:image:width', content: '1200' },

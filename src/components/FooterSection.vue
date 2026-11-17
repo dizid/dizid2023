@@ -15,6 +15,8 @@ const currentYear = new Date().getFullYear()
         <router-link to="/hire">Hire</router-link>
         <router-link to="/what-is-dizid">What is Dizid?</router-link>
         <router-link to="/fixed-price-mvp-for-non-technical-founders">Fixed-price MVP</router-link>
+        <router-link to="/add-ai-features-to-your-existing-app">Add AI to your app</router-link>
+        <router-link to="/freelance-developer-ai-functies-toevoegen-webapp" hreflang="nl">AI in je webapp (NL)</router-link>
         <router-link to="/blog">Blog</router-link>
       </nav>
 
@@ -84,7 +86,9 @@ const currentYear = new Date().getFullYear()
 
 .footer-nav {
   display: flex;
-  gap: var(--space-6);
+  flex-wrap: wrap; /* 7 links don't fit one row on a phone */
+  justify-content: center;
+  gap: var(--space-3) var(--space-6);
 }
 
 .footer-nav a {
