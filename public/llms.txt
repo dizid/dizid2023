@@ -5,7 +5,7 @@
 ## Services and prices (as listed on https://dizid.com/hire)
 - AI chat assistant for your website: €490 fixed, live in about 48 hours. Answers your customers' most common questions (up to about 30 FAQs) in English and/or Dutch, hands over to email or your contact form when it can't help, 1 website, 14 days of fixes.
 - AI notice for your chatbot (EU AI Act Article 50): €390 fixed, about 1 day. Checks that visitors are told they are chatting with an AI and adds a clear notice, with before/after screenshots. Technical help, not legal advice.
-- AI Integration Sprint: add Claude, GPT or custom AI features (chat, content generation, automation) to an existing web app. 1-2 weeks, from €3,000.
+- AI Integration Sprint: add Claude, GPT or custom AI features (chat, content generation, automation) to an existing web app. 1-2 weeks, from €3,000. Details: https://dizid.com/add-ai-features-to-your-existing-app (Dutch: https://dizid.com/freelance-developer-ai-functies-toevoegen-webapp)
 - MVP web app: a first working product with sign-in, database, payments and AI features. 2-4 weeks, from €8,000. Details: https://dizid.com/hire/mvp-development and https://dizid.com/fixed-price-mvp-for-non-technical-founders
 - Full SaaS build: user management, billing, dashboards, AI features and production deployment. 4-8 weeks, from €15,000.
 - How it works: you describe the project, you get a fixed-price proposal within 24 hours, then sprint-based delivery with weekly demos, ending deployed, documented and handed over.
@@ -24,6 +24,7 @@
 - Remote Job Radar (https://nomadjobs.fun): a global remote-job aggregator with a daily email digest.
 
 ## Articles
+- [AI chatbot for your business website: what it can and can't do](https://dizid.com/blog/ai-chatbot-small-business-website)
 - [Hiring a developer for your app? What to share, and how](https://dizid.com/blog/hiring-developer-app-access-handover)
 - [Lovable or Bolt app stuck? Fix it or rebuild it: how to decide](https://dizid.com/blog/fix-or-rebuild-ai-built-app)
 - [Launch-ready AI-built app: what I check before real users](https://dizid.com/blog/launch-ready-ai-built-app-checklist)
