@@ -8,6 +8,13 @@ export const SITE_URL = 'https://dizid.com'
 
 export const blogPosts = [
   {
+    slug: 'ai-chatbot-small-business-website',
+    title: "AI chatbot for your business website: what it can and can't do",
+    description: "What an AI chat assistant on a small business website handles well, what it must not do, how to stop made-up answers, and what it really costs to run.",
+    datePublished: '2026-11-17',
+    dateModified: '2026-11-17'
+  },
+  {
     slug: 'duplicate-stripe-subscriptions-one-customer',
     title: "Customer charged twice? Stop duplicate Stripe subscriptions",
     description: "Why a customer ends up with two Stripe subscriptions, and how to stop it: one Customer, a server check, the billing portal, webhook alerts. Nov 2026.",
